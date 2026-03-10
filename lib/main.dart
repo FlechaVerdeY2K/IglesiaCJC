@@ -15,7 +15,7 @@ void main() async {
 
   await FlutterFlowTheme.initialize();
 
-  final appState = FFAppState(); // Initialize FFAppState
+  final appState = FFAppState();
   await appState.initializePersistedState();
 
   runApp(ChangeNotifierProvider(
@@ -25,7 +25,6 @@ void main() async {
 }
 
 class MyApp extends StatefulWidget {
-  // This widget is the root of your application.
   @override
   State<MyApp> createState() => _MyAppState();
 
@@ -46,6 +45,7 @@ class _MyAppState extends State<MyApp> {
 
   late AppStateNotifier _appStateNotifier;
   late GoRouter _router;
+
   String getRoute([RouteMatch? routeMatch]) {
     final RouteMatch lastMatch =
         routeMatch ?? _router.routerDelegate.currentConfiguration.last;
@@ -59,7 +59,6 @@ class _MyAppState extends State<MyApp> {
       _router.routerDelegate.currentConfiguration.matches
           .map((e) => getRoute(e))
           .toList();
-  bool displaySplashImage = true;
 
   @override
   void initState() {
@@ -119,9 +118,8 @@ class NavBarPage extends StatefulWidget {
   _NavBarPageState createState() => _NavBarPageState();
 }
 
-/// This is the private State class that goes with NavBarPage.
 class _NavBarPageState extends State<NavBarPage> {
-  String _currentPageName = 'HomePage';
+  String _currentPageName = HomePageWidget.routeName;
   late Widget? _currentPage;
 
   @override
@@ -134,16 +132,17 @@ class _NavBarPageState extends State<NavBarPage> {
   @override
   Widget build(BuildContext context) {
     final tabs = {
-      'HomePage': HomePageWidget(),
-      'livePage': LivePageWidget(),
-      'sermonPage': SermonPageWidget(),
-      'eventsPage': EventsPageWidget(),
+      HomePageWidget.routeName: const HomePageWidget(),
+      UbicacionPageWidget.routeName: const UbicacionPageWidget(),
+      EventsPageWidget.routeName: const EventsPageWidget(),
     };
-    final currentIndex = tabs.keys.toList().indexOf(_currentPageName);
+    final tabKeys = tabs.keys.toList();
+    final selectedIndex = tabKeys.indexOf(_currentPageName);
+    final currentIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
     return Scaffold(
       resizeToAvoidBottomInset: !widget.disableResizeToAvoidBottomInset,
-      body: _currentPage ?? tabs[_currentPageName],
+      body: _currentPage ?? tabs[_currentPageName] ?? const HomePageWidget(),
       bottomNavigationBar: Visibility(
         visible: responsiveVisibility(
           context: context,
@@ -153,63 +152,35 @@ class _NavBarPageState extends State<NavBarPage> {
           currentIndex: currentIndex,
           onTap: (i) => safeSetState(() {
             _currentPage = null;
-            _currentPageName = tabs.keys.toList()[i];
+            _currentPageName = tabKeys[i];
           }),
-          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
-          selectedItemColor: FlutterFlowTheme.of(context).secondary,
-          unselectedItemColor: FlutterFlowTheme.of(context).secondaryText,
+          backgroundColor: const Color(0xFF1A1A1A),
+          selectedItemColor: Colors.white,
+          unselectedItemColor: const Color(0xFF9C9C9C),
+          selectedFontSize: 12.0,
+          unselectedFontSize: 12.0,
           showSelectedLabels: true,
           showUnselectedLabels: true,
           type: BottomNavigationBarType.fixed,
-          items: <BottomNavigationBarItem>[
+          items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
-              icon: Icon(
-                Icons.home_outlined,
-                size: 24.0,
-              ),
-              activeIcon: Icon(
-                Icons.home,
-                size: 24.0,
-              ),
-              label: 'inicio',
+              icon: Icon(Icons.home_outlined, size: 26.0),
+              activeIcon: Icon(Icons.home_rounded, size: 26.0),
+              label: 'Casa CJC',
               tooltip: '',
             ),
             BottomNavigationBarItem(
-              icon: Icon(
-                Icons.play_circle_outlined,
-                size: 24.0,
-              ),
-              activeIcon: Icon(
-                Icons.play_circle_fill,
-                size: 24.0,
-              ),
-              label: 'En Vivo',
+              icon: Icon(Icons.groups_2_outlined, size: 26.0),
+              activeIcon: Icon(Icons.groups_2_rounded, size: 26.0),
+              label: 'GPS',
               tooltip: '',
             ),
             BottomNavigationBarItem(
-              icon: Icon(
-                Icons.personal_video,
-                size: 24.0,
-              ),
-              activeIcon: Icon(
-                Icons.ondemand_video,
-                size: 24.0,
-              ),
-              label: 'Predicas',
+              icon: Icon(Icons.calendar_today_outlined, size: 24.0),
+              activeIcon: Icon(Icons.calendar_month_rounded, size: 24.0),
+              label: 'Calendario CJC',
               tooltip: '',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(
-                Icons.calendar_today_outlined,
-                size: 24.0,
-              ),
-              activeIcon: Icon(
-                Icons.calendar_month_outlined,
-                size: 24.0,
-              ),
-              label: 'Eventos',
-              tooltip: '',
-            )
           ],
         ),
       ),
