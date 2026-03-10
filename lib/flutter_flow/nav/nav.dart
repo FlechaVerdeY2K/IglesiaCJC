@@ -80,22 +80,18 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: LivePageWidget.routeName,
           path: LivePageWidget.routePath,
-          builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'livePage')
-              : LivePageWidget(),
+          builder: (context, params) => LivePageWidget(),
         ),
         FFRoute(
           name: SermonPageWidget.routeName,
           path: SermonPageWidget.routePath,
-          builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'sermonPage')
-              : SermonPageWidget(),
+          builder: (context, params) => SermonPageWidget(),
         ),
         FFRoute(
           name: EventsPageWidget.routeName,
           path: EventsPageWidget.routePath,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'eventsPage')
+              ? NavBarPage(initialPage: EventsPageWidget.routeName)
               : EventsPageWidget(),
         ),
         FFRoute(
@@ -126,7 +122,9 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: UbicacionPageWidget.routeName,
           path: UbicacionPageWidget.routePath,
-          builder: (context, params) => UbicacionPageWidget(),
+          builder: (context, params) => params.isEmpty
+              ? NavBarPage(initialPage: UbicacionPageWidget.routeName)
+              : UbicacionPageWidget(),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

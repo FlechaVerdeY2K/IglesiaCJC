@@ -23,14 +23,12 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => EventsPageModel());
-
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
 
   @override
   void dispose() {
     _model.dispose();
-
     super.dispose();
   }
 
@@ -43,32 +41,124 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        backgroundColor: const Color(0xFF050505),
         appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primary,
+          backgroundColor: const Color(0xFF1A1A1A),
           automaticallyImplyLeading: false,
+          elevation: 0.0,
+          centerTitle: true,
           title: Text(
-            'Page Title',
-            style: FlutterFlowTheme.of(context).headlineMedium.override(
-                  fontFamily: FlutterFlowTheme.of(context).headlineMediumFamily,
+            'Calendario CJC',
+            style: FlutterFlowTheme.of(context).titleLarge.override(
+                  fontFamily: FlutterFlowTheme.of(context).titleLargeFamily,
                   color: Colors.white,
-                  fontSize: 22.0,
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 0.0,
                   useGoogleFonts:
-                      !FlutterFlowTheme.of(context).headlineMediumIsCustom,
+                      !FlutterFlowTheme.of(context).titleLargeIsCustom,
                 ),
           ),
-          actions: [],
-          centerTitle: false,
-          elevation: 2.0,
         ),
         body: SafeArea(
-          top: true,
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [],
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildCard(
+                  context,
+                  title: 'Horarios CJC',
+                  description:
+                      'Accede rapido a los horarios y actividades generales de la iglesia.',
+                  buttonLabel: 'Ver horarios',
+                  onTap: () => context.pushNamed('horariosPage'),
+                ),
+                const SizedBox(height: 18.0),
+                _buildCard(
+                  context,
+                  title: 'Eventos y agenda',
+                  description:
+                      'Esta seccion queda lista para conectar proximos eventos, reuniones especiales y actividades por ministerio.',
+                  buttonLabel: 'Proximamente',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content:
+                            Text('Calendario detallado disponible pronto.'),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCard(
+    BuildContext context, {
+    required String title,
+    required String description,
+    required String buttonLabel,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFF121212),
+        borderRadius: BorderRadius.circular(18.0),
+        border: Border.all(color: const Color(0xFF2B2B2B)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: FlutterFlowTheme.of(context).headlineSmall.override(
+                  fontFamily: FlutterFlowTheme.of(context).headlineSmallFamily,
+                  color: Colors.white,
+                  fontSize: 22.0,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.0,
+                  useGoogleFonts:
+                      !FlutterFlowTheme.of(context).headlineSmallIsCustom,
+                ),
+          ),
+          const SizedBox(height: 12.0),
+          Text(
+            description,
+            style: FlutterFlowTheme.of(context).bodyLarge.override(
+                  fontFamily: FlutterFlowTheme.of(context).bodyLargeFamily,
+                  color: const Color(0xFFC8C8C8),
+                  lineHeight: 1.5,
+                  letterSpacing: 0.0,
+                  useGoogleFonts:
+                      !FlutterFlowTheme.of(context).bodyLargeIsCustom,
+                ),
+          ),
+          const SizedBox(height: 18.0),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton(
+              onPressed: onTap,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF202020),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999.0),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18.0,
+                  vertical: 12.0,
+                ),
+              ),
+              child: Text(buttonLabel),
+            ),
+          ),
+        ],
       ),
     );
   }
