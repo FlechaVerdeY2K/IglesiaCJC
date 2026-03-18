@@ -121,11 +121,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
               ),
               IconButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Notificaciones disponibles pronto.'),
-                    ),
-                  );
+                  context.pushNamed(AnunciosPageWidget.routeName);
                 },
                 icon: const Icon(
                   Icons.notifications_rounded,
@@ -212,6 +208,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 fit: BoxFit.contain,
                 alignment: Alignment.centerLeft,
               ),
+            ),
+            _buildDrawerItem(
+              context,
+              label: 'Anuncios',
+              onTap: () {
+                Navigator.pop(context);
+                context.pushNamed(AnunciosPageWidget.routeName);
+              },
             ),
             _buildDrawerItem(
               context,

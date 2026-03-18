@@ -125,7 +125,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => params.isEmpty
               ? NavBarPage(initialPage: UbicacionPageWidget.routeName)
               : UbicacionPageWidget(),
-        )
+        ),
+        FFRoute(
+          name: AnunciosPageWidget.routeName,
+          path: AnunciosPageWidget.routePath,
+          builder: (context, params) => AnunciosPageWidget(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

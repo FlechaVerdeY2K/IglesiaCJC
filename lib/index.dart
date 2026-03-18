@@ -15,3 +15,4 @@ export '/menu_pages/ofrendas_page/ofrendas_page_widget.dart'
     show OfrendasPageWidget;
 export '/menu_pages/ubicacion_page/ubicacion_page_widget.dart'
     show UbicacionPageWidget;
+export '/menu_pages/anuncios_page_widget.dart' show AnunciosPageWidget;
