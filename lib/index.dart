@@ -16,3 +16,22 @@ export '/menu_pages/ofrendas_page/ofrendas_page_widget.dart'
 export '/menu_pages/ubicacion_page/ubicacion_page_widget.dart'
     show UbicacionPageWidget;
 export '/menu_pages/anuncios_page_widget.dart' show AnunciosPageWidget;
+export '/menu_pages/devocional_page/devocional_page_widget.dart'
+    show DevocionalPageWidget;
+export '/menu_pages/oracion_page/oracion_page_widget.dart'
+    show OracionPageWidget;
+export '/menu_pages/galeria_page/galeria_page_widget.dart'
+    show GaleriaPageWidget;
+export '/menu_pages/recursos_page/recursos_page_widget.dart'
+    show RecursosPageWidget;
+export '/menu_pages/registro_gps_page/registro_gps_page_widget.dart'
+    show RegistroGpsPageWidget;
+export '/menu_pages/creacion_gps_page/creacion_gps_page_widget.dart'
+    show CreacionGpsPageWidget;
+export '/menu_pages/playlist_page/playlist_page_widget.dart'
+    show PlaylistPageWidget;
+export '/admin/login_page_widget.dart' show LoginPageWidget;
+export '/admin/admin_panel_page_widget.dart' show AdminPanelPageWidget;
+export '/admin/admin_anuncios_page_widget.dart' show AdminAnunciosPageWidget;
+export '/admin/admin_eventos_page_widget.dart' show AdminEventosPageWidget;
+export '/admin/admin_sermones_page_widget.dart' show AdminSermonesPageWidget;
