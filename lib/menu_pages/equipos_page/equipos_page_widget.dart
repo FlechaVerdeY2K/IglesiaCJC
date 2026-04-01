@@ -1,4 +1,4 @@
-import '/flutter_flow/flutter_flow_icon_button.dart';
+import '/backend/firebase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -16,75 +16,161 @@ class EquiposPageWidget extends StatefulWidget {
 }
 
 class _EquiposPageWidgetState extends State<EquiposPageWidget> {
-  late EquiposPageModel _model;
+  static const Color _bg = Color(0xFF050505);
+  static const Color _surface = Color(0xFF171717);
+  static const Color _accent = Color(0xFFE8D5B0);
 
+  late EquiposPageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => EquiposPageModel());
-
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
 
   @override
   void dispose() {
     _model.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          automaticallyImplyLeading: false,
-          leading: FlutterFlowIconButton(
-            borderColor: Colors.transparent,
-            borderRadius: 30.0,
-            borderWidth: 1.0,
-            buttonSize: 60.0,
-            icon: Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.white,
-              size: 30.0,
-            ),
-            onPressed: () async {
-              context.pop();
-            },
-          ),
-          title: Text(
-            'Page Title',
-            style: FlutterFlowTheme.of(context).headlineMedium.override(
-                  fontFamily: FlutterFlowTheme.of(context).headlineMediumFamily,
-                  color: Colors.white,
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  useGoogleFonts:
-                      !FlutterFlowTheme.of(context).headlineMediumIsCustom,
-                ),
-          ),
-          actions: [],
-          centerTitle: false,
-          elevation: 2.0,
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
+          onPressed: () => context.safePop(),
         ),
-        body: SafeArea(
-          top: true,
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [],
-          ),
+        title: Text(
+          'Equipos',
+          style: FlutterFlowTheme.of(context).titleLarge.override(
+                fontFamily: FlutterFlowTheme.of(context).titleLargeFamily,
+                color: Colors.white,
+                fontSize: 18.0,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.0,
+                useGoogleFonts:
+                    !FlutterFlowTheme.of(context).titleLargeIsCustom,
+              ),
         ),
+        centerTitle: true,
+      ),
+      body: StreamBuilder<List<Equipo>>(
+        stream: FirebaseService.instance.equiposStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+                child: CircularProgressIndicator(color: _accent));
+          }
+          final equipos = snapshot.data ?? [];
+          if (equipos.isEmpty) {
+            return const Center(
+              child: Text('Próximamente',
+                  style: TextStyle(color: Colors.white54, fontSize: 16)),
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+            itemCount: equipos.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, i) =>
+                _buildEquipoCard(context, equipos[i]),
+          );
+        },
       ),
     );
+  }
+
+  Widget _buildEquipoCard(BuildContext context, Equipo equipo) {
+    final iconData = _iconFromName(equipo.iconName);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF2B2B2B)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: const Color(0xFF272727),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: const Color(0xFF3A3A3A)),
+            ),
+            child: Icon(iconData, color: _accent, size: 26),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  equipo.nombre,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700),
+                ),
+                if (equipo.lider.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.person_rounded,
+                          color: Color(0xFF7A7A7A), size: 14),
+                      const SizedBox(width: 4),
+                      Text(equipo.lider,
+                          style: const TextStyle(
+                              color: Color(0xFF7A7A7A), fontSize: 13)),
+                    ],
+                  ),
+                ],
+                if (equipo.descripcion.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    equipo.descripcion,
+                    style: const TextStyle(
+                        color: Color(0xFFB5B5B5), fontSize: 13, height: 1.5),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _iconFromName(String? name) {
+    switch (name) {
+      case 'music':
+        return Icons.music_note_rounded;
+      case 'kids':
+        return Icons.child_care_rounded;
+      case 'youth':
+        return Icons.groups_rounded;
+      case 'media':
+        return Icons.camera_alt_rounded;
+      case 'prayer':
+        return Icons.volunteer_activism_rounded;
+      case 'welcome':
+        return Icons.waving_hand_rounded;
+      case 'missions':
+        return Icons.public_rounded;
+      case 'sound':
+        return Icons.speaker_rounded;
+      default:
+        return Icons.people_alt_rounded;
+    }
   }
 }

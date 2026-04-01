@@ -9,12 +9,13 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
 import '/backend/firebase_service.dart';
+import 'firebase_options.dart';
 import 'index.dart';
 
 /// Manejar mensajes FCM cuando la app está en background/terminada.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
 void main() async {
@@ -22,9 +23,11 @@ void main() async {
   GoRouter.optionURLReflectsImperativeAPIs = true;
   usePathUrlStrategy();
 
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await FirebaseService.instance.initialize();
+
+  // Run FCM/notifications init in the background — don't block the splash
+  FirebaseService.instance.initialize();
 
   await FlutterFlowTheme.initialize();
 
@@ -80,7 +83,7 @@ class _MyAppState extends State<MyApp> {
     _appStateNotifier = AppStateNotifier.instance;
     _router = createRouter(_appStateNotifier);
 
-    Future.delayed(Duration(milliseconds: 1000),
+    Future.delayed(Duration(milliseconds: 200),
         () => safeSetState(() => _appStateNotifier.stopShowingSplashImage()));
   }
 

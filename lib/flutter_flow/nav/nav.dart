@@ -131,6 +131,66 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: AnunciosPageWidget.routePath,
           builder: (context, params) => AnunciosPageWidget(),
         ),
+        FFRoute(
+          name: DevocionalPageWidget.routeName,
+          path: DevocionalPageWidget.routePath,
+          builder: (context, params) => DevocionalPageWidget(),
+        ),
+        FFRoute(
+          name: OracionPageWidget.routeName,
+          path: OracionPageWidget.routePath,
+          builder: (context, params) => OracionPageWidget(),
+        ),
+        FFRoute(
+          name: GaleriaPageWidget.routeName,
+          path: GaleriaPageWidget.routePath,
+          builder: (context, params) => GaleriaPageWidget(),
+        ),
+        FFRoute(
+          name: RecursosPageWidget.routeName,
+          path: RecursosPageWidget.routePath,
+          builder: (context, params) => RecursosPageWidget(),
+        ),
+        FFRoute(
+          name: RegistroGpsPageWidget.routeName,
+          path: RegistroGpsPageWidget.routePath,
+          builder: (context, params) => RegistroGpsPageWidget(),
+        ),
+        FFRoute(
+          name: CreacionGpsPageWidget.routeName,
+          path: CreacionGpsPageWidget.routePath,
+          builder: (context, params) => CreacionGpsPageWidget(),
+        ),
+        FFRoute(
+          name: PlaylistPageWidget.routeName,
+          path: PlaylistPageWidget.routePath,
+          builder: (context, params) => PlaylistPageWidget(),
+        ),
+        FFRoute(
+          name: LoginPageWidget.routeName,
+          path: LoginPageWidget.routePath,
+          builder: (context, params) => const LoginPageWidget(),
+        ),
+        FFRoute(
+          name: AdminPanelPageWidget.routeName,
+          path: AdminPanelPageWidget.routePath,
+          builder: (context, params) => const AdminPanelPageWidget(),
+        ),
+        FFRoute(
+          name: AdminAnunciosPageWidget.routeName,
+          path: AdminAnunciosPageWidget.routePath,
+          builder: (context, params) => const AdminAnunciosPageWidget(),
+        ),
+        FFRoute(
+          name: AdminEventosPageWidget.routeName,
+          path: AdminEventosPageWidget.routePath,
+          builder: (context, params) => const AdminEventosPageWidget(),
+        ),
+        FFRoute(
+          name: AdminSermonesPageWidget.routeName,
+          path: AdminSermonesPageWidget.routePath,
+          builder: (context, params) => const AdminSermonesPageWidget(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

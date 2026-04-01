@@ -1,8 +1,10 @@
+import '/backend/firebase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'home_page_model.dart';
 export 'home_page_model.dart';
 
@@ -23,7 +25,6 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   static const Color _mutedTextColor = Color(0xFFB5B5B5);
 
   static const String _wazeUrl = 'https://waze.com/ul/hd1u0x7u3j';
-  static const String _gpsRequestUrl = '';
   static const String _youtubeUrl = 'https://youtube.com/@iglesiacjc217';
   static const String _instagramUrl = 'https://www.instagram.com/iglesiacjc';
   static const String _facebookUrl = 'https://www.facebook.com/share/1D6LhUGwoz/';
@@ -121,6 +122,18 @@ class _HomePageWidgetState extends State<HomePageWidget> {
               ),
               IconButton(
                 onPressed: () {
+                  Share.share(
+                      '¡Descarga la app de Iglesia CJC! https://iglesiacjc.app');
+                },
+                icon: const Icon(
+                  Icons.share_rounded,
+                  color: Colors.white,
+                  size: 26.0,
+                ),
+                tooltip: 'Compartir app',
+              ),
+              IconButton(
+                onPressed: () {
                   context.pushNamed(AnunciosPageWidget.routeName);
                 },
                 icon: const Icon(
@@ -167,12 +180,18 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 _buildDivider(),
                 _buildGradientButton(
                   context,
-                  label: 'Solicitud Apertura GPS',
-                  onPressed: () => _openExternalLink(
-                    context,
-                    _gpsRequestUrl,
-                    'solicitud GPS',
-                  ),
+                  label: 'Unirme a un GPS',
+                  onPressed: () {
+                    context.pushNamed(RegistroGpsPageWidget.routeName);
+                  },
+                ),
+                _buildDivider(),
+                _buildGradientButton(
+                  context,
+                  label: 'Iniciar un GPS',
+                  onPressed: () {
+                    context.pushNamed(CreacionGpsPageWidget.routeName);
+                  },
                 ),
                 _buildDivider(),
                 Padding(
@@ -209,45 +228,150 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 alignment: Alignment.centerLeft,
               ),
             ),
-            _buildDrawerItem(
-              context,
-              label: 'Anuncios',
-              onTap: () {
-                Navigator.pop(context);
-                context.pushNamed(AnunciosPageWidget.routeName);
-              },
-            ),
-            _buildDrawerItem(
-              context,
-              label: 'Contacto',
-              onTap: () {
-                Navigator.pop(context);
-                context.pushNamed(ContactoPageWidget.routeName);
-              },
-            ),
-            _buildDrawerItem(
-              context,
-              label: 'Ofrendas',
-              onTap: () {
-                Navigator.pop(context);
-                context.pushNamed(OfrendasPageWidget.routeName);
-              },
-            ),
-            _buildDrawerItem(
-              context,
-              label: 'Ubicacion',
-              onTap: () {
-                Navigator.pop(context);
-                context.pushNamed(UbicacionPageWidget.routeName);
-              },
-            ),
-            _buildDrawerItem(
-              context,
-              label: 'Horarios',
-              onTap: () {
-                Navigator.pop(context);
-                context.pushNamed(HorariosPageWidget.routeName);
-              },
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  // ── Información ─────────────────────────────────────────
+                  _buildDrawerSection('Información'),
+                  _buildDrawerItem(context,
+                      icon: Icons.campaign_rounded,
+                      label: 'Anuncios',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(AnunciosPageWidget.routeName);
+                      }),
+                  _buildDrawerItem(context,
+                      icon: Icons.access_time_rounded,
+                      label: 'Horarios',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(HorariosPageWidget.routeName);
+                      }),
+                  _buildDrawerItem(context,
+                      icon: Icons.location_on_rounded,
+                      label: 'Ubicación',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(UbicacionPageWidget.routeName);
+                      }),
+                  _buildDrawerItem(context,
+                      icon: Icons.phone_rounded,
+                      label: 'Contacto',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(ContactoPageWidget.routeName);
+                      }),
+                  _buildDrawerItem(context,
+                      icon: Icons.volunteer_activism_rounded,
+                      label: 'Ofrendas',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(OfrendasPageWidget.routeName);
+                      }),
+
+                  // ── Comunidad ────────────────────────────────────────────
+                  _buildDrawerSection('Comunidad'),
+                  _buildDrawerItem(context,
+                      icon: Icons.people_rounded,
+                      label: 'Pastores',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(PastoresPageWidget.routeName);
+                      }),
+                  _buildDrawerItem(context,
+                      icon: Icons.groups_rounded,
+                      label: 'Equipos',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(EquiposPageWidget.routeName);
+                      }),
+                  _buildDrawerItem(context,
+                      icon: Icons.favorite_rounded,
+                      label: 'Pedidos de Oración',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(OracionPageWidget.routeName);
+                      }),
+
+                  // ── Crecimiento ──────────────────────────────────────────
+                  _buildDrawerSection('Crecimiento'),
+                  _buildDrawerItem(context,
+                      icon: Icons.book_rounded,
+                      label: 'Devocional',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(DevocionalPageWidget.routeName);
+                      }),
+                  _buildDrawerItem(context,
+                      icon: Icons.library_books_rounded,
+                      label: 'Recursos',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(RecursosPageWidget.routeName);
+                      }),
+                  _buildDrawerItem(context,
+                      icon: Icons.music_note_rounded,
+                      label: 'Playlist',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(PlaylistPageWidget.routeName);
+                      }),
+
+                  // ── GPS ──────────────────────────────────────────────────
+                  _buildDrawerSection('GPS'),
+                  _buildDrawerItem(context,
+                      icon: Icons.group_add_rounded,
+                      label: 'Unirme a un GPS',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(RegistroGpsPageWidget.routeName);
+                      }),
+                  _buildDrawerItem(context,
+                      icon: Icons.add_location_alt_rounded,
+                      label: 'Iniciar un GPS',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(CreacionGpsPageWidget.routeName);
+                      }),
+
+                  // ── Multimedia ───────────────────────────────────────────
+                  _buildDrawerSection('Multimedia'),
+                  _buildDrawerItem(context,
+                      icon: Icons.photo_library_rounded,
+                      label: 'Galería',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(GaleriaPageWidget.routeName);
+                      }),
+
+                  // ── App ──────────────────────────────────────────────────
+                  _buildDrawerSection('App'),
+                  _buildDrawerItem(context,
+                      icon: Icons.share_rounded,
+                      label: 'Compartir App',
+                      onTap: () {
+                        Navigator.pop(context);
+                        Share.share(
+                            '¡Descarga la app de Iglesia CJC! https://iglesiacjc.app');
+                      }),
+
+                  // ── Admin ─────────────────────────────────────────────────
+                  _buildDrawerSection('Administración'),
+                  _buildDrawerItem(context,
+                      icon: Icons.admin_panel_settings_rounded,
+                      label: 'Panel de Admin',
+                      onTap: () {
+                        Navigator.pop(context);
+                        final user = FirebaseService.instance.currentUser;
+                        if (user != null) {
+                          context.pushNamed(AdminPanelPageWidget.routeName);
+                        } else {
+                          context.pushNamed(LoginPageWidget.routeName);
+                        }
+                      }),
+                ],
+              ),
             ),
           ],
         ),
@@ -255,13 +379,30 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     );
   }
 
+  Widget _buildDrawerSection(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+      child: Text(
+        title.toUpperCase(),
+        style: const TextStyle(
+          color: Color(0xFFE8D5B0),
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
   Widget _buildDrawerItem(
     BuildContext context, {
+    required IconData icon,
     required String label,
     required VoidCallback onTap,
   }) {
     return ListTile(
       onTap: onTap,
+      leading: Icon(icon, color: Colors.white70, size: 22),
       title: Text(
         label,
         style: FlutterFlowTheme.of(context).titleSmall.override(
@@ -275,6 +416,8 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         Icons.chevron_right_rounded,
         color: Colors.white70,
       ),
+      dense: true,
+      minLeadingWidth: 28,
     );
   }
 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "469431498973",
+    "project_id": "iglesiacjc",
+    "storage_bucket": "iglesiacjc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:469431498973:android:512be58c5e66b67c318334",
+        "android_client_info": {
+          "package_name": "com.mycompany.iglesiacjc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjJa99i0my_jjz5nCCZYIWe86uve4080A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

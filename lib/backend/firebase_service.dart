@@ -1,6 +1,274 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+// ─── Modelos adicionales ──────────────────────────────────────────────────────
+
+class LiveConfig {
+  final String videoId;
+  final String titulo;
+  final String descripcion;
+  final bool activo;
+
+  const LiveConfig({
+    required this.videoId,
+    required this.titulo,
+    required this.descripcion,
+    required this.activo,
+  });
+
+  factory LiveConfig.fromFirestore(Map<String, dynamic> data) => LiveConfig(
+        videoId: data['videoId'] as String? ?? '',
+        titulo: data['titulo'] as String? ?? '',
+        descripcion: data['descripcion'] as String? ?? '',
+        activo: data['activo'] as bool? ?? false,
+      );
+}
+
+class Sermon {
+  final String id;
+  final String titulo;
+  final String descripcion;
+  final String videoId;
+  final DateTime fecha;
+  final String predicador;
+  final bool activo;
+
+  const Sermon({
+    required this.id,
+    required this.titulo,
+    required this.descripcion,
+    required this.videoId,
+    required this.fecha,
+    required this.predicador,
+    required this.activo,
+  });
+
+  factory Sermon.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return Sermon(
+      id: doc.id,
+      titulo: d['titulo'] as String? ?? '',
+      descripcion: d['descripcion'] as String? ?? '',
+      videoId: d['videoId'] as String? ?? '',
+      fecha: (d['fecha'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      predicador: d['predicador'] as String? ?? '',
+      activo: d['activo'] as bool? ?? true,
+    );
+  }
+}
+
+class Devocional {
+  final String id;
+  final String titulo;
+  final String versiculo;
+  final String referencia;
+  final String reflexion;
+  final DateTime fecha;
+
+  const Devocional({
+    required this.id,
+    required this.titulo,
+    required this.versiculo,
+    required this.referencia,
+    required this.reflexion,
+    required this.fecha,
+  });
+
+  factory Devocional.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return Devocional(
+      id: doc.id,
+      titulo: d['titulo'] as String? ?? '',
+      versiculo: d['versiculo'] as String? ?? '',
+      referencia: d['referencia'] as String? ?? '',
+      reflexion: d['reflexion'] as String? ?? '',
+      fecha: (d['fecha'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+}
+
+class Oracion {
+  final String id;
+  final String nombre;
+  final String peticion;
+  final bool anonima;
+  final DateTime fecha;
+
+  const Oracion({
+    required this.id,
+    required this.nombre,
+    required this.peticion,
+    required this.anonima,
+    required this.fecha,
+  });
+
+  factory Oracion.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return Oracion(
+      id: doc.id,
+      nombre: d['anonima'] == true ? 'Anónimo' : (d['nombre'] as String? ?? ''),
+      peticion: d['peticion'] as String? ?? '',
+      anonima: d['anonima'] as bool? ?? false,
+      fecha: (d['fecha'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+}
+
+class FotoGaleria {
+  final String id;
+  final String imageUrl;
+  final String titulo;
+  final String descripcion;
+  final DateTime fecha;
+  final String categoria;
+
+  const FotoGaleria({
+    required this.id,
+    required this.imageUrl,
+    required this.titulo,
+    required this.descripcion,
+    required this.fecha,
+    required this.categoria,
+  });
+
+  factory FotoGaleria.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return FotoGaleria(
+      id: doc.id,
+      imageUrl: d['imageUrl'] as String? ?? '',
+      titulo: d['titulo'] as String? ?? '',
+      descripcion: d['descripcion'] as String? ?? '',
+      fecha: (d['fecha'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      categoria: d['categoria'] as String? ?? 'general',
+    );
+  }
+}
+
+class Recurso {
+  final String id;
+  final String titulo;
+  final String descripcion;
+  final String url;
+  final String tipo; // 'pdf' | 'audio' | 'video'
+  final DateTime fecha;
+
+  const Recurso({
+    required this.id,
+    required this.titulo,
+    required this.descripcion,
+    required this.url,
+    required this.tipo,
+    required this.fecha,
+  });
+
+  factory Recurso.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return Recurso(
+      id: doc.id,
+      titulo: d['titulo'] as String? ?? '',
+      descripcion: d['descripcion'] as String? ?? '',
+      url: d['url'] as String? ?? '',
+      tipo: d['tipo'] as String? ?? 'pdf',
+      fecha: (d['fecha'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+}
+
+class Pastor {
+  final String id;
+  final String nombre;
+  final String cargo;
+  final String bio;
+  final String? fotoUrl;
+  final int orden;
+
+  const Pastor({
+    required this.id,
+    required this.nombre,
+    required this.cargo,
+    required this.bio,
+    this.fotoUrl,
+    required this.orden,
+  });
+
+  factory Pastor.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return Pastor(
+      id: doc.id,
+      nombre: d['nombre'] as String? ?? '',
+      cargo: d['cargo'] as String? ?? '',
+      bio: d['bio'] as String? ?? '',
+      fotoUrl: d['fotoUrl'] as String?,
+      orden: d['orden'] as int? ?? 0,
+    );
+  }
+}
+
+class Equipo {
+  final String id;
+  final String nombre;
+  final String descripcion;
+  final String lider;
+  final String? iconName;
+  final int orden;
+
+  const Equipo({
+    required this.id,
+    required this.nombre,
+    required this.descripcion,
+    required this.lider,
+    this.iconName,
+    required this.orden,
+  });
+
+  factory Equipo.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return Equipo(
+      id: doc.id,
+      nombre: d['nombre'] as String? ?? '',
+      descripcion: d['descripcion'] as String? ?? '',
+      lider: d['lider'] as String? ?? '',
+      iconName: d['iconName'] as String?,
+      orden: d['orden'] as int? ?? 0,
+    );
+  }
+}
+
+class Evento {
+  final String id;
+  final String titulo;
+  final String descripcion;
+  final DateTime fecha;
+  final String? lugar;
+  final String? imageUrl;
+  final bool activo;
+
+  const Evento({
+    required this.id,
+    required this.titulo,
+    required this.descripcion,
+    required this.fecha,
+    this.lugar,
+    this.imageUrl,
+    required this.activo,
+  });
+
+  factory Evento.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return Evento(
+      id: doc.id,
+      titulo: d['titulo'] as String? ?? '',
+      descripcion: d['descripcion'] as String? ?? '',
+      fecha: (d['fecha'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      lugar: d['lugar'] as String?,
+      imageUrl: d['imageUrl'] as String?,
+      activo: d['activo'] as bool? ?? true,
+    );
+  }
+}
 
 // ─── Modelo Anuncio ───────────────────────────────────────────────────────────
 
@@ -41,6 +309,7 @@ class FirebaseService {
   static final FirebaseService instance = FirebaseService._();
 
   final _db = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
   final _messaging = FirebaseMessaging.instance;
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
@@ -54,7 +323,9 @@ class FirebaseService {
   // ── Inicialización ──────────────────────────────────────────────────────────
 
   Future<void> initialize() async {
-    await _initLocalNotifications();
+    if (!kIsWeb) {
+      await _initLocalNotifications();
+    }
     await _initFCM();
   }
 
@@ -79,18 +350,19 @@ class FirebaseService {
   }
 
   Future<void> _initFCM() async {
-    // Pedir permiso (iOS / Android 13+)
-    await _messaging.requestPermission(
+    // Pedir permiso (iOS / Android 13+).
+    // En web esto puede tardar si el navegador muestra un diálogo — no bloquea el arranque.
+    _messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
 
-    // Mostrar notificación local cuando la app está en primer plano
-    FirebaseMessaging.onMessage.listen(_showLocalNotification);
-
-    // Todos los dispositivos se suscriben al topic general de anuncios
-    await _messaging.subscribeToTopic('anuncios');
+    // Mostrar notificación local cuando la app está en primer plano (solo nativo)
+    if (!kIsWeb) {
+      FirebaseMessaging.onMessage.listen(_showLocalNotification);
+      await _messaging.subscribeToTopic('anuncios');
+    }
   }
 
   void _showLocalNotification(RemoteMessage message) {
@@ -119,9 +391,379 @@ class FirebaseService {
   Stream<List<Anuncio>> anunciosStream() {
     return _db
         .collection('anuncios')
-        .where('activo', isEqualTo: true)
-        .orderBy('fecha', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map(Anuncio.fromFirestore).toList());
+        .map((snap) {
+      final list = snap.docs.map(Anuncio.fromFirestore).toList();
+      list.removeWhere((a) => a.activo == false);
+      list.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return list;
+    });
   }
+
+  // ── Live Config ─────────────────────────────────────────────────────────────
+
+  Future<LiveConfig?> getLiveConfig() async {
+    try {
+      final doc = await _db.collection('config').doc('live').get();
+      if (!doc.exists || doc.data() == null) return null;
+      return LiveConfig.fromFirestore(doc.data()!);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ── Sermones ────────────────────────────────────────────────────────────────
+
+  Stream<List<Sermon>> sermonesStream() {
+    return _db
+        .collection('sermones')
+        .snapshots()
+        .map((snap) {
+      final list = snap.docs.map(Sermon.fromFirestore).toList();
+      list.removeWhere((s) => s.activo == false);
+      list.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return list;
+    });
+  }
+
+  // ── Devocional diario ───────────────────────────────────────────────────────
+
+  Future<Devocional?> getDevocionalHoy() async {
+    try {
+      final hoy = DateTime.now();
+      final inicio = DateTime(hoy.year, hoy.month, hoy.day);
+      final fin = inicio.add(const Duration(days: 1));
+      final snap = await _db
+          .collection('devocionales')
+          .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(inicio))
+          .where('fecha', isLessThan: Timestamp.fromDate(fin))
+          .limit(1)
+          .get();
+      if (snap.docs.isEmpty) {
+        // Fallback: most recent
+        final fallback = await _db
+            .collection('devocionales')
+            .orderBy('fecha', descending: true)
+            .limit(1)
+            .get();
+        if (fallback.docs.isEmpty) return null;
+        return Devocional.fromFirestore(fallback.docs.first);
+      }
+      return Devocional.fromFirestore(snap.docs.first);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Stream<List<Devocional>> devoccionalesStream() {
+    return _db
+        .collection('devocionales')
+        .orderBy('fecha', descending: true)
+        .limit(30)
+        .snapshots()
+        .map((snap) => snap.docs.map(Devocional.fromFirestore).toList());
+  }
+
+  // ── Oración ─────────────────────────────────────────────────────────────────
+
+  Stream<List<Oracion>> oracionesPublicasStream() {
+    return _db
+        .collection('oraciones')
+        .orderBy('fecha', descending: true)
+        .limit(50)
+        .snapshots()
+        .map((snap) => snap.docs.map(Oracion.fromFirestore).toList());
+  }
+
+  Future<void> crearOracion({
+    required String nombre,
+    required String peticion,
+    required bool anonima,
+  }) async {
+    await _db.collection('oraciones').add({
+      'nombre': anonima ? 'Anónimo' : nombre,
+      'peticion': peticion,
+      'anonima': anonima,
+      'fecha': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // ── Galería ─────────────────────────────────────────────────────────────────
+
+  Stream<List<FotoGaleria>> galeriaStream({String? categoria}) {
+    Query<Map<String, dynamic>> q = _db.collection('galeria');
+    if (categoria != null && categoria != 'todos') {
+      q = q.where('categoria', isEqualTo: categoria);
+    }
+    return q.snapshots().map((snap) {
+      final list = snap.docs.map(FotoGaleria.fromFirestore).toList();
+      list.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return list;
+    });
+  }
+
+  // ── Recursos ────────────────────────────────────────────────────────────────
+
+  Stream<List<Recurso>> recursosStream({String? tipo}) {
+    Query<Map<String, dynamic>> q = _db.collection('recursos');
+    if (tipo != null && tipo != 'todos') {
+      q = q.where('tipo', isEqualTo: tipo);
+    }
+    return q.snapshots().map((snap) {
+      final list = snap.docs.map(Recurso.fromFirestore).toList();
+      list.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return list;
+    });
+  }
+
+  // ── Pastores ────────────────────────────────────────────────────────────────
+
+  Stream<List<Pastor>> pastoresStream() {
+    return _db
+        .collection('pastores')
+        .orderBy('orden')
+        .snapshots()
+        .map((snap) => snap.docs.map(Pastor.fromFirestore).toList());
+  }
+
+  // ── Equipos ─────────────────────────────────────────────────────────────────
+
+  Stream<List<Equipo>> equiposStream() {
+    return _db
+        .collection('equipos')
+        .orderBy('orden')
+        .snapshots()
+        .map((snap) => snap.docs.map(Equipo.fromFirestore).toList());
+  }
+
+  // ── Eventos ─────────────────────────────────────────────────────────────────
+
+  Stream<List<Evento>> eventosStream() {
+    final ahora = DateTime.now();
+    final inicioHoy = DateTime(ahora.year, ahora.month, ahora.day);
+    return _db
+        .collection('eventos')
+        .where('activo', isEqualTo: true)
+        .snapshots()
+        .map((snap) {
+      final list = snap.docs.map(Evento.fromFirestore).toList();
+      list.removeWhere((e) => e.fecha.isBefore(inicioHoy));
+      list.sort((a, b) => a.fecha.compareTo(b.fecha));
+      return list;
+    });
+  }
+
+  // ── GPS ──────────────────────────────────────────────────────────────────────
+
+  Future<void> registrarGPS(Map<String, dynamic> datos) async {
+    await _db.collection('gps_registros').add({
+      ...datos,
+      'fecha': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> solicitarCreacionGPS(Map<String, dynamic> datos) async {
+    await _db.collection('gps_solicitudes').add({
+      ...datos,
+      'fecha': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> registrarEvento(Map<String, dynamic> datos) async {
+    await _db.collection('registros_eventos').add({
+      ...datos,
+      'fecha': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // ── Auth ──────────────────────────────────────────────────────────────────────
+
+  User? get currentUser => _auth.currentUser;
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  Future<bool> get isAdmin async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    try {
+      final doc = await _db.collection('usuarios').doc(user.uid).get();
+      return doc.data()?['rol'] == 'admin';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Devuelve null si el login es exitoso, o un mensaje de error.
+  Future<String?> signIn(String email, String password) async {
+    try {
+      await _auth.signInWithEmailAndPassword(
+          email: email.trim(), password: password);
+      final adminOk = await isAdmin;
+      if (!adminOk) {
+        await _auth.signOut();
+        return 'No tienes permisos de administrador.';
+      }
+      return null;
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'user-not-found':
+          return 'Usuario no encontrado.';
+        case 'wrong-password':
+          return 'Contraseña incorrecta.';
+        case 'invalid-email':
+          return 'Correo inválido.';
+        case 'invalid-credential':
+          return 'Credenciales inválidas.';
+        default:
+          return e.message ?? 'Error al iniciar sesión.';
+      }
+    }
+  }
+
+  Future<void> signOut() async => _auth.signOut();
+
+  // ── Admin: CRUD Anuncios ──────────────────────────────────────────────────────
+
+  Stream<List<Anuncio>> todosAnunciosStream() {
+    return _db.collection('anuncios').snapshots().map((snap) {
+      final list = snap.docs.map(Anuncio.fromFirestore).toList();
+      list.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return list;
+    });
+  }
+
+  Future<void> crearAnuncio({
+    required String titulo,
+    required String descripcion,
+    required DateTime fecha,
+    required bool activo,
+    String? imagenUrl,
+  }) async {
+    await _db.collection('anuncios').add({
+      'titulo': titulo,
+      'descripcion': descripcion,
+      'fecha': Timestamp.fromDate(fecha),
+      'activo': activo,
+      if (imagenUrl != null && imagenUrl.isNotEmpty) 'imagenUrl': imagenUrl,
+    });
+  }
+
+  Future<void> actualizarAnuncio(
+    String id, {
+    required String titulo,
+    required String descripcion,
+    required DateTime fecha,
+    required bool activo,
+    String? imagenUrl,
+  }) async {
+    await _db.collection('anuncios').doc(id).update({
+      'titulo': titulo,
+      'descripcion': descripcion,
+      'fecha': Timestamp.fromDate(fecha),
+      'activo': activo,
+      'imagenUrl': imagenUrl ?? '',
+    });
+  }
+
+  Future<void> eliminarAnuncio(String id) async =>
+      _db.collection('anuncios').doc(id).delete();
+
+  // ── Admin: CRUD Eventos ───────────────────────────────────────────────────────
+
+  Stream<List<Evento>> todosEventosStream() {
+    return _db.collection('eventos').snapshots().map((snap) {
+      final list = snap.docs.map(Evento.fromFirestore).toList();
+      list.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return list;
+    });
+  }
+
+  Future<void> crearEvento({
+    required String titulo,
+    required String descripcion,
+    required DateTime fecha,
+    required bool activo,
+    String? lugar,
+    String? imageUrl,
+  }) async {
+    await _db.collection('eventos').add({
+      'titulo': titulo,
+      'descripcion': descripcion,
+      'fecha': Timestamp.fromDate(fecha),
+      'activo': activo,
+      if (lugar != null && lugar.isNotEmpty) 'lugar': lugar,
+      if (imageUrl != null && imageUrl.isNotEmpty) 'imageUrl': imageUrl,
+    });
+  }
+
+  Future<void> actualizarEvento(
+    String id, {
+    required String titulo,
+    required String descripcion,
+    required DateTime fecha,
+    required bool activo,
+    String? lugar,
+    String? imageUrl,
+  }) async {
+    await _db.collection('eventos').doc(id).update({
+      'titulo': titulo,
+      'descripcion': descripcion,
+      'fecha': Timestamp.fromDate(fecha),
+      'activo': activo,
+      'lugar': lugar ?? '',
+      'imageUrl': imageUrl ?? '',
+    });
+  }
+
+  Future<void> eliminarEvento(String id) async =>
+      _db.collection('eventos').doc(id).delete();
+
+  // ── Admin: CRUD Sermones ──────────────────────────────────────────────────────
+
+  Stream<List<Sermon>> todosSermonesStream() {
+    return _db.collection('sermones').snapshots().map((snap) {
+      final list = snap.docs.map(Sermon.fromFirestore).toList();
+      list.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return list;
+    });
+  }
+
+  Future<void> crearSermon({
+    required String titulo,
+    required String descripcion,
+    required String videoId,
+    required String predicador,
+    required DateTime fecha,
+    required bool activo,
+  }) async {
+    await _db.collection('sermones').add({
+      'titulo': titulo,
+      'descripcion': descripcion,
+      'videoId': videoId,
+      'predicador': predicador,
+      'fecha': Timestamp.fromDate(fecha),
+      'activo': activo,
+    });
+  }
+
+  Future<void> actualizarSermon(
+    String id, {
+    required String titulo,
+    required String descripcion,
+    required String videoId,
+    required String predicador,
+    required DateTime fecha,
+    required bool activo,
+  }) async {
+    await _db.collection('sermones').doc(id).update({
+      'titulo': titulo,
+      'descripcion': descripcion,
+      'videoId': videoId,
+      'predicador': predicador,
+      'fecha': Timestamp.fromDate(fecha),
+      'activo': activo,
+    });
+  }
+
+  Future<void> eliminarSermon(String id) async =>
+      _db.collection('sermones').doc(id).delete();
 }

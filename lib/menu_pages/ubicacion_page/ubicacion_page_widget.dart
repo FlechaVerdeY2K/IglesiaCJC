@@ -1,7 +1,9 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'ubicacion_page_model.dart';
 export 'ubicacion_page_model.dart';
 
@@ -16,11 +18,20 @@ class UbicacionPageWidget extends StatefulWidget {
 }
 
 class _UbicacionPageWidgetState extends State<UbicacionPageWidget> {
-  static const String _wazeUrl = '';
-  static const String _gpsRequestUrl = '';
+  static const Color _bg = Color(0xFF050505);
+  static const Color _surface = Color(0xFF171717);
+  static const Color _accent = Color(0xFFE8D5B0);
+
+  // ── Actualiza estas URLs con la ubicación real ──
+  static const String _wazeUrl = 'https://waze.com/ul/hd1u0x7u3j';
+  static const String _googleMapsUrl =
+      'https://www.google.com/maps/search/?api=1&query=Iglesia+CJC+Costa+Rica';
+  static const String _appleMapsUrl =
+      'https://maps.apple.com/?q=Iglesia+CJC+Costa+Rica';
+  static const String _direccion =
+      'Costa Rica\n(Actualiza la dirección exacta)';
 
   late UbicacionPageModel _model;
-
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -36,159 +47,185 @@ class _UbicacionPageWidgetState extends State<UbicacionPageWidget> {
     super.dispose();
   }
 
-  Future<void> _openLink(BuildContext context, String url, String label) async {
+  Future<void> _openLink(String url, String label) async {
     if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text('Configura el enlace de $label en UbicacionPageWidget.')),
+        SnackBar(content: Text('Configura el enlace de $label')),
       );
       return;
     }
-
     await launchURL(url);
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: const Color(0xFF050505),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF1A1A1A),
-          automaticallyImplyLeading: false,
-          elevation: 0.0,
-          centerTitle: true,
-          title: Text(
-            'GPS',
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  fontFamily: FlutterFlowTheme.of(context).titleLargeFamily,
-                  color: Colors.white,
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.0,
-                  useGoogleFonts:
-                      !FlutterFlowTheme.of(context).titleLargeIsCustom,
-                ),
-          ),
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
+          onPressed: () => context.safePop(),
         ),
-        body: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20.0),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF121212),
-                    borderRadius: BorderRadius.circular(18.0),
-                    border: Border.all(color: const Color(0xFF2B2B2B)),
+        title: Text(
+          'Ubicación',
+          style: FlutterFlowTheme.of(context).titleLarge.override(
+                fontFamily: FlutterFlowTheme.of(context).titleLargeFamily,
+                color: Colors.white,
+                fontSize: 18.0,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.0,
+                useGoogleFonts:
+                    !FlutterFlowTheme.of(context).titleLargeIsCustom,
+              ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Dirección ────────────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: _surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF2B2B2B)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.location_on_rounded,
+                      color: Color(0xFFE8D5B0), size: 26),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Iglesia CJC',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16)),
+                        const SizedBox(height: 4),
+                        Text(_direccion,
+                            style: const TextStyle(
+                                color: Color(0xFFB5B5B5),
+                                fontSize: 14,
+                                height: 1.4)),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      const FaIcon(
-                        FontAwesomeIcons.locationArrow,
-                        color: Colors.white,
-                        size: 30.0,
-                      ),
-                      const SizedBox(height: 16.0),
-                      Text(
-                        'Ubicacion y acceso GPS',
-                        textAlign: TextAlign.center,
-                        style:
-                            FlutterFlowTheme.of(context).headlineSmall.override(
-                                  fontFamily: FlutterFlowTheme.of(context)
-                                      .headlineSmallFamily,
-                                  color: Colors.white,
-                                  fontSize: 22.0,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.0,
-                                  useGoogleFonts: !FlutterFlowTheme.of(context)
-                                      .headlineSmallIsCustom,
-                                ),
-                      ),
-                      const SizedBox(height: 12.0),
-                      Text(
-                        'Desde aqui puedes conectar la ubicacion de Waze o compartir el formulario para apertura de GPS.',
-                        textAlign: TextAlign.center,
-                        style: FlutterFlowTheme.of(context).bodyLarge.override(
-                              fontFamily:
-                                  FlutterFlowTheme.of(context).bodyLargeFamily,
-                              color: const Color(0xFFC8C8C8),
-                              lineHeight: 1.5,
-                              letterSpacing: 0.0,
-                              useGoogleFonts: !FlutterFlowTheme.of(context)
-                                  .bodyLargeIsCustom,
-                            ),
-                      ),
-                    ],
+                  IconButton(
+                    onPressed: () {
+                      Clipboard.setData(
+                          const ClipboardData(text: _direccion));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Dirección copiada'),
+                            behavior: SnackBarBehavior.floating),
+                      );
+                    },
+                    icon: const Icon(Icons.copy_rounded,
+                        color: Colors.white38, size: 18),
                   ),
-                ),
-                const SizedBox(height: 24.0),
-                _buildGradientButton(
-                  context,
-                  'Ubicacion Waze',
-                  () => _openLink(context, _wazeUrl, 'Waze'),
-                ),
-                const SizedBox(height: 16.0),
-                _buildGradientButton(
-                  context,
-                  'Solicitud Apertura GPS',
-                  () => _openLink(context, _gpsRequestUrl, 'solicitud GPS'),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 24),
+            const Text('Abrir con...',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 14),
+            // ── Waze ─────────────────────────────────────────────────────────
+            _buildMapButton(
+              label: 'Waze',
+              sublabel: 'Navegación en tiempo real',
+              icon: const FaIcon(FontAwesomeIcons.locationArrow,
+                  color: Color(0xFF33CCFF), size: 22),
+              color: const Color(0xFF0D2533),
+              borderColor: const Color(0xFF33CCFF),
+              onTap: () => _openLink(_wazeUrl, 'Waze'),
+            ),
+            const SizedBox(height: 10),
+            // ── Google Maps ──────────────────────────────────────────────────
+            _buildMapButton(
+              label: 'Google Maps',
+              sublabel: 'Ver en Google Maps',
+              icon: const Icon(Icons.map_rounded,
+                  color: Color(0xFF4285F4), size: 26),
+              color: const Color(0xFF0D1833),
+              borderColor: const Color(0xFF4285F4),
+              onTap: () => _openLink(_googleMapsUrl, 'Google Maps'),
+            ),
+            if (!kIsWeb &&
+                defaultTargetPlatform == TargetPlatform.iOS) ...[
+              const SizedBox(height: 10),
+              // ── Apple Maps ─────────────────────────────────────────────────
+              _buildMapButton(
+                label: 'Apple Maps',
+                sublabel: 'Ver en Apple Maps',
+                icon: const Icon(Icons.apple_rounded,
+                    color: Colors.white, size: 26),
+                color: const Color(0xFF1A1A1A),
+                borderColor: const Color(0xFF3A3A3A),
+                onTap: () => _openLink(_appleMapsUrl, 'Apple Maps'),
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildGradientButton(
-    BuildContext context,
-    String label,
-    VoidCallback onTap,
-  ) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF0C8BFF),
-            Color(0xFF6EE85B),
-          ],
+  Widget _buildMapButton({
+    required String label,
+    required String sublabel,
+    required Widget icon,
+    required Color color,
+    required Color borderColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor.withOpacity(0.5)),
         ),
-        borderRadius: BorderRadius.circular(999.0),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(999.0),
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(vertical: 16.0, horizontal: 22.0),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: FlutterFlowTheme.of(context).titleMedium.override(
-                    fontFamily: FlutterFlowTheme.of(context).titleMediumFamily,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.0,
-                    useGoogleFonts:
-                        !FlutterFlowTheme.of(context).titleMediumIsCustom,
-                  ),
+        child: Row(
+          children: [
+            SizedBox(width: 32, height: 32, child: Center(child: icon)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15)),
+                  Text(sublabel,
+                      style: const TextStyle(
+                          color: Color(0xFFB5B5B5), fontSize: 12)),
+                ],
+              ),
             ),
-          ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                color: Colors.white24, size: 16),
+          ],
         ),
       ),
     );
   }
 }
+
