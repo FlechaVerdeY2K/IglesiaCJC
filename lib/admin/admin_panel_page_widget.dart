@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '/backend/firebase_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import 'admin_devocional_page_widget.dart';
 
 class AdminPanelPageWidget extends StatelessWidget {
   const AdminPanelPageWidget({super.key});
@@ -127,18 +128,26 @@ class AdminPanelPageWidget extends StatelessWidget {
               subtitle: 'Configurar la transmisión en vivo',
               onTap: () => context.pushNamed(AdminLivePageWidget.routeName),
             ),
-
-            const SizedBox(height: 28),
-            const _SectionTitle('Próximamente'),
             const SizedBox(height: 12),
+            _AdminCard(
+              icon: Icons.favorite_rounded,
+              title: 'Moderación de Oración',
+              subtitle: 'Aprobar o rechazar pedidos de oración',
+              onTap: () => context.pushNamed(AdminOracionPageWidget.routeName),
+            ),
 
+            const SizedBox(height: 12),
             _AdminCard(
               icon: Icons.auto_stories_rounded,
               title: 'Devocionales',
               subtitle: 'Publicar el devocional diario',
-              enabled: false,
-              onTap: () {},
+              onTap: () =>
+                  context.pushNamed(AdminDevocionalPageWidget.routeName),
             ),
+
+            const SizedBox(height: 28),
+            const _SectionTitle('Próximamente'),
+            const SizedBox(height: 12),
             const SizedBox(height: 12),
             _AdminCard(
               icon: Icons.people_rounded,

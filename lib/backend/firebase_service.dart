@@ -97,6 +97,9 @@ class Oracion {
   final bool anonima;
   final DateTime fecha;
   final String estado; // 'pendiente' | 'aprobada' | 'rechazada'
+  final int orantes;
+  final List<String> orantesUids;
+  final String autorUid;
 
   const Oracion({
     required this.id,
@@ -105,6 +108,9 @@ class Oracion {
     required this.anonima,
     required this.fecha,
     this.estado = 'pendiente',
+    this.orantes = 0,
+    this.orantesUids = const [],
+    this.autorUid = '',
   });
 
   factory Oracion.fromFirestore(DocumentSnapshot doc) {
@@ -116,6 +122,9 @@ class Oracion {
       anonima: d['anonima'] as bool? ?? false,
       fecha: (d['fecha'] as Timestamp?)?.toDate() ?? DateTime.now(),
       estado: d['estado'] as String? ?? 'pendiente',
+      orantes: (d['orantes'] as num?)?.toInt() ?? 0,
+      orantesUids: List<String>.from(d['orantesUids'] as List? ?? []),
+      autorUid: d['autorUid'] as String? ?? '',
     );
   }
 }
@@ -488,6 +497,42 @@ class FirebaseService {
         .map((snap) => snap.docs.map(Devocional.fromFirestore).toList());
   }
 
+  Future<void> crearDevocional({
+    required String titulo,
+    required String versiculo,
+    required String referencia,
+    required String reflexion,
+    required DateTime fecha,
+  }) async {
+    await _db.collection('devocionales').add({
+      'titulo': titulo.trim(),
+      'versiculo': versiculo.trim(),
+      'referencia': referencia.trim(),
+      'reflexion': reflexion.trim(),
+      'fecha': Timestamp.fromDate(fecha),
+    });
+  }
+
+  Future<void> actualizarDevocional(
+    String id, {
+    required String titulo,
+    required String versiculo,
+    required String referencia,
+    required String reflexion,
+    required DateTime fecha,
+  }) async {
+    await _db.collection('devocionales').doc(id).update({
+      'titulo': titulo.trim(),
+      'versiculo': versiculo.trim(),
+      'referencia': referencia.trim(),
+      'reflexion': reflexion.trim(),
+      'fecha': Timestamp.fromDate(fecha),
+    });
+  }
+
+  Future<void> eliminarDevocional(String id) async =>
+      _db.collection('devocionales').doc(id).delete();
+
   // ── Oración ─────────────────────────────────────────────────────────────────
 
   /// Solo muestra oraciones aprobadas por el admin.
@@ -521,7 +566,30 @@ class FirebaseService {
       'peticion': peticion,
       'anonima': anonima,
       'fecha': FieldValue.serverTimestamp(),
-      'estado': 'pendiente', // requiere aprobación del admin
+      'estado': 'pendiente',
+      'autorUid': currentUser?.uid ?? '',
+      'orantes': 0,
+      'orantesUids': [],
+    });
+  }
+
+  Stream<List<Oracion>> misOracionesStream(String uid) {
+    return _db
+        .collection('oraciones')
+        .where('autorUid', isEqualTo: uid)
+        .where('estado', isEqualTo: 'aprobada')
+        .snapshots()
+        .map((snap) {
+      final list = snap.docs.map(Oracion.fromFirestore).toList();
+      list.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return list;
+    });
+  }
+
+  Future<void> orarPor(String oracionId, String uid) async {
+    await _db.collection('oraciones').doc(oracionId).update({
+      'orantes': FieldValue.increment(1),
+      'orantesUids': FieldValue.arrayUnion([uid]),
     });
   }
 

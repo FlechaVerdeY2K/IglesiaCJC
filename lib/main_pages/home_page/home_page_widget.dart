@@ -6,6 +6,7 @@ import '/index.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'home_page_model.dart';
 export 'home_page_model.dart';
 
@@ -32,6 +33,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   static const String _phoneUrl = 'tel:+50670939483';
 
   late HomePageModel _model;
+  int _lastSeenOrantes = 0;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -40,7 +42,25 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     super.initState();
     _model = createModel(context, () => HomePageModel());
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+    _loadLastSeenOrantes();
   }
+
+  Future<void> _loadLastSeenOrantes() async {
+    final uid = AuthService.instance.currentUser?.uid;
+    if (uid == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getInt('lastSeenOrantes_$uid') ?? 0;
+    if (mounted) setState(() => _lastSeenOrantes = saved);
+  }
+
+  Future<void> _markOrantesAsSeen(int total) async {
+    final uid = AuthService.instance.currentUser?.uid;
+    if (uid == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastSeenOrantes_$uid', total);
+    if (mounted) setState(() => _lastSeenOrantes = total);
+  }
+
 
   @override
   void dispose() {
@@ -133,16 +153,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 ),
                 tooltip: 'Compartir app',
               ),
-              IconButton(
-                onPressed: () {
-                  context.pushNamed(AnunciosPageWidget.routeName);
-                },
-                icon: const Icon(
-                  Icons.notifications_rounded,
-                  color: Colors.white,
-                  size: 28.0,
-                ),
-              ),
+              _buildNotificationBell(context),
             ],
           ),
         ),
@@ -924,6 +935,66 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       ),
     );
   }
+
+  Widget _buildNotificationBell(BuildContext context) {
+    final uid = AuthService.instance.currentUser?.uid;
+    if (uid == null) {
+      return IconButton(
+        onPressed: () => context.pushNamed(AnunciosPageWidget.routeName),
+        icon: const Icon(Icons.notifications_rounded,
+            color: Colors.white, size: 28.0),
+      );
+    }
+    return StreamBuilder<List<Oracion>>(
+      stream: FirebaseService.instance.misOracionesStream(uid),
+      builder: (context, snapshot) {
+        final oraciones = snapshot.data ?? [];
+        final totalOrantes =
+            oraciones.fold<int>(0, (sum, o) => sum + o.orantes);
+        final hasNew = totalOrantes > _lastSeenOrantes;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () async {
+                await _markOrantesAsSeen(totalOrantes);
+                if (context.mounted) {
+                  context.pushNamed(MisOracionesPageWidget.routeName);
+                }
+              },
+              icon: const Icon(Icons.notifications_rounded,
+                  color: Colors.white, size: 28.0),
+            ),
+            if (hasNew)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF4CAF50),
+                    shape: BoxShape.circle,
+                  ),
+                  constraints:
+                      const BoxConstraints(minWidth: 16, minHeight: 16),
+                  child: Text(
+                    (totalOrantes - _lastSeenOrantes) > 99
+                        ? '99+'
+                        : '${totalOrantes - _lastSeenOrantes}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
 
   Widget _buildDivider() {
     return const Padding(

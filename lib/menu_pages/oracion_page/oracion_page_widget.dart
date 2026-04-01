@@ -1,7 +1,9 @@
 import 'package:intl/intl.dart';
+import '/backend/auth_service.dart';
 import '/backend/firebase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/index.dart';
 import 'package:flutter/material.dart';
 import 'oracion_page_model.dart';
 export 'oracion_page_model.dart';
@@ -256,6 +258,9 @@ class _OracionPageWidgetState extends State<OracionPageWidget> {
 
   Widget _buildOracionCard(Oracion oracion) {
     final fecha = DateFormat('d MMM', 'es').format(oracion.fecha);
+    final uid = AuthService.instance.currentUser?.uid;
+    final yaOro = uid != null && oracion.orantesUids.contains(uid);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
@@ -299,6 +304,58 @@ class _OracionPageWidgetState extends State<OracionPageWidget> {
             oracion.peticion,
             style: const TextStyle(
                 color: Color(0xFFCCCCCC), fontSize: 14, height: 1.5),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () async {
+              if (uid == null) {
+                context.pushNamed(UserLoginPageWidget.routeName);
+                return;
+              }
+              if (yaOro) return;
+              await FirebaseService.instance.orarPor(oracion.id, uid);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: yaOro
+                    ? const Color(0xFF1E3A1E)
+                    : const Color(0xFF272727),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: yaOro
+                      ? const Color(0xFF4CAF50)
+                      : const Color(0xFF3A3A3A),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    yaOro
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color: yaOro
+                        ? const Color(0xFF4CAF50)
+                        : const Color(0xFF7A7A7A),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    yaOro
+                        ? 'Orando · ${oracion.orantes}'
+                        : 'Orar · ${oracion.orantes}',
+                    style: TextStyle(
+                      color: yaOro
+                          ? const Color(0xFF4CAF50)
+                          : const Color(0xFF7A7A7A),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

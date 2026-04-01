@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import '/backend/firebase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -74,13 +75,13 @@ class _DevocionalPageWidgetState extends State<DevocionalPageWidget> {
           if (dev == null) {
             return _buildEmpty();
           }
-          return _buildDevocional(dev);
+          return _buildDevocional(dev, context);
         },
       ),
     );
   }
 
-  Widget _buildDevocional(Devocional dev) {
+  Widget _buildDevocional(Devocional dev, BuildContext context) {
     final fecha = DateFormat('EEEE d \'de\' MMMM, yyyy', 'es').format(dev.fecha);
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
@@ -127,6 +128,26 @@ class _DevocionalPageWidgetState extends State<DevocionalPageWidget> {
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Botón compartir
+          OutlinedButton.icon(
+            onPressed: () {
+              final texto = '"${dev.versiculo}"\n— ${dev.referencia}'
+                  '${dev.titulo.isNotEmpty ? '\n\n${dev.titulo}' : ''}'
+                  '\n\nDevocional del día · Iglesia CJC';
+              Share.share(texto);
+            },
+            icon: const Icon(Icons.share_rounded, size: 18),
+            label: const Text('Compartir versículo'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _accent,
+              side: BorderSide(color: _accent.withOpacity(0.4)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
           const SizedBox(height: 24),

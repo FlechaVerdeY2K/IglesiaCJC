@@ -161,6 +161,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => OracionPageWidget(),
         ),
         FFRoute(
+          name: MisOracionesPageWidget.routeName,
+          path: MisOracionesPageWidget.routePath,
+          requireAuth: true,
+          builder: (context, params) => const MisOracionesPageWidget(),
+        ),
+        FFRoute(
           name: GaleriaPageWidget.routeName,
           path: GaleriaPageWidget.routePath,
           builder: (context, params) => GaleriaPageWidget(),
@@ -221,6 +227,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: AdminLivePageWidget.routeName,
           path: AdminLivePageWidget.routePath,
           builder: (context, params) => const AdminLivePageWidget(),
+        ),
+        FFRoute(
+          name: AdminDevocionalPageWidget.routeName,
+          path: AdminDevocionalPageWidget.routePath,
+          builder: (context, params) => const AdminDevocionalPageWidget(),
         ),
         FFRoute(
           name: UserLoginPageWidget.routeName,

@@ -20,6 +20,8 @@ export '/menu_pages/devocional_page/devocional_page_widget.dart'
     show DevocionalPageWidget;
 export '/menu_pages/oracion_page/oracion_page_widget.dart'
     show OracionPageWidget;
+export '/menu_pages/mis_oraciones_page_widget.dart'
+    show MisOracionesPageWidget;
 export '/menu_pages/galeria_page/galeria_page_widget.dart'
     show GaleriaPageWidget;
 export '/menu_pages/recursos_page/recursos_page_widget.dart'
@@ -37,5 +39,6 @@ export '/admin/admin_eventos_page_widget.dart' show AdminEventosPageWidget;
 export '/admin/admin_sermones_page_widget.dart' show AdminSermonesPageWidget;
 export '/admin/admin_oracion_page_widget.dart' show AdminOracionPageWidget;
 export '/admin/admin_live_page_widget.dart' show AdminLivePageWidget;
+export '/admin/admin_devocional_page_widget.dart' show AdminDevocionalPageWidget;
 export '/main_pages/user_login_page_widget.dart' show UserLoginPageWidget;
 export '/main_pages/user_register_page_widget.dart' show UserRegisterPageWidget;
