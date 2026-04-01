@@ -81,6 +81,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
 
     _appStateNotifier = AppStateNotifier.instance;
+    _appStateNotifier.listenToAuthChanges();
     _router = createRouter(_appStateNotifier);
 
     Future.delayed(Duration(milliseconds: 200),

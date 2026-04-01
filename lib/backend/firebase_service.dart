@@ -96,6 +96,7 @@ class Oracion {
   final String peticion;
   final bool anonima;
   final DateTime fecha;
+  final String estado; // 'pendiente' | 'aprobada' | 'rechazada'
 
   const Oracion({
     required this.id,
@@ -103,6 +104,7 @@ class Oracion {
     required this.peticion,
     required this.anonima,
     required this.fecha,
+    this.estado = 'pendiente',
   });
 
   factory Oracion.fromFirestore(DocumentSnapshot doc) {
@@ -113,6 +115,7 @@ class Oracion {
       peticion: d['peticion'] as String? ?? '',
       anonima: d['anonima'] as bool? ?? false,
       fecha: (d['fecha'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      estado: d['estado'] as String? ?? 'pendiente',
     );
   }
 }
@@ -331,7 +334,7 @@ class FirebaseService {
 
   Future<void> _initLocalNotifications() async {
     const androidSettings =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -412,6 +415,27 @@ class FirebaseService {
     }
   }
 
+  Stream<LiveConfig?> liveConfigStream() {
+    return _db.collection('config').doc('live').snapshots().map((doc) {
+      if (!doc.exists || doc.data() == null) return null;
+      return LiveConfig.fromFirestore(doc.data()!);
+    });
+  }
+
+  Future<void> saveLiveConfig({
+    required String videoId,
+    required String titulo,
+    required String descripcion,
+    required bool activo,
+  }) async {
+    await _db.collection('config').doc('live').set({
+      'videoId': videoId.trim(),
+      'titulo': titulo.trim(),
+      'descripcion': descripcion.trim(),
+      'activo': activo,
+    });
+  }
+
   // ── Sermones ────────────────────────────────────────────────────────────────
 
   Stream<List<Sermon>> sermonesStream() {
@@ -466,11 +490,23 @@ class FirebaseService {
 
   // ── Oración ─────────────────────────────────────────────────────────────────
 
+  /// Solo muestra oraciones aprobadas por el admin.
   Stream<List<Oracion>> oracionesPublicasStream() {
     return _db
         .collection('oraciones')
+        .where('estado', isEqualTo: 'aprobada')
         .orderBy('fecha', descending: true)
         .limit(50)
+        .snapshots()
+        .map((snap) => snap.docs.map(Oracion.fromFirestore).toList());
+  }
+
+  /// Oraciones pendientes de moderación (solo para admin).
+  Stream<List<Oracion>> oracionesPendientesStream() {
+    return _db
+        .collection('oraciones')
+        .where('estado', isEqualTo: 'pendiente')
+        .orderBy('fecha', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(Oracion.fromFirestore).toList());
   }
@@ -485,7 +521,18 @@ class FirebaseService {
       'peticion': peticion,
       'anonima': anonima,
       'fecha': FieldValue.serverTimestamp(),
+      'estado': 'pendiente', // requiere aprobación del admin
     });
+  }
+
+  /// Admin: aprobar una oración.
+  Future<void> aprobarOracion(String id) async {
+    await _db.collection('oraciones').doc(id).update({'estado': 'aprobada'});
+  }
+
+  /// Admin: rechazar/eliminar una oración.
+  Future<void> rechazarOracion(String id) async {
+    await _db.collection('oraciones').doc(id).update({'estado': 'rechazada'});
   }
 
   // ── Galería ─────────────────────────────────────────────────────────────────

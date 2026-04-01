@@ -40,6 +40,7 @@ class AuthService {
       email: email.trim(),
       password: password,
     );
+    await _saveUserProfile(result.user);
     return result;
   }
 
@@ -64,7 +65,9 @@ class AuthService {
   // ── Cerrar sesión ──────────────────────────────────────────────────────────
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
     await _auth.signOut();
   }
 
@@ -73,12 +76,15 @@ class AuthService {
   Future<void> _saveUserProfile(User? user, {String? displayName}) async {
     if (user == null) return;
     final ref = _db.collection('usuarios').doc(user.uid);
+    final snap = await ref.get();
+    final existingRol = snap.data()?['rol'];
     await ref.set({
       'uid': user.uid,
       'nombre': displayName ?? user.displayName ?? '',
       'email': user.email ?? '',
       'fotoUrl': user.photoURL ?? '',
       'creadoEn': FieldValue.serverTimestamp(),
+      if (existingRol == null) 'rol': 'miembro',
     }, SetOptions(merge: true));
   }
 

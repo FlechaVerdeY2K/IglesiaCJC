@@ -24,10 +24,27 @@ class AppStateNotifier extends ChangeNotifier {
   static AppStateNotifier get instance => _instance ??= AppStateNotifier._();
 
   bool showSplashImage = true;
+  bool _isLoggedIn = FirebaseAuth.instance.currentUser != null;
+  bool get isLoggedIn => _isLoggedIn;
+
+  StreamSubscription<User?>? _authSubscription;
+
+  void listenToAuthChanges() {
+    _authSubscription ??= FirebaseAuth.instance.authStateChanges().listen((user) {
+      _isLoggedIn = user != null;
+      notifyListeners();
+    });
+  }
 
   void stopShowingSplashImage() {
     showSplashImage = false;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 }
 
@@ -140,6 +157,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: OracionPageWidget.routeName,
           path: OracionPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => OracionPageWidget(),
         ),
         FFRoute(
@@ -155,11 +173,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: RegistroGpsPageWidget.routeName,
           path: RegistroGpsPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => RegistroGpsPageWidget(),
         ),
         FFRoute(
           name: CreacionGpsPageWidget.routeName,
           path: CreacionGpsPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => CreacionGpsPageWidget(),
         ),
         FFRoute(
@@ -193,9 +213,21 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const AdminSermonesPageWidget(),
         ),
         FFRoute(
+          name: AdminOracionPageWidget.routeName,
+          path: AdminOracionPageWidget.routePath,
+          builder: (context, params) => const AdminOracionPageWidget(),
+        ),
+        FFRoute(
+          name: AdminLivePageWidget.routeName,
+          path: AdminLivePageWidget.routePath,
+          builder: (context, params) => const AdminLivePageWidget(),
+        ),
+        FFRoute(
           name: UserLoginPageWidget.routeName,
           path: UserLoginPageWidget.routePath,
-          builder: (context, params) => const UserLoginPageWidget(),
+          builder: (context, params) => UserLoginPageWidget(
+            next: params.getParam('next', ParamType.String),
+          ),
         ),
         FFRoute(
           name: UserRegisterPageWidget.routeName,
@@ -313,6 +345,14 @@ class FFRoute {
   GoRoute toRoute(AppStateNotifier appStateNotifier) => GoRoute(
         name: name,
         path: path,
+        redirect: requireAuth
+            ? (context, state) {
+                if (!appStateNotifier.isLoggedIn) {
+                  return '${UserLoginPageWidget.routePath}?next=${Uri.encodeComponent(state.uri.toString())}';
+                }
+                return null;
+              }
+            : null,
         pageBuilder: (context, state) {
           fixStatusBarOniOS16AndBelow(context);
           final ffParams = FFParameters(state, asyncParams);

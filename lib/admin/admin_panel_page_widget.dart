@@ -120,6 +120,13 @@ class AdminPanelPageWidget extends StatelessWidget {
               onTap: () =>
                   context.pushNamed(AdminSermonesPageWidget.routeName),
             ),
+            const SizedBox(height: 12),
+            _AdminCard(
+              icon: Icons.live_tv_rounded,
+              title: 'Config. Live',
+              subtitle: 'Configurar la transmisión en vivo',
+              onTap: () => context.pushNamed(AdminLivePageWidget.routeName),
+            ),
 
             const SizedBox(height: 28),
             const _SectionTitle('Próximamente'),
@@ -137,14 +144,6 @@ class AdminPanelPageWidget extends StatelessWidget {
               icon: Icons.people_rounded,
               title: 'Pastores y Equipos',
               subtitle: 'Gestionar el directorio de la iglesia',
-              enabled: false,
-              onTap: () {},
-            ),
-            const SizedBox(height: 12),
-            _AdminCard(
-              icon: Icons.live_tv_rounded,
-              title: 'Config. Live',
-              subtitle: 'Configurar la transmisión en vivo',
               enabled: false,
               onTap: () {},
             ),

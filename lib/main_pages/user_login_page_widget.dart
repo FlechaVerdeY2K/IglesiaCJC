@@ -10,7 +10,9 @@ import 'user_login_page_model.dart';
 export 'user_login_page_model.dart';
 
 class UserLoginPageWidget extends StatefulWidget {
-  const UserLoginPageWidget({super.key});
+  const UserLoginPageWidget({super.key, this.next});
+
+  final String? next;
 
   static String routeName = 'UserLoginPage';
   static String routePath = '/userLogin';
@@ -47,6 +49,15 @@ class _UserLoginPageWidgetState extends State<UserLoginPageWidget> {
 
   void _setLoading(bool v) => safeSetState(() => _model.isLoading = v);
 
+  void _goAfterLogin() {
+    final destination = widget.next;
+    if (destination != null && destination.isNotEmpty) {
+      context.go(Uri.decodeComponent(destination));
+    } else {
+      context.go('/homePage');
+    }
+  }
+
   Future<void> _loginWithEmail() async {
     final email = _model.emailController.text.trim();
     final pass = _model.passwordController.text;
@@ -57,7 +68,7 @@ class _UserLoginPageWidgetState extends State<UserLoginPageWidget> {
     _setLoading(true);
     try {
       await AuthService.instance.signInWithEmail(email, pass);
-      if (mounted) context.go('/homePage');
+      if (mounted) _goAfterLogin();
     } on FirebaseAuthException catch (e) {
       _showError(AuthService.errorMessage(e));
     } finally {
@@ -74,7 +85,7 @@ class _UserLoginPageWidgetState extends State<UserLoginPageWidget> {
     _setLoading(true);
     try {
       final result = await AuthService.instance.signInWithGoogle();
-      if (result != null && mounted) context.go('/homePage');
+      if (result != null && mounted) _goAfterLogin();
     } catch (_) {
       _showError('No se pudo iniciar sesión con Google.');
     } finally {
@@ -216,7 +227,7 @@ class _UserLoginPageWidgetState extends State<UserLoginPageWidget> {
               ]),
               Center(
                 child: TextButton(
-                  onPressed: () => context.go('/homePage'),
+                  onPressed: () => context.go('/'),
                   child: const Text('Continuar sin cuenta',
                       style: TextStyle(color: Colors.white38, fontSize: 13)),
                 ),

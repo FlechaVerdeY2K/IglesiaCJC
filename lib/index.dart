@@ -35,5 +35,7 @@ export '/admin/admin_panel_page_widget.dart' show AdminPanelPageWidget;
 export '/admin/admin_anuncios_page_widget.dart' show AdminAnunciosPageWidget;
 export '/admin/admin_eventos_page_widget.dart' show AdminEventosPageWidget;
 export '/admin/admin_sermones_page_widget.dart' show AdminSermonesPageWidget;
+export '/admin/admin_oracion_page_widget.dart' show AdminOracionPageWidget;
+export '/admin/admin_live_page_widget.dart' show AdminLivePageWidget;
 export '/main_pages/user_login_page_widget.dart' show UserLoginPageWidget;
 export '/main_pages/user_register_page_widget.dart' show UserRegisterPageWidget;
