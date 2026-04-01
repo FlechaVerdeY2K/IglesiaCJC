@@ -22,7 +22,8 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
-	<array>        <dict>
+	<array>
+        <dict>
         <key>CFBundleTypeRole</key>
         <string>Editor</string>
         <key>CFBundleURLName</key>
@@ -30,6 +31,16 @@
         <key>CFBundleURLSchemes</key>
         <array>
         <string>iglesiacjc</string>
+        </array>
+        </dict>
+        <!-- URL scheme para Google Sign-In. Reemplazar REVERSED_CLIENT_ID
+             con el valor de GoogleService-Info.plist una vez descargado -->
+        <dict>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+        <string>REVERSED_CLIENT_ID</string>
         </array>
         </dict>
     </array>

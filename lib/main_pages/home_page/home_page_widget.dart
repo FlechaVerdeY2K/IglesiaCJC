@@ -1,4 +1,5 @@
 import '/backend/firebase_service.dart';
+import '/backend/auth_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -213,20 +214,98 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   }
 
   Widget _buildDrawer(BuildContext context) {
+    final user = AuthService.instance.currentUser;
     return Drawer(
       backgroundColor: const Color(0xFF111111),
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20.0, 12.0, 20.0, 24.0),
-              child: Image.asset(
-                'assets/images/LOGO_CJC_BLANCO_(1).png',
-                height: 72.0,
-                fit: BoxFit.contain,
-                alignment: Alignment.centerLeft,
+            // ── Header perfil ────────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              decoration: const BoxDecoration(
+                border: Border(
+                    bottom: BorderSide(color: Color(0xFF2B2B2B))),
               ),
+              child: user != null
+                  ? Row(children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: const Color(0xFF2B2B2B),
+                        backgroundImage: (user.photoURL != null &&
+                                user.photoURL!.isNotEmpty)
+                            ? NetworkImage(user.photoURL!)
+                            : null,
+                        child: (user.photoURL == null ||
+                                user.photoURL!.isEmpty)
+                            ? const Icon(Icons.person_rounded,
+                                color: Colors.white54, size: 22)
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.displayName ?? 'Miembro CJC',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              user.email ?? '',
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 12),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.logout_rounded,
+                            color: Colors.white38, size: 20),
+                        tooltip: 'Cerrar sesión',
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await AuthService.instance.signOut();
+                          if (mounted) context.go(UserLoginPageWidget.routePath);
+                        },
+                      ),
+                    ])
+                  : InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        context
+                            .pushNamed(UserLoginPageWidget.routeName);
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A1A1A),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: const Color(0xFF2B2B2B)),
+                        ),
+                        child: const Row(children: [
+                          Icon(Icons.login_rounded,
+                              color: Color(0xFFE8D5B0), size: 20),
+                          SizedBox(width: 10),
+                          Text('Iniciar sesión / Registrarse',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500)),
+                        ]),
+                      ),
+                    ),
             ),
             Expanded(
               child: ListView(

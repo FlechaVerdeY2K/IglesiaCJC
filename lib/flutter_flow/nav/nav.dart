@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -190,6 +191,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: AdminSermonesPageWidget.routeName,
           path: AdminSermonesPageWidget.routePath,
           builder: (context, params) => const AdminSermonesPageWidget(),
+        ),
+        FFRoute(
+          name: UserLoginPageWidget.routeName,
+          path: UserLoginPageWidget.routePath,
+          builder: (context, params) => const UserLoginPageWidget(),
+        ),
+        FFRoute(
+          name: UserRegisterPageWidget.routeName,
+          path: UserRegisterPageWidget.routePath,
+          builder: (context, params) => const UserRegisterPageWidget(),
         ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
