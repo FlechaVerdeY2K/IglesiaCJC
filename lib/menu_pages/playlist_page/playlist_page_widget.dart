@@ -133,8 +133,8 @@ class _PlaylistPageWidgetState extends State<PlaylistPageWidget> {
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: FFButtonWidget(
               onPressed: () => launchURL(
-                  'https://www.youtube.com/@iglesiacjc217/playlists'),
-              text: 'Ver playlists en YouTube',
+                  'https://www.youtube.com/playlist?list=PLHWMjKQNdSZjzCyXJZ_Fc7TLsvZLl9n1D'),
+              text: 'Ver Repertorio en YouTube',
               icon: const Icon(Icons.play_circle_outline_rounded,
                   size: 20, color: Colors.white),
               options: FFButtonOptions(
