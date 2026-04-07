@@ -691,6 +691,149 @@ class FirebaseService {
     });
   }
 
+  // ── Seed inicial ─────────────────────────────────────────────────────────────
+
+  /// Puebla Firestore con pastores y equipos reales si las colecciones están vacías.
+  Future<void> seedDatosIniciales() async {
+    await Future.wait([
+      _seedPastoresIfEmpty(),
+      _seedEquiposIfEmpty(),
+    ]);
+  }
+
+  Future<void> _seedPastoresIfEmpty() async {
+    final snap = await _db.collection('pastores').limit(1).get();
+    if (snap.docs.isNotEmpty) return;
+
+    final pastores = [
+      {
+        'nombre': 'Andrés Barrantes',
+        'cargo': 'Pastor General',
+        'bio': '',
+        'fotoUrl': null,
+        'orden': 1,
+      },
+      {
+        'nombre': 'Paola Fallas',
+        'cargo': 'Pastora General',
+        'bio': '',
+        'fotoUrl': null,
+        'orden': 2,
+      },
+      {
+        'nombre': 'Luis Barboza',
+        'cargo': 'Pastor Anciano',
+        'bio': '',
+        'fotoUrl': null,
+        'orden': 3,
+      },
+      {
+        'nombre': 'Marta Campos',
+        'cargo': 'Pastora Anciana',
+        'bio': '',
+        'fotoUrl': null,
+        'orden': 4,
+      },
+      {
+        'nombre': 'Daphny Gilles',
+        'cargo': 'Pastora Anciana · Líder de Jóvenes CJC',
+        'bio': '',
+        'fotoUrl': null,
+        'orden': 5,
+      },
+    ];
+
+    final batch = _db.batch();
+    for (final p in pastores) {
+      batch.set(_db.collection('pastores').doc(), p);
+    }
+    await batch.commit();
+  }
+
+  Future<void> _seedEquiposIfEmpty() async {
+    final snap = await _db.collection('equipos').limit(1).get();
+    if (snap.docs.isNotEmpty) return;
+
+    final equipos = [
+      {
+        'nombre': 'Benjamines',
+        'descripcion':
+            'Pastoral a cargo de los niños de nuestra casa, en edades de 0 a 12 años.',
+        'lider': '',
+        'iconName': 'kids',
+        'orden': 1,
+      },
+      {
+        'nombre': 'Jóvenes CJC',
+        'descripcion':
+            'Pastoral a cargo de los jóvenes de nuestra casa, en edades de 13 a 25 años.',
+        'lider': '',
+        'iconName': 'youth',
+        'orden': 2,
+      },
+      {
+        'nombre': 'Somos Hijos',
+        'descripcion':
+            'Equipo encargado de la parte de adoración de nuestra casa.',
+        'lider': '',
+        'iconName': 'music',
+        'orden': 3,
+      },
+      {
+        'nombre': 'Bethel',
+        'descripcion':
+            'Equipo encargado de la parte artística como obras de teatro y danzas.',
+        'lider': '',
+        'iconName': 'media',
+        'orden': 4,
+      },
+      {
+        'nombre': 'Construyendo Sobre la Roca',
+        'descripcion':
+            'Pastoral a cargo de los matrimonios de nuestra casa.',
+        'lider': '',
+        'iconName': 'prayer',
+        'orden': 5,
+      },
+      {
+        'nombre': 'Club de la Pelea',
+        'descripcion': 'Equipo a cargo de los varones.',
+        'lider': '',
+        'iconName': 'missions',
+        'orden': 6,
+      },
+      {
+        'nombre': 'Guerreras del Reino',
+        'descripcion': 'Equipo a cargo de las mujeres.',
+        'lider': '',
+        'iconName': 'welcome',
+        'orden': 7,
+      },
+      {
+        'nombre': 'Servidores',
+        'descripcion':
+            'Equipo encargado de asistir logísticamente en el desarrollo de nuestros servicios.',
+        'lider': '',
+        'iconName': 'sound',
+        'orden': 8,
+      },
+      {
+        'nombre': 'Piedras Vivas',
+        'descripcion':
+            'Equipo encargado de la bienvenida a las personas que se agregan a nuestra familia.',
+        'lider': '',
+        'iconName': 'welcome',
+        'orden': 9,
+      },
+    ];
+
+    final batch = _db.batch();
+    for (final e in equipos) {
+      batch.set(_db.collection('equipos').doc(), e);
+    }
+    await batch.commit();
+  }
+
   // ── Auth ──────────────────────────────────────────────────────────────────────
 
   User? get currentUser => _auth.currentUser;

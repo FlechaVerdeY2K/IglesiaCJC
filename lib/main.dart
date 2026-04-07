@@ -29,6 +29,9 @@ void main() async {
   // Run FCM/notifications init in the background — don't block the splash
   FirebaseService.instance.initialize();
 
+  // Poblar Firestore con datos iniciales si las colecciones están vacías
+  FirebaseService.instance.seedDatosIniciales();
+
   await FlutterFlowTheme.initialize();
 
   final appState = FFAppState();
