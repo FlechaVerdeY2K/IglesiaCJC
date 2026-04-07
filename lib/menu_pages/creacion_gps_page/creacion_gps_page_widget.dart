@@ -17,11 +17,11 @@ class CreacionGpsPageWidget extends StatefulWidget {
 }
 
 class _CreacionGpsPageWidgetState extends State<CreacionGpsPageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
-  static const Color _divider = Color(0xFF2B2B2B);
+  static const Color _divider = Color(0xFF1E2E4A);
 
   late CreacionGpsPageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -87,7 +87,7 @@ class _CreacionGpsPageWidgetState extends State<CreacionGpsPageWidget> {
       key: scaffoldKey,
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),

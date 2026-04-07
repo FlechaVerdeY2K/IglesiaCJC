@@ -1,8 +1,10 @@
 import '/backend/firebase_service.dart';
 import '/backend/auth_service.dart';
+import '/backend/cloudinary_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
@@ -21,19 +23,17 @@ class HomePageWidget extends StatefulWidget {
 }
 
 class _HomePageWidgetState extends State<HomePageWidget> {
-  static const Color _pageBackground = Color(0xFF050505);
-  static const Color _surfaceColor = Color(0xFF171717);
-  static const Color _dividerColor = Color(0xFF2B2B2B);
+  static const Color _pageBackground = Color(0xFF080E1E);
+  static const Color _surfaceColor = Color(0xFF0F1C30);
+  static const Color _dividerColor = Color(0xFF1E2E4A);
   static const Color _mutedTextColor = Color(0xFFB5B5B5);
 
-  static const String _wazeUrl = 'https://waze.com/ul/hd1u0x7u3j';
-  static const String _youtubeUrl = 'https://youtube.com/@iglesiacjc217';
-  static const String _instagramUrl = 'https://www.instagram.com/iglesiacjc';
-  static const String _facebookUrl = 'https://www.facebook.com/share/1D6LhUGwoz/';
-  static const String _phoneUrl = 'tel:+50670939483';
+  HomeConfig _homeConfig = HomeConfig.defaults;
 
   late HomePageModel _model;
   int _lastSeenOrantes = 0;
+  bool _isAdmin = false;
+  bool _uploadingPhoto = false;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -43,6 +43,36 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     _model = createModel(context, () => HomePageModel());
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
     _loadLastSeenOrantes();
+    _listenHomeConfig();
+    _checkAdmin();
+  }
+
+  Future<void> _uploadProfilePhoto() async {
+    final uid = AuthService.instance.currentUser?.uid;
+    if (uid == null) return;
+    setState(() => _uploadingPhoto = true);
+    try {
+      final url = await CloudinaryService.instance.pickAndUpload(
+        folder: 'perfiles',
+      );
+      if (url != null) {
+        await FirebaseService.instance.updateUserPhoto(uid, url);
+        if (mounted) setState(() {});
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+
+  Future<void> _checkAdmin() async {
+    final admin = await FirebaseService.instance.isAdmin;
+    if (mounted) setState(() => _isAdmin = admin);
+  }
+
+  void _listenHomeConfig() {
+    FirebaseService.instance.homeConfigStream().listen((config) {
+      if (mounted) setState(() => _homeConfig = config);
+    });
   }
 
   Future<void> _loadLastSeenOrantes() async {
@@ -98,7 +128,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         backgroundColor: _pageBackground,
         drawer: _buildDrawer(context),
         appBar: AppBar(
-          backgroundColor: const Color(0xFF1A1A1A),
+          backgroundColor: const Color(0xFF0D1628),
           automaticallyImplyLeading: false,
           elevation: 0.0,
           titleSpacing: 16.0,
@@ -178,13 +208,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   icon: Icons.phone_rounded,
                   label: 'Phone',
                   onTap: () =>
-                      _openExternalLink(context, _phoneUrl, 'telefono'),
+                      _openExternalLink(context, _homeConfig.telefono, 'telefono'),
                 ),
                 _buildDivider(),
                 _buildGradientButton(
                   context,
-                  label: 'Ubicacion Waze',
-                  onPressed: () => _openExternalLink(context, _wazeUrl, 'Waze'),
+                  label: 'Ver en Google Maps',
+                  onPressed: () => _openExternalLink(context, _homeConfig.wazeUrl, 'Maps'),
                 ),
                 _buildDivider(),
                 _buildSocialRow(context),
@@ -228,7 +258,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   Widget _buildDrawer(BuildContext context) {
     final user = AuthService.instance.currentUser;
     return Drawer(
-      backgroundColor: const Color(0xFF111111),
+      backgroundColor: const Color(0xFF080E1E),
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -238,22 +268,61 @@ class _HomePageWidgetState extends State<HomePageWidget> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
               decoration: const BoxDecoration(
                 border: Border(
-                    bottom: BorderSide(color: Color(0xFF2B2B2B))),
+                    bottom: BorderSide(color: Color(0xFF1E2E4A))),
               ),
               child: user != null
                   ? Row(children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: const Color(0xFF2B2B2B),
-                        backgroundImage: (user.photoURL != null &&
-                                user.photoURL!.isNotEmpty)
-                            ? NetworkImage(user.photoURL!)
-                            : null,
-                        child: (user.photoURL == null ||
-                                user.photoURL!.isEmpty)
-                            ? const Icon(Icons.person_rounded,
-                                color: Colors.white54, size: 22)
-                            : null,
+                      Tooltip(
+                        message: 'Cambiar foto de perfil',
+                        child: InkWell(
+                          onTap: _uploadingPhoto ? null : _uploadProfilePhoto,
+                          borderRadius: BorderRadius.circular(24),
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundColor: const Color(0xFF1E2E4A),
+                                backgroundImage: (user.photoURL != null &&
+                                        user.photoURL!.isNotEmpty)
+                                    ? CachedNetworkImageProvider(user.photoURL!)
+                                    : null,
+                                child: (user.photoURL == null ||
+                                        user.photoURL!.isEmpty)
+                                    ? const Icon(Icons.person_rounded,
+                                        color: Colors.white54, size: 24)
+                                    : null,
+                              ),
+                              if (_uploadingPhoto)
+                                const Positioned.fill(
+                                  child: CircleAvatar(
+                                    backgroundColor: Colors.black45,
+                                    child: SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                Positioned(
+                                  right: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFBF1E2E),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.camera_alt_rounded,
+                                        color: Colors.white, size: 10),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -301,14 +370,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                         padding: const EdgeInsets.symmetric(
                             vertical: 10, horizontal: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A1A1A),
+                          color: const Color(0xFF0D1628),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                              color: const Color(0xFF2B2B2B)),
+                              color: const Color(0xFF1E2E4A)),
                         ),
                         child: const Row(children: [
                           Icon(Icons.login_rounded,
-                              color: Color(0xFFE8D5B0), size: 20),
+                              color: Color(0xFFBF1E2E), size: 20),
                           SizedBox(width: 10),
                           Text('Iniciar sesión / Registrarse',
                               style: TextStyle(
@@ -447,20 +516,17 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                             '¡Descarga la app de Iglesia CJC! https://iglesiacjc.app');
                       }),
 
-                  // ── Admin ─────────────────────────────────────────────────
-                  _buildDrawerSection('Administración'),
-                  _buildDrawerItem(context,
-                      icon: Icons.admin_panel_settings_rounded,
-                      label: 'Panel de Admin',
-                      onTap: () {
-                        Navigator.pop(context);
-                        final user = FirebaseService.instance.currentUser;
-                        if (user != null) {
+                  // ── Admin (solo visible para admins) ──────────────────────
+                  if (_isAdmin) ...[
+                    _buildDrawerSection('Administración'),
+                    _buildDrawerItem(context,
+                        icon: Icons.admin_panel_settings_rounded,
+                        label: 'Panel de Admin',
+                        onTap: () {
+                          Navigator.pop(context);
                           context.pushNamed(AdminPanelPageWidget.routeName);
-                        } else {
-                          context.pushNamed(LoginPageWidget.routeName);
-                        }
-                      }),
+                        }),
+                  ],
                 ],
               ),
             ),
@@ -476,7 +542,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       child: Text(
         title.toUpperCase(),
         style: const TextStyle(
-          color: Color(0xFFE8D5B0),
+          color: Color(0xFFBF1E2E),
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
@@ -565,7 +631,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     return Column(
       children: [
         Text(
-          'Bienvenidos a Iglesia CJC',
+          _homeConfig.bienvenidaTitulo,
           textAlign: TextAlign.center,
           style: FlutterFlowTheme.of(context).headlineSmall.override(
                 fontFamily: FlutterFlowTheme.of(context).headlineSmallFamily,
@@ -579,7 +645,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         ),
         const SizedBox(height: 18.0),
         Text(
-          'Somos una iglesia que cree que todo comienza en Dios y que la vida se vive mejor en familia. Somos una comunidad que camina junta, creciendo en fe, amor y propósito, poniendo a Cristo en el centro de todo lo que somos y hacemos.\n\nEn CJC no creemos en una fe aislada, sino en una fe que se vive y se camina. Caminamos juntos en procesos reales, con personas reales, aprendiendo cada día a seguir a Jesús con honestidad, gracia y compromiso.\n\nSomos una iglesia que adora con el corazón, sirve con alegría y vive su fe cada día. Aquí celebramos la vida, fortalecemos la familia y nos comprometemos a impactar nuestra comunidad con el amor de Dios.\n\nCJC no es solo un lugar al que asistes; es una familia a la que perteneces.\n\nSomos CJC. Somos familia. Una familia que camina en adoración y servicio a Dios.',
+          _homeConfig.bienvenidaTexto,
           textAlign: TextAlign.center,
           style: FlutterFlowTheme.of(context).bodyLarge.override(
                 fontFamily: FlutterFlowTheme.of(context).bodyLargeFamily,
@@ -661,7 +727,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         ),
         const SizedBox(height: 18.0),
         Text(
-          'Domingos 10 am\nServicio online Youtube\nPastoral infantil en simultaneo\n\nEventos personalizados para\nJovenes\nMujeres\nMatrimonios',
+          _homeConfig.serviciosTexto,
           textAlign: TextAlign.center,
           style: FlutterFlowTheme.of(context).titleLarge.override(
                 fontFamily: FlutterFlowTheme.of(context).titleLargeFamily,
@@ -722,21 +788,24 @@ class _HomePageWidgetState extends State<HomePageWidget> {
           context,
           icon: FontAwesomeIcons.youtube,
           label: 'YouTube',
-          onTap: () => _openExternalLink(context, _youtubeUrl, 'YouTube'),
+          color: const Color(0xFFFF0000),
+          onTap: () => _openExternalLink(context, _homeConfig.youtubeUrl, 'YouTube'),
         ),
         const SizedBox(width: 26.0),
         _buildSocialButton(
           context,
           icon: FontAwesomeIcons.instagram,
           label: 'Instagram',
-          onTap: () => _openExternalLink(context, _instagramUrl, 'Instagram'),
+          color: const Color(0xFFE1306C),
+          onTap: () => _openExternalLink(context, _homeConfig.instagramUrl, 'Instagram'),
         ),
         const SizedBox(width: 26.0),
         _buildSocialButton(
           context,
           icon: FontAwesomeIcons.facebook,
           label: 'Facebook',
-          onTap: () => _openExternalLink(context, _facebookUrl, 'Facebook'),
+          color: const Color(0xFF1877F2),
+          onTap: () => _openExternalLink(context, _homeConfig.facebookUrl, 'Facebook'),
         ),
       ],
     );
@@ -747,6 +816,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    required Color color,
   }) {
     return Semantics(
       label: label,
@@ -758,7 +828,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
           padding: const EdgeInsets.all(8.0),
           child: FaIcon(
             icon,
-            color: const Color(0xFF5E5E5E),
+            color: color,
             size: 34.0,
           ),
         ),
@@ -893,16 +963,16 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [
-              Color(0xFF0C8BFF),
-              Color(0xFF6EE85B),
+              Color(0xFF8C1520),
+              Color(0xFFBF1E2E),
             ],
           ),
           borderRadius: BorderRadius.circular(999.0),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x3300A8FF),
-              blurRadius: 18.0,
-              offset: Offset(0.0, 10.0),
+              color: Color(0x33BF1E2E),
+              blurRadius: 12.0,
+              offset: Offset(0.0, 6.0),
             ),
           ],
         ),

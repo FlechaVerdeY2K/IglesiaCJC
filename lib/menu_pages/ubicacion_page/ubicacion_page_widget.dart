@@ -18,9 +18,9 @@ class UbicacionPageWidget extends StatefulWidget {
 }
 
 class _UbicacionPageWidgetState extends State<UbicacionPageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
 
   // ── Actualiza estas URLs con la ubicación real ──
   static const String _wazeUrl = 'https://waze.com/ul/hd1u0x7u3j';
@@ -63,7 +63,7 @@ class _UbicacionPageWidgetState extends State<UbicacionPageWidget> {
       key: scaffoldKey,
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -94,13 +94,13 @@ class _UbicacionPageWidgetState extends State<UbicacionPageWidget> {
               decoration: BoxDecoration(
                 color: _surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF2B2B2B)),
+                border: Border.all(color: const Color(0xFF1E2E4A)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(Icons.location_on_rounded,
-                      color: Color(0xFFE8D5B0), size: 26),
+                      color: Color(0xFFBF1E2E), size: 26),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -173,7 +173,7 @@ class _UbicacionPageWidgetState extends State<UbicacionPageWidget> {
                 sublabel: 'Ver en Apple Maps',
                 icon: const Icon(Icons.apple_rounded,
                     color: Colors.white, size: 26),
-                color: const Color(0xFF1A1A1A),
+                color: const Color(0xFF0D1628),
                 borderColor: const Color(0xFF3A3A3A),
                 onTap: () => _openLink(_appleMapsUrl, 'Apple Maps'),
               ),

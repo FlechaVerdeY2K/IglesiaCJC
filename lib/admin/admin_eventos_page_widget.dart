@@ -9,9 +9,9 @@ class AdminEventosPageWidget extends StatelessWidget {
   static String routeName = 'AdminEventosPage';
   static String routePath = '/adminEventos';
 
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   @override
@@ -19,7 +19,7 @@ class AdminEventosPageWidget extends StatelessWidget {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -88,7 +88,7 @@ class AdminEventosPageWidget extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: const Color(0xFF111D2E),
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => _EventoForm(item: item),
@@ -99,7 +99,7 @@ class AdminEventosPageWidget extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF2B2B2B),
+        backgroundColor: const Color(0xFF1E2E4A),
         title: const Text('Eliminar evento',
             style: TextStyle(color: Colors.white)),
         content: const Text('¿Eliminar este evento? No se puede deshacer.',
@@ -128,8 +128,8 @@ class _EventoCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   const _EventoCard(
@@ -154,7 +154,7 @@ class _EventoCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
               color: isPast
-                  ? const Color(0xFF2B2B2B)
+                  ? const Color(0xFF1E2E4A)
                   : _accent.withAlpha(30),
               borderRadius: BorderRadius.circular(10),
             ),
@@ -225,7 +225,7 @@ class _EventoCard extends StatelessWidget {
             ),
           ),
           PopupMenuButton<String>(
-            color: const Color(0xFF2B2B2B),
+            color: const Color(0xFF1E2E4A),
             icon: const Icon(Icons.more_vert_rounded, color: Colors.white54),
             onSelected: (v) {
               if (v == 'edit') onEdit();
@@ -257,7 +257,7 @@ class _EventoForm extends StatefulWidget {
 }
 
 class _EventoFormState extends State<_EventoForm> {
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   late final TextEditingController _tituloCtrl;
@@ -348,7 +348,7 @@ class _EventoFormState extends State<_EventoForm> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 14),
                       decoration: BoxDecoration(
-                          color: const Color(0xFF2B2B2B),
+                          color: const Color(0xFF1E2E4A),
                           borderRadius: BorderRadius.circular(8)),
                       child: Row(children: [
                         const Icon(Icons.calendar_today_outlined,
@@ -385,7 +385,7 @@ class _EventoFormState extends State<_EventoForm> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 14),
                       decoration: BoxDecoration(
-                          color: const Color(0xFF2B2B2B),
+                          color: const Color(0xFF1E2E4A),
                           borderRadius: BorderRadius.circular(8)),
                       child: Row(children: [
                         const Icon(Icons.access_time_rounded,
@@ -405,7 +405,7 @@ class _EventoFormState extends State<_EventoForm> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                  color: const Color(0xFF2B2B2B),
+                  color: const Color(0xFF1E2E4A),
                   borderRadius: BorderRadius.circular(8)),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -511,7 +511,7 @@ class _EventoFormState extends State<_EventoForm> {
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFF2B2B2B),
+            fillColor: const Color(0xFF1E2E4A),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none),

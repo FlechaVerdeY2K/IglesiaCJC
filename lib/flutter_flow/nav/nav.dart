@@ -234,6 +234,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const AdminDevocionalPageWidget(),
         ),
         FFRoute(
+          name: AdminHomeConfigPageWidget.routeName,
+          path: AdminHomeConfigPageWidget.routePath,
+          builder: (context, params) => const AdminHomeConfigPageWidget(),
+        ),
+        FFRoute(
           name: UserLoginPageWidget.routeName,
           path: UserLoginPageWidget.routePath,
           builder: (context, params) => UserLoginPageWidget(

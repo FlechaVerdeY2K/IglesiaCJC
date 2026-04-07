@@ -19,9 +19,9 @@ class AnunciosPageWidget extends StatefulWidget {
 }
 
 class _AnunciosPageWidgetState extends State<AnunciosPageWidget> {
-  static const Color _pageBackground = Color(0xFF050505);
-  static const Color _surfaceColor = Color(0xFF171717);
-  static const Color _accentColor = Color(0xFFE8D5B0);
+  static const Color _pageBackground = Color(0xFF080E1E);
+  static const Color _surfaceColor = Color(0xFF0F1C30);
+  static const Color _accentColor = Color(0xFFBF1E2E);
 
   late AnunciosPageModel _model;
 
@@ -42,7 +42,7 @@ class _AnunciosPageWidgetState extends State<AnunciosPageWidget> {
     return Scaffold(
       backgroundColor: _pageBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -112,7 +112,7 @@ class _AnunciosPageWidgetState extends State<AnunciosPageWidget> {
               fit: BoxFit.cover,
               placeholder: (_, __) => Container(
                 height: 180,
-                color: const Color(0xFF2B2B2B),
+                color: const Color(0xFF1E2E4A),
                 child: const Center(
                   child: CircularProgressIndicator(
                     color: _accentColor,
@@ -122,7 +122,7 @@ class _AnunciosPageWidgetState extends State<AnunciosPageWidget> {
               ),
               errorWidget: (_, __, ___) => Container(
                 height: 180,
-                color: const Color(0xFF2B2B2B),
+                color: const Color(0xFF1E2E4A),
                 child: const Icon(Icons.image_not_supported_outlined,
                     color: Colors.white38, size: 40),
               ),

@@ -40,5 +40,6 @@ export '/admin/admin_sermones_page_widget.dart' show AdminSermonesPageWidget;
 export '/admin/admin_oracion_page_widget.dart' show AdminOracionPageWidget;
 export '/admin/admin_live_page_widget.dart' show AdminLivePageWidget;
 export '/admin/admin_devocional_page_widget.dart' show AdminDevocionalPageWidget;
+export '/admin/admin_home_config_page_widget.dart' show AdminHomeConfigPageWidget;
 export '/main_pages/user_login_page_widget.dart' show UserLoginPageWidget;
 export '/main_pages/user_register_page_widget.dart' show UserRegisterPageWidget;

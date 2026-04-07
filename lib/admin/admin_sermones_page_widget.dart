@@ -9,9 +9,9 @@ class AdminSermonesPageWidget extends StatelessWidget {
   static String routeName = 'AdminSermonesPage';
   static String routePath = '/adminSermones';
 
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   @override
@@ -19,7 +19,7 @@ class AdminSermonesPageWidget extends StatelessWidget {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -88,7 +88,7 @@ class AdminSermonesPageWidget extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: const Color(0xFF111D2E),
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => _SermonForm(item: item),
@@ -99,7 +99,7 @@ class AdminSermonesPageWidget extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF2B2B2B),
+        backgroundColor: const Color(0xFF1E2E4A),
         title: const Text('Eliminar sermón',
             style: TextStyle(color: Colors.white)),
         content: const Text('¿Eliminar este sermón? No se puede deshacer.',
@@ -128,8 +128,8 @@ class _SermonCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   const _SermonCard(
@@ -160,7 +160,7 @@ class _SermonCard extends StatelessWidget {
                       fit: BoxFit.cover,
                     )
                   : null,
-              color: const Color(0xFF2B2B2B),
+              color: const Color(0xFF1E2E4A),
             ),
             child: item.videoId.isEmpty
                 ? const Icon(Icons.play_circle_outline,
@@ -202,7 +202,7 @@ class _SermonCard extends StatelessWidget {
             ),
           ),
           PopupMenuButton<String>(
-            color: const Color(0xFF2B2B2B),
+            color: const Color(0xFF1E2E4A),
             icon: const Icon(Icons.more_vert_rounded, color: Colors.white54),
             onSelected: (v) {
               if (v == 'edit') onEdit();
@@ -234,7 +234,7 @@ class _SermonForm extends StatefulWidget {
 }
 
 class _SermonFormState extends State<_SermonForm> {
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   late final TextEditingController _tituloCtrl;
@@ -320,7 +320,7 @@ class _SermonFormState extends State<_SermonForm> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 14),
                 decoration: BoxDecoration(
-                    color: const Color(0xFF2B2B2B),
+                    color: const Color(0xFF1E2E4A),
                     borderRadius: BorderRadius.circular(8)),
                 child: Row(
                   children: [
@@ -338,7 +338,7 @@ class _SermonFormState extends State<_SermonForm> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                  color: const Color(0xFF2B2B2B),
+                  color: const Color(0xFF1E2E4A),
                   borderRadius: BorderRadius.circular(8)),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -446,7 +446,7 @@ class _SermonFormState extends State<_SermonForm> {
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
             filled: true,
-            fillColor: const Color(0xFF2B2B2B),
+            fillColor: const Color(0xFF1E2E4A),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none),

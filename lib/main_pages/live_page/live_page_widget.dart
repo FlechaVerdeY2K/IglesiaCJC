@@ -18,9 +18,9 @@ class LivePageWidget extends StatefulWidget {
 }
 
 class _LivePageWidgetState extends State<LivePageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const String _channelLiveUrl =
       'https://www.youtube.com/@iglesiacjc217/live';
 
@@ -46,7 +46,7 @@ class _LivePageWidgetState extends State<LivePageWidget> {
       key: scaffoldKey,
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -224,7 +224,7 @@ class _LivePageWidgetState extends State<LivePageWidget> {
               decoration: BoxDecoration(
                 color: _surface,
                 borderRadius: BorderRadius.circular(50),
-                border: Border.all(color: const Color(0xFF2B2B2B)),
+                border: Border.all(color: const Color(0xFF1E2E4A)),
               ),
               child: const Icon(Icons.live_tv_rounded,
                   color: Colors.white38, size: 52),
@@ -268,7 +268,7 @@ class _LivePageWidgetState extends State<LivePageWidget> {
             label: const Text('Ver transmisiones pasadas',
                 style: TextStyle(color: _accent)),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF2B2B2B)),
+              side: const BorderSide(color: Color(0xFF1E2E4A)),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -285,7 +285,7 @@ class _LivePageWidgetState extends State<LivePageWidget> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2B2B2B)),
+        border: Border.all(color: const Color(0xFF1E2E4A)),
       ),
       child: Row(
         children: [

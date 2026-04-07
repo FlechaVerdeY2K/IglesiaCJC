@@ -9,9 +9,9 @@ class AdminDevocionalPageWidget extends StatelessWidget {
   static String routeName = 'AdminDevocionalPage';
   static String routePath = '/adminDevocional';
 
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   @override
@@ -19,7 +19,7 @@ class AdminDevocionalPageWidget extends StatelessWidget {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -92,7 +92,7 @@ class AdminDevocionalPageWidget extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: const Color(0xFF111D2E),
         title: const Text('Eliminar devocional',
             style: TextStyle(color: Colors.white)),
         content: Text(
@@ -127,8 +127,8 @@ class _DevCard extends StatelessWidget {
   const _DevCard(
       {required this.dev, required this.onEdit, required this.onDelete});
 
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   @override
@@ -139,7 +139,7 @@ class _DevCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2B2B2B)),
+        border: Border.all(color: const Color(0xFF1E2E4A)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,8 +206,8 @@ class _DevocionalForm extends StatefulWidget {
 }
 
 class _DevocionalFormState extends State<_DevocionalForm> {
-  static const Color _bg = Color(0xFF111111);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   final _tituloCtrl = TextEditingController();
@@ -326,9 +326,9 @@ class _DevocionalFormState extends State<_DevocionalForm> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
+                    color: const Color(0xFF111D2E),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF2B2B2B)),
+                    border: Border.all(color: const Color(0xFF1E2E4A)),
                   ),
                   child: Row(
                     children: [
@@ -423,19 +423,19 @@ class _Field extends StatelessWidget {
         labelText: label,
         labelStyle: const TextStyle(color: Color(0xFFB5B5B5), fontSize: 13),
         filled: true,
-        fillColor: const Color(0xFF1E1E1E),
+        fillColor: const Color(0xFF111D2E),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF2B2B2B)),
+          borderSide: const BorderSide(color: Color(0xFF1E2E4A)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF2B2B2B)),
+          borderSide: const BorderSide(color: Color(0xFF1E2E4A)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide:
-              const BorderSide(color: Color(0xFFE8D5B0), width: 1.5),
+              const BorderSide(color: Color(0xFFBF1E2E), width: 1.5),
         ),
       ),
     );

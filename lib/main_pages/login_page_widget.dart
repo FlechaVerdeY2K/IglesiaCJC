@@ -19,10 +19,10 @@ class LoginPageWidget extends StatefulWidget {
 }
 
 class _LoginPageWidgetState extends State<LoginPageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
-  static const Color _border = Color(0xFF2B2B2B);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
+  static const Color _border = Color(0xFF1E2E4A);
 
   late LoginPageModel _model;
 
@@ -74,7 +74,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor: const Color(0xFF2B2B2B),
+      backgroundColor: const Color(0xFF1E2E4A),
     ));
   }
 
@@ -337,7 +337,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('Email de recuperación enviado.'),
-                    backgroundColor: Color(0xFF2B2B2B),
+                    backgroundColor: Color(0xFF1E2E4A),
                   ));
                 }
               } catch (_) {

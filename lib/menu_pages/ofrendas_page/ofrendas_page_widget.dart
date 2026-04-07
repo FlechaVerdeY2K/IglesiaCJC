@@ -16,9 +16,9 @@ class OfrendasPageWidget extends StatefulWidget {
 }
 
 class _OfrendasPageWidgetState extends State<OfrendasPageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
 
   // ── Actualiza estos datos con los reales de la iglesia ──
   static const String _sinpeNumero = '7093-9483';
@@ -61,7 +61,7 @@ class _OfrendasPageWidgetState extends State<OfrendasPageWidget> {
       key: scaffoldKey,
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -98,13 +98,13 @@ class _OfrendasPageWidgetState extends State<OfrendasPageWidget> {
               child: const Row(
                 children: [
                   Icon(Icons.volunteer_activism_rounded,
-                      color: Color(0xFFE8D5B0), size: 28),
+                      color: Color(0xFFBF1E2E), size: 28),
                   SizedBox(width: 14),
                   Expanded(
                     child: Text(
                       '"Cada uno dé como propuso en su corazón, no con tristeza ni por necesidad." — 2 Cor 9:7',
                       style: TextStyle(
-                          color: Color(0xFFE8D5B0),
+                          color: Color(0xFFBF1E2E),
                           fontSize: 13,
                           fontStyle: FontStyle.italic,
                           height: 1.5),
@@ -189,7 +189,7 @@ class _OfrendasPageWidgetState extends State<OfrendasPageWidget> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2B2B2B)),
+        border: Border.all(color: const Color(0xFF1E2E4A)),
       ),
       child: Row(
         children: [

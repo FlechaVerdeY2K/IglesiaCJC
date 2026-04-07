@@ -19,8 +19,8 @@ class GaleriaPageWidget extends StatefulWidget {
 }
 
 class _GaleriaPageWidgetState extends State<GaleriaPageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _accent = Color(0xFFBF1E2E);
 
   late GaleriaPageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -52,7 +52,7 @@ class _GaleriaPageWidgetState extends State<GaleriaPageWidget> {
       key: scaffoldKey,
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -111,7 +111,7 @@ class _GaleriaPageWidgetState extends State<GaleriaPageWidget> {
                   imageUrl: foto.imageUrl,
                   fit: BoxFit.cover,
                   errorWidget: (_, __, ___) => Container(
-                    color: const Color(0xFF1A1A1A),
+                    color: const Color(0xFF0D1628),
                     child: const Icon(Icons.broken_image_rounded,
                         color: Colors.white24),
                   ),

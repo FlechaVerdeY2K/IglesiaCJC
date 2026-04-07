@@ -10,9 +10,9 @@ class MisOracionesPageWidget extends StatelessWidget {
   static String routeName = 'MisOracionesPage';
   static String routePath = '/misOraciones';
 
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   @override
@@ -22,7 +22,7 @@ class MisOracionesPageWidget extends StatelessWidget {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -86,7 +86,7 @@ class MisOracionesPageWidget extends StatelessWidget {
         border: Border.all(
           color: orantes > 0
               ? const Color(0xFF4CAF50).withOpacity(0.4)
-              : const Color(0xFF2B2B2B),
+              : const Color(0xFF1E2E4A),
         ),
       ),
       child: Column(

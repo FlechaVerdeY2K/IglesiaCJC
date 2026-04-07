@@ -16,9 +16,9 @@ class EquiposPageWidget extends StatefulWidget {
 }
 
 class _EquiposPageWidgetState extends State<EquiposPageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
 
   late EquiposPageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -42,7 +42,7 @@ class _EquiposPageWidgetState extends State<EquiposPageWidget> {
       key: scaffoldKey,
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -95,7 +95,7 @@ class _EquiposPageWidgetState extends State<EquiposPageWidget> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2B2B2B)),
+        border: Border.all(color: const Color(0xFF1E2E4A)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

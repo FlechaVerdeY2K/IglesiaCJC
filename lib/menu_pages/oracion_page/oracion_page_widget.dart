@@ -19,9 +19,9 @@ class OracionPageWidget extends StatefulWidget {
 }
 
 class _OracionPageWidgetState extends State<OracionPageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
 
   late OracionPageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -85,7 +85,7 @@ class _OracionPageWidgetState extends State<OracionPageWidget> {
       key: scaffoldKey,
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -116,7 +116,7 @@ class _OracionPageWidgetState extends State<OracionPageWidget> {
               decoration: BoxDecoration(
                 color: _surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF2B2B2B)),
+                border: Border.all(color: const Color(0xFF1E2E4A)),
               ),
               child: Form(
                 key: _formKey,
@@ -239,14 +239,14 @@ class _OracionPageWidgetState extends State<OracionPageWidget> {
         labelText: label,
         labelStyle: const TextStyle(color: Color(0xFF7A7A7A)),
         filled: true,
-        fillColor: const Color(0xFF111111),
+        fillColor: const Color(0xFF080E1E),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF2B2B2B)),
+          borderSide: const BorderSide(color: Color(0xFF1E2E4A)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF2B2B2B)),
+          borderSide: const BorderSide(color: Color(0xFF1E2E4A)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -267,7 +267,7 @@ class _OracionPageWidgetState extends State<OracionPageWidget> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2B2B2B)),
+        border: Border.all(color: const Color(0xFF1E2E4A)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

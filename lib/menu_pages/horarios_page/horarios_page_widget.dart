@@ -15,9 +15,9 @@ class HorariosPageWidget extends StatefulWidget {
 }
 
 class _HorariosPageWidgetState extends State<HorariosPageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
 
   late HorariosPageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -41,7 +41,7 @@ class _HorariosPageWidgetState extends State<HorariosPageWidget> {
       key: scaffoldKey,
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -74,7 +74,7 @@ class _HorariosPageWidgetState extends State<HorariosPageWidget> {
               hora: '10:00 AM',
               descripcion: 'Culto de adoración y predicación de la Palabra.',
               icon: Icons.church_rounded,
-              color: const Color(0xFFE8D5B0),
+              color: const Color(0xFFBF1E2E),
             ),
             const SizedBox(height: 10),
             _buildHorarioCard(
@@ -105,7 +105,7 @@ class _HorariosPageWidgetState extends State<HorariosPageWidget> {
               decoration: BoxDecoration(
                 color: _surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF2B2B2B)),
+                border: Border.all(color: const Color(0xFF1E2E4A)),
               ),
               child: const Text(
                 'Las actividades especiales se anuncian con anticipación en la sección de Anuncios y Calendario.\nEstamos activos en redes sociales con todas las novedades.',
@@ -143,7 +143,7 @@ class _HorariosPageWidgetState extends State<HorariosPageWidget> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2B2B2B)),
+        border: Border.all(color: const Color(0xFF1E2E4A)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

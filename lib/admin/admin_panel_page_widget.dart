@@ -4,25 +4,61 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import 'admin_devocional_page_widget.dart';
 
-class AdminPanelPageWidget extends StatelessWidget {
+class AdminPanelPageWidget extends StatefulWidget {
   const AdminPanelPageWidget({super.key});
 
   static String routeName = 'AdminPanelPage';
   static String routePath = '/adminPanel';
 
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  @override
+  State<AdminPanelPageWidget> createState() => _AdminPanelPageWidgetState();
+}
+
+class _AdminPanelPageWidgetState extends State<AdminPanelPageWidget> {
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
+
+  bool _checking = true;
+  bool _isAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdmin();
+  }
+
+  Future<void> _checkAdmin() async {
+    final admin = await FirebaseService.instance.isAdmin;
+    if (!mounted) return;
+    if (!admin) {
+      context.go('/homePage');
+      return;
+    }
+    setState(() {
+      _isAdmin = true;
+      _checking = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseService.instance.currentUser;
 
+    if (_checking) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF080E1E),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFBF1E2E)),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -99,6 +135,14 @@ class AdminPanelPageWidget extends StatelessWidget {
             const SizedBox(height: 12),
 
             _AdminCard(
+              icon: Icons.home_rounded,
+              title: 'Home',
+              subtitle: 'Editar textos, servicios y links del inicio',
+              onTap: () =>
+                  context.pushNamed(AdminHomeConfigPageWidget.routeName),
+            ),
+            const SizedBox(height: 12),
+            _AdminCard(
               icon: Icons.campaign_rounded,
               title: 'Anuncios',
               subtitle: 'Crear, editar y eliminar anuncios',
@@ -173,7 +217,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: const TextStyle(
-        color: Color(0xFFE8D5B0),
+        color: Color(0xFFBF1E2E),
         fontSize: 11,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.2,
@@ -197,8 +241,8 @@ class _AdminCard extends StatelessWidget {
     this.enabled = true,
   });
 
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   @override

@@ -17,9 +17,9 @@ class ContactoPageWidget extends StatefulWidget {
 }
 
 class _ContactoPageWidgetState extends State<ContactoPageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
 
   static const String _whatsappUrl = 'https://wa.me/50670939483';
@@ -51,7 +51,7 @@ class _ContactoPageWidgetState extends State<ContactoPageWidget> {
       key: scaffoldKey,
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF0D1628),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -166,7 +166,7 @@ class _ContactoPageWidgetState extends State<ContactoPageWidget> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color:
-                highlight ? const Color(0xFF25D366) : const Color(0xFF2B2B2B),
+                highlight ? const Color(0xFF25D366) : const Color(0xFF1E2E4A),
           ),
         ),
         child: Row(

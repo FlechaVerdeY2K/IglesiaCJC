@@ -41,9 +41,9 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: const Color(0xFF050505),
+        backgroundColor: const Color(0xFF080E1E),
         appBar: AppBar(
-          backgroundColor: const Color(0xFF1A1A1A),
+          backgroundColor: const Color(0xFF0D1628),
           automaticallyImplyLeading: false,
           elevation: 0.0,
           centerTitle: true,
@@ -111,7 +111,7 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
       decoration: BoxDecoration(
         color: const Color(0xFF121212),
         borderRadius: BorderRadius.circular(18.0),
-        border: Border.all(color: const Color(0xFF2B2B2B)),
+        border: Border.all(color: const Color(0xFF1E2E4A)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

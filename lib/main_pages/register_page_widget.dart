@@ -18,10 +18,10 @@ class RegisterPageWidget extends StatefulWidget {
 }
 
 class _RegisterPageWidgetState extends State<RegisterPageWidget> {
-  static const Color _bg = Color(0xFF050505);
-  static const Color _surface = Color(0xFF171717);
-  static const Color _accent = Color(0xFFE8D5B0);
-  static const Color _border = Color(0xFF2B2B2B);
+  static const Color _bg = Color(0xFF080E1E);
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _accent = Color(0xFFBF1E2E);
+  static const Color _border = Color(0xFF1E2E4A);
 
   late RegisterPageModel _model;
 
@@ -72,7 +72,7 @@ class _RegisterPageWidgetState extends State<RegisterPageWidget> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor: const Color(0xFF2B2B2B),
+      backgroundColor: const Color(0xFF1E2E4A),
     ));
   }
 

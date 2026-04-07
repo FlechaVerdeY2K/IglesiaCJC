@@ -6,6 +6,58 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // ─── Modelos adicionales ──────────────────────────────────────────────────────
 
+class HomeConfig {
+  final String bienvenidaTitulo;
+  final String bienvenidaTexto;
+  final String serviciosTexto;
+  final String telefono;
+  final String wazeUrl;
+  final String youtubeUrl;
+  final String instagramUrl;
+  final String facebookUrl;
+
+  const HomeConfig({
+    required this.bienvenidaTitulo,
+    required this.bienvenidaTexto,
+    required this.serviciosTexto,
+    required this.telefono,
+    required this.wazeUrl,
+    required this.youtubeUrl,
+    required this.instagramUrl,
+    required this.facebookUrl,
+  });
+
+  static HomeConfig get defaults => const HomeConfig(
+        bienvenidaTitulo: 'Bienvenidos a Iglesia CJC',
+        bienvenidaTexto:
+            'Somos una iglesia que cree que todo comienza en Dios y que la vida se vive mejor en familia. Somos una comunidad que camina junta, creciendo en fe, amor y propósito, poniendo a Cristo en el centro de todo lo que somos y hacemos.\n\nEn CJC no creemos en una fe aislada, sino en una fe que se vive y se camina. Caminamos juntos en procesos reales, con personas reales, aprendiendo cada día a seguir a Jesús con honestidad, gracia y compromiso.\n\nSomos una iglesia que adora con el corazón, sirve con alegría y vive su fe cada día. Aquí celebramos la vida, fortalecemos la familia y nos comprometemos a impactar nuestra comunidad con el amor de Dios.\n\nCJC no es solo un lugar al que asistes; es una familia a la que perteneces.\n\nSomos CJC. Somos familia. Una familia que camina en adoración y servicio a Dios.',
+        serviciosTexto:
+            'Domingos 10 am\nServicio online Youtube\nPastoral infantil en simultaneo\n\nEventos personalizados para\nJovenes\nMujeres\nMatrimonios',
+        telefono: 'tel:+50670939483',
+        wazeUrl: 'https://maps.app.goo.gl/',
+        youtubeUrl: 'https://youtube.com/@iglesiacjc217',
+        instagramUrl: 'https://www.instagram.com/iglesiacjc',
+        facebookUrl: 'https://www.facebook.com/share/1D6LhUGwoz/',
+      );
+
+  factory HomeConfig.fromFirestore(Map<String, dynamic> d) => HomeConfig(
+        bienvenidaTitulo: d['bienvenidaTitulo'] as String? ??
+            HomeConfig.defaults.bienvenidaTitulo,
+        bienvenidaTexto: d['bienvenidaTexto'] as String? ??
+            HomeConfig.defaults.bienvenidaTexto,
+        serviciosTexto: d['serviciosTexto'] as String? ??
+            HomeConfig.defaults.serviciosTexto,
+        telefono: d['telefono'] as String? ?? HomeConfig.defaults.telefono,
+        wazeUrl: d['wazeUrl'] as String? ?? HomeConfig.defaults.wazeUrl,
+        youtubeUrl:
+            d['youtubeUrl'] as String? ?? HomeConfig.defaults.youtubeUrl,
+        instagramUrl:
+            d['instagramUrl'] as String? ?? HomeConfig.defaults.instagramUrl,
+        facebookUrl:
+            d['facebookUrl'] as String? ?? HomeConfig.defaults.facebookUrl,
+      );
+}
+
 class LiveConfig {
   final String videoId;
   final String titulo;
@@ -412,6 +464,38 @@ class FirebaseService {
     });
   }
 
+  // ── Home Config ─────────────────────────────────────────────────────────────
+
+  Future<HomeConfig> getHomeConfig() async {
+    try {
+      final doc = await _db.collection('config').doc('home').get();
+      if (!doc.exists || doc.data() == null) return HomeConfig.defaults;
+      return HomeConfig.fromFirestore(doc.data()!);
+    } catch (_) {
+      return HomeConfig.defaults;
+    }
+  }
+
+  Stream<HomeConfig> homeConfigStream() {
+    return _db.collection('config').doc('home').snapshots().map((doc) {
+      if (!doc.exists || doc.data() == null) return HomeConfig.defaults;
+      return HomeConfig.fromFirestore(doc.data()!);
+    });
+  }
+
+  Future<void> saveHomeConfig(HomeConfig config) async {
+    await _db.collection('config').doc('home').set({
+      'bienvenidaTitulo': config.bienvenidaTitulo,
+      'bienvenidaTexto': config.bienvenidaTexto,
+      'serviciosTexto': config.serviciosTexto,
+      'telefono': config.telefono,
+      'wazeUrl': config.wazeUrl,
+      'youtubeUrl': config.youtubeUrl,
+      'instagramUrl': config.instagramUrl,
+      'facebookUrl': config.facebookUrl,
+    });
+  }
+
   // ── Live Config ─────────────────────────────────────────────────────────────
 
   Future<LiveConfig?> getLiveConfig() async {
@@ -692,6 +776,11 @@ class FirebaseService {
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────────
+
+  Future<void> updateUserPhoto(String uid, String photoUrl) async {
+    await _db.collection('usuarios').doc(uid).update({'fotoUrl': photoUrl});
+    await _auth.currentUser?.updatePhotoURL(photoUrl);
+  }
 
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
