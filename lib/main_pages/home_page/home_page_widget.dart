@@ -1,4 +1,4 @@
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/backend/auth_service.dart';
 import '/backend/cloudinary_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -22,7 +22,8 @@ class HomePageWidget extends StatefulWidget {
   State<HomePageWidget> createState() => _HomePageWidgetState();
 }
 
-class _HomePageWidgetState extends State<HomePageWidget> {
+class _HomePageWidgetState extends State<HomePageWidget>
+    with SingleTickerProviderStateMixin {
   static const Color _pageBackground = Color(0xFF080E1E);
   static const Color _surfaceColor = Color(0xFF0F1C30);
   static const Color _dividerColor = Color(0xFF1E2E4A);
@@ -34,8 +35,17 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   int _lastSeenOrantes = 0;
   bool _isAdmin = false;
   bool _uploadingPhoto = false;
+  String? _dbPhotoUrl;
+  String? _dbName;
+  String? _dbGenero; // 'M' | 'F' | null
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+
+  late AnimationController _drawerCtrl;
+  late Animation<double> _drawerAnim;
+
+  void _openDrawer()  => _drawerCtrl.forward();
+  void _closeDrawer() => _drawerCtrl.reverse();
 
   @override
   void initState() {
@@ -45,10 +55,21 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     _loadLastSeenOrantes();
     _listenHomeConfig();
     _checkAdmin();
+    _loadUserProfile();
+
+    _drawerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _drawerAnim = CurvedAnimation(
+      parent: _drawerCtrl,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
   }
 
   Future<void> _uploadProfilePhoto() async {
-    final uid = AuthService.instance.currentUser?.uid;
+    final uid = AuthService.instance.currentUser?.id;
     if (uid == null) return;
     setState(() => _uploadingPhoto = true);
     try {
@@ -56,27 +77,53 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         folder: 'perfiles',
       );
       if (url != null) {
-        await FirebaseService.instance.updateUserPhoto(uid, url);
-        if (mounted) setState(() {});
+        await SupabaseService.instance.updateUserPhoto(uid, url);
+        if (mounted) setState(() => _dbPhotoUrl = url);
       }
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
     }
   }
 
+  Future<void> _loadUserProfile() async {
+    final uid = AuthService.instance.currentUser?.id;
+    if (uid == null) return;
+    final profile = await SupabaseService.instance.getUserProfile(uid);
+    if (!mounted) return;
+    setState(() {
+      if (profile['foto_url'] != null && profile['foto_url']!.isNotEmpty) {
+        _dbPhotoUrl = profile['foto_url'];
+      }
+      if (profile['nombre'] != null && profile['nombre']!.isNotEmpty) {
+        _dbName = profile['nombre'];
+      }
+      if (profile['genero'] != null && profile['genero']!.isNotEmpty) {
+        _dbGenero = profile['genero'];
+      }
+    });
+  }
+
   Future<void> _checkAdmin() async {
-    final admin = await FirebaseService.instance.isAdmin;
+    final admin = await SupabaseService.instance.isAdmin;
     if (mounted) setState(() => _isAdmin = admin);
   }
 
   void _listenHomeConfig() {
-    FirebaseService.instance.homeConfigStream().listen((config) {
+    // Carga inmediata via REST (no depende de WebSocket/Realtime)
+    SupabaseService.instance.getHomeConfig().then((config) {
       if (mounted) setState(() => _homeConfig = config);
     });
+    // Realtime para actualizaciones en vivo (opcional, falla silenciosamente)
+    SupabaseService.instance.homeConfigStream().listen(
+      (config) {
+        if (mounted) setState(() => _homeConfig = config);
+      },
+      onError: (_) {}, // ya cargó por REST arriba
+    );
   }
 
   Future<void> _loadLastSeenOrantes() async {
-    final uid = AuthService.instance.currentUser?.uid;
+    final uid = AuthService.instance.currentUser?.id;
     if (uid == null) return;
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getInt('lastSeenOrantes_$uid') ?? 0;
@@ -84,7 +131,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   }
 
   Future<void> _markOrantesAsSeen(int total) async {
-    final uid = AuthService.instance.currentUser?.uid;
+    final uid = AuthService.instance.currentUser?.id;
     if (uid == null) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('lastSeenOrantes_$uid', total);
@@ -94,6 +141,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   @override
   void dispose() {
+    _drawerCtrl.dispose();
     _model.dispose();
     super.dispose();
   }
@@ -103,85 +151,61 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     String url,
     String label,
   ) async {
-    if (url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Configura el enlace de $label en HomePageWidget.'),
-          backgroundColor: const Color(0xFF202020),
-        ),
-      );
+    final trimmed = url.trim();
+    final uri = Uri.tryParse(trimmed);
+    if (trimmed.isEmpty || uri == null || !uri.hasScheme) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Enlace de $label no configurado aún.'),
+            backgroundColor: const Color(0xFF1E2E4A),
+          ),
+        );
+      }
       return;
     }
 
-    await launchURL(url);
+    await launchURL(trimmed);
   }
 
   @override
   Widget build(BuildContext context) {
+    const drawerWidth = 304.0;
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
         FocusManager.instance.primaryFocus?.unfocus();
       },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: _pageBackground,
-        drawer: _buildDrawer(context),
+      child: Stack(
+        children: [
+          Scaffold(
+            key: scaffoldKey,
+            backgroundColor: _pageBackground,
         appBar: AppBar(
           backgroundColor: const Color(0xFF0D1628),
           automaticallyImplyLeading: false,
           elevation: 0.0,
+          toolbarHeight: 56,
           titleSpacing: 16.0,
           title: Row(
             children: [
               InkWell(
-                onTap: () => scaffoldKey.currentState?.openDrawer(),
+                onTap: _openDrawer,
                 borderRadius: BorderRadius.circular(24.0),
-                child: CircleAvatar(
-                  radius: 20.0,
-                  backgroundColor: const Color(0xFF5A5A5A),
-                  child: Text(
-                    'CJC',
-                    style: FlutterFlowTheme.of(context).labelMedium.override(
-                          fontFamily:
-                              FlutterFlowTheme.of(context).labelMediumFamily,
-                          color: Colors.white,
-                          fontSize: 11.0,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.4,
-                          useGoogleFonts:
-                              !FlutterFlowTheme.of(context).labelMediumIsCustom,
-                        ),
-                  ),
-                ),
+                child: _buildUserAvatar(
+                    AuthService.instance.currentUser, 20),
               ),
               Expanded(
-                child: Text(
-                  'Casa CJC',
-                  textAlign: TextAlign.center,
-                  style: FlutterFlowTheme.of(context).titleLarge.override(
-                        fontFamily:
-                            FlutterFlowTheme.of(context).titleLargeFamily,
-                        color: Colors.white,
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.0,
-                        useGoogleFonts:
-                            !FlutterFlowTheme.of(context).titleLargeIsCustom,
-                      ),
-                ),
+                child: _buildAppBarTitle(context),
               ),
-              IconButton(
+              _smallIconBtn(
+                icon: Icons.share_rounded,
+                tooltip: 'Compartir app',
                 onPressed: () {
                   Share.share(
                       '¡Descarga la app de Iglesia CJC! https://iglesiacjc.app');
                 },
-                icon: const Icon(
-                  Icons.share_rounded,
-                  color: Colors.white,
-                  size: 26.0,
-                ),
-                tooltip: 'Compartir app',
               ),
               _buildNotificationBell(context),
             ],
@@ -190,75 +214,138 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         body: SafeArea(
           top: false,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24.0, 18.0, 24.0, 32.0),
+            padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildLiveBanner(context),
-                _buildHeroCard(context),
-                _buildDivider(),
-                _buildWelcomeCopy(context),
-                _buildDivider(),
-                _buildServicesHeroCard(context),
-                _buildDivider(),
-                _buildMinistryGroups(context),
-                _buildDivider(),
-                _buildContactRow(
-                  context,
-                  icon: Icons.phone_rounded,
-                  label: 'Phone',
-                  onTap: () =>
-                      _openExternalLink(context, _homeConfig.telefono, 'telefono'),
-                ),
-                _buildDivider(),
-                _buildGradientButton(
-                  context,
-                  label: 'Ver en Google Maps',
-                  onPressed: () => _openExternalLink(context, _homeConfig.wazeUrl, 'Maps'),
-                ),
-                _buildDivider(),
-                _buildSocialRow(context),
-                _buildDivider(),
-                _buildDonationCard(context),
-                _buildDivider(),
-                _buildGradientButton(
-                  context,
-                  label: 'Unirme a un GPS',
-                  onPressed: () {
-                    context.pushNamed(RegistroGpsPageWidget.routeName);
-                  },
-                ),
-                _buildDivider(),
-                _buildGradientButton(
-                  context,
-                  label: 'Iniciar un GPS',
-                  onPressed: () {
-                    context.pushNamed(CreacionGpsPageWidget.routeName);
-                  },
-                ),
-                _buildDivider(),
+                // Live Banner
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/LOGO_CJC_BLANCO_(1).png',
-                      width: 92.0,
-                      fit: BoxFit.contain,
-                    ),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: _buildLiveBanner(context),
+                ),
+                // Hero sin padding lateral
+                _buildHeroCard(context),
+                const SizedBox(height: 32),
+                // Bienvenida
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _buildWelcomeCopy(context),
+                ),
+                const SizedBox(height: 32),
+                // Servicios hero
+                _buildServicesHeroCard(context),
+                const SizedBox(height: 24),
+                // Horarios cards
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildScheduleCards(context),
+                ),
+                const SizedBox(height: 16),
+                // WhatsApp + Ubicación
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildQuickActionsRow(context),
+                ),
+                const SizedBox(height: 32),
+                // Redes sociales
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _buildSocialRow(context),
+                ),
+                const SizedBox(height: 32),
+                // Ofrendas
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildDonationCard(context),
+                ),
+                const SizedBox(height: 32),
+                // GPS
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildSectionLabel('Grupos de Proceso Semanal'),
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildGpsCard(
+                          context,
+                          icon: Icons.group_add_rounded,
+                          title: 'Unirme a un GPS',
+                          subtitle: 'Sé parte de un grupo',
+                          color: const Color(0xFF1B4332),
+                          accentColor: const Color(0xFF40C072),
+                          onTap: () => context.pushNamed(RegistroGpsPageWidget.routeName),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildGpsCard(
+                          context,
+                          icon: Icons.add_home_work_rounded,
+                          title: 'Iniciar un GPS',
+                          subtitle: 'Abrí tu propio grupo',
+                          color: const Color(0xFF1A237E),
+                          accentColor: const Color(0xFF7986CB),
+                          onTap: () => context.pushNamed(CreacionGpsPageWidget.routeName),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 40),
+                // Logo footer
+                Center(
+                  child: Image.asset(
+                    'assets/images/LOGO_CJC_BLANCO_(1).png',
+                    width: 80.0,
+                    fit: BoxFit.contain,
+                    color: Colors.white24,
+                  ),
+                ),
+                const SizedBox(height: 32),
               ],
             ),
           ),
         ),
+          ),
+          // ── Scrim ──────────────────────────────────────────────────────────
+          AnimatedBuilder(
+            animation: _drawerAnim,
+            builder: (context, _) {
+              if (_drawerAnim.value == 0) return const SizedBox.shrink();
+              return GestureDetector(
+                onTap: _closeDrawer,
+                child: Container(
+                  color: Colors.black.withOpacity(0.55 * _drawerAnim.value),
+                ),
+              );
+            },
+          ),
+          // ── Drawer panel ───────────────────────────────────────────────────
+          AnimatedBuilder(
+            animation: _drawerAnim,
+            builder: (context, child) => Transform.translate(
+              offset: Offset(drawerWidth * (_drawerAnim.value - 1), 0),
+              child: child,
+            ),
+            child: SizedBox(
+              width: drawerWidth,
+              child: _buildDrawer(context),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildDrawer(BuildContext context) {
     final user = AuthService.instance.currentUser;
-    return Drawer(
-      backgroundColor: const Color(0xFF080E1E),
+    return Material(
+      color: const Color(0xFF080E1E),
+      elevation: 16,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -273,55 +360,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
               child: user != null
                   ? Row(children: [
                       Tooltip(
-                        message: 'Cambiar foto de perfil',
+                        message: 'Ver perfil',
                         child: InkWell(
-                          onTap: _uploadingPhoto ? null : _uploadProfilePhoto,
+                          onTap: () {
+                            _closeDrawer();
+                            context.pushNamed(PerfilPageWidget.routeName).then((_) => _loadUserProfile());
+                          },
                           borderRadius: BorderRadius.circular(24),
-                          child: Stack(
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: const Color(0xFF1E2E4A),
-                                backgroundImage: (user.photoURL != null &&
-                                        user.photoURL!.isNotEmpty)
-                                    ? CachedNetworkImageProvider(user.photoURL!)
-                                    : null,
-                                child: (user.photoURL == null ||
-                                        user.photoURL!.isEmpty)
-                                    ? const Icon(Icons.person_rounded,
-                                        color: Colors.white54, size: 24)
-                                    : null,
-                              ),
-                              if (_uploadingPhoto)
-                                const Positioned.fill(
-                                  child: CircleAvatar(
-                                    backgroundColor: Colors.black45,
-                                    child: SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              else
-                                Positioned(
-                                  right: 0,
-                                  bottom: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFBF1E2E),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.camera_alt_rounded,
-                                        color: Colors.white, size: 10),
-                                  ),
-                                ),
-                            ],
-                          ),
+                          child: _buildUserAvatar(user, 24),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -330,7 +376,11 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user.displayName ?? 'Miembro CJC',
+                              _dbName ??
+                                  (user.userMetadata?['full_name'] as String?) ??
+                                  (user.userMetadata?['nombre'] as String?) ??
+                                  (user.email as String?)?.split('@').first ??
+                                  'Miembro CJC',
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
@@ -348,12 +398,19 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.logout_rounded,
-                            color: Colors.white38, size: 20),
+                      _smallIconBtn(
+                        icon: Icons.person_rounded,
+                        tooltip: 'Ver perfil',
+                        onPressed: () {
+                          _closeDrawer();
+                          context.pushNamed(PerfilPageWidget.routeName);
+                        },
+                      ),
+                      _smallIconBtn(
+                        icon: Icons.logout_rounded,
                         tooltip: 'Cerrar sesión',
                         onPressed: () async {
-                          Navigator.pop(context);
+                          _closeDrawer();
                           await AuthService.instance.signOut();
                           if (mounted) context.go(UserLoginPageWidget.routePath);
                         },
@@ -361,7 +418,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                     ])
                   : InkWell(
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context
                             .pushNamed(UserLoginPageWidget.routeName);
                       },
@@ -398,35 +455,35 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       icon: Icons.campaign_rounded,
                       label: 'Anuncios',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(AnunciosPageWidget.routeName);
                       }),
                   _buildDrawerItem(context,
                       icon: Icons.access_time_rounded,
                       label: 'Horarios',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(HorariosPageWidget.routeName);
                       }),
                   _buildDrawerItem(context,
                       icon: Icons.location_on_rounded,
                       label: 'Ubicación',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(UbicacionPageWidget.routeName);
                       }),
                   _buildDrawerItem(context,
                       icon: Icons.phone_rounded,
                       label: 'Contacto',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(ContactoPageWidget.routeName);
                       }),
                   _buildDrawerItem(context,
                       icon: Icons.volunteer_activism_rounded,
                       label: 'Ofrendas',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(OfrendasPageWidget.routeName);
                       }),
 
@@ -436,21 +493,21 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       icon: Icons.people_rounded,
                       label: 'Pastores',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(PastoresPageWidget.routeName);
                       }),
                   _buildDrawerItem(context,
                       icon: Icons.groups_rounded,
                       label: 'Equipos',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(EquiposPageWidget.routeName);
                       }),
                   _buildDrawerItem(context,
                       icon: Icons.favorite_rounded,
                       label: 'Pedidos de Oración',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(OracionPageWidget.routeName);
                       }),
 
@@ -460,21 +517,21 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       icon: Icons.book_rounded,
                       label: 'Devocional',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(DevocionalPageWidget.routeName);
                       }),
                   _buildDrawerItem(context,
                       icon: Icons.library_books_rounded,
                       label: 'Recursos',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(RecursosPageWidget.routeName);
                       }),
                   _buildDrawerItem(context,
                       icon: Icons.music_note_rounded,
                       label: 'Playlist',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(PlaylistPageWidget.routeName);
                       }),
 
@@ -484,14 +541,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       icon: Icons.group_add_rounded,
                       label: 'Unirme a un GPS',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(RegistroGpsPageWidget.routeName);
                       }),
                   _buildDrawerItem(context,
                       icon: Icons.add_location_alt_rounded,
                       label: 'Iniciar un GPS',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(CreacionGpsPageWidget.routeName);
                       }),
 
@@ -501,7 +558,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       icon: Icons.photo_library_rounded,
                       label: 'Galería',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         context.pushNamed(GaleriaPageWidget.routeName);
                       }),
 
@@ -511,7 +568,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       icon: Icons.share_rounded,
                       label: 'Compartir App',
                       onTap: () {
-                        Navigator.pop(context);
+                        _closeDrawer();
                         Share.share(
                             '¡Descarga la app de Iglesia CJC! https://iglesiacjc.app');
                       }),
@@ -523,7 +580,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                         icon: Icons.admin_panel_settings_rounded,
                         label: 'Panel de Admin',
                         onTap: () {
-                          Navigator.pop(context);
+                          _closeDrawer();
                           context.pushNamed(AdminPanelPageWidget.routeName);
                         }),
                   ],
@@ -551,6 +608,73 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     );
   }
 
+  Widget _buildAppBarTitle(BuildContext context) {
+    final user = AuthService.instance.currentUser;
+    if (user == null) {
+      return Text(
+        'Casa CJC',
+        textAlign: TextAlign.center,
+        style: FlutterFlowTheme.of(context).titleLarge.override(
+              fontFamily: FlutterFlowTheme.of(context).titleLargeFamily,
+              color: Colors.white,
+              fontSize: 18.0,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.0,
+              useGoogleFonts: !FlutterFlowTheme.of(context).titleLargeIsCustom,
+            ),
+      );
+    }
+    final rawName = _dbName ??
+        (user.userMetadata?['full_name'] as String?) ??
+        (user.userMetadata?['nombre'] as String?) ??
+        '';
+    final firstName = rawName.trim().split(' ').first;
+    final tratamiento = _dbGenero == 'F' ? 'hermana' : _dbGenero == 'M' ? 'hermano' : null;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Bienvenido a CJC',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
+        ),
+        if (firstName.isNotEmpty)
+          Text(
+            tratamiento != null ? '$tratamiento $firstName' : firstName,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFFB0B8C8),
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _smallIconBtn({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Icon(icon, color: Colors.white38, size: 20),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDrawerItem(
     BuildContext context, {
     required IconData icon,
@@ -559,12 +683,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   }) {
     return ListTile(
       onTap: onTap,
-      leading: Icon(icon, color: Colors.white70, size: 22),
+      leading: Icon(icon, color: Colors.white70, size: 20),
       title: Text(
         label,
         style: FlutterFlowTheme.of(context).titleSmall.override(
               fontFamily: FlutterFlowTheme.of(context).titleSmallFamily,
               color: Colors.white,
+              fontSize: 14,
               letterSpacing: 0.0,
               useGoogleFonts: !FlutterFlowTheme.of(context).titleSmallIsCustom,
             ),
@@ -572,136 +697,431 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       trailing: const Icon(
         Icons.chevron_right_rounded,
         color: Colors.white70,
+        size: 18,
       ),
       dense: true,
-      minLeadingWidth: 28,
+      visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      minLeadingWidth: 24,
     );
   }
 
   Widget _buildHeroCard(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6.0),
-      child: Container(
-        height: 300.0,
-        decoration: const BoxDecoration(
-          color: _surfaceColor,
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              'assets/images/WhatsApp_Image_2025-08-23_at_10.40.17.jpeg',
-              fit: BoxFit.cover,
-            ),
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0x22000000),
-                    Color(0xAA000000),
-                  ],
+    final heroUrl = _homeConfig.heroImageUrl;
+    return SizedBox(
+      height: 360.0,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          heroUrl.isNotEmpty
+              ? Image.network(heroUrl, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Image.asset(
+                    'assets/images/WhatsApp_Image_2025-08-23_at_10.40.17.jpeg',
+                    fit: BoxFit.cover))
+              : Image.asset(
+                  'assets/images/WhatsApp_Image_2025-08-23_at_10.40.17.jpeg',
+                  fit: BoxFit.cover,
                 ),
+          // Gradiente: transparente arriba → negro sólido abajo (zona del texto)
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.0, 0.35, 0.65, 1.0],
+                colors: [
+                  Color(0x00000000),
+                  Color(0x33000000),
+                  Color(0xCC000000),
+                  Color(0xFF080E1E),
+                ],
               ),
             ),
-            Center(
-              child: Text(
-                'BIENVENIDOS A CJC',
-                textAlign: TextAlign.center,
-                style: FlutterFlowTheme.of(context).headlineSmall.override(
-                      fontFamily:
-                          FlutterFlowTheme.of(context).headlineSmallFamily,
+          ),
+          // Contenido centrado
+          Positioned(
+            bottom: 32,
+            left: 24,
+            right: 24,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFBF1E2E),
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 8),
+                    ],
+                  ),
+                  child: const Text(
+                    'IGLESIA CJC',
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 28.0,
+                      fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                      useGoogleFonts:
-                          !FlutterFlowTheme.of(context).headlineSmallIsCustom,
+                      letterSpacing: 2.5,
                     ),
-              ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Bienvenidos a\nCasa CJC',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                    letterSpacing: -0.5,
+                    shadows: [
+                      Shadow(color: Colors.black.withOpacity(0.9), blurRadius: 20, offset: const Offset(0, 2)),
+                      Shadow(color: Colors.black.withOpacity(0.7), blurRadius: 40, offset: Offset.zero),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Una familia que camina en adoración y servicio a Dios',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    height: 1.4,
+                    shadows: [
+                      Shadow(color: Colors.black.withOpacity(0.9), blurRadius: 16, offset: const Offset(0, 1)),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildWelcomeCopy(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        _buildSectionLabel('QUIÉNES SOMOS'),
+        const SizedBox(height: 12),
         Text(
           _homeConfig.bienvenidaTitulo,
           textAlign: TextAlign.center,
-          style: FlutterFlowTheme.of(context).headlineSmall.override(
-                fontFamily: FlutterFlowTheme.of(context).headlineSmallFamily,
-                color: Colors.white,
-                fontSize: 22.0,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.0,
-                useGoogleFonts:
-                    !FlutterFlowTheme.of(context).headlineSmallIsCustom,
-              ),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            height: 1.2,
+            letterSpacing: -0.3,
+          ),
         ),
-        const SizedBox(height: 18.0),
+        const SizedBox(height: 6),
+        // Línea decorativa
+        Container(
+          width: 48,
+          height: 3,
+          decoration: BoxDecoration(
+            color: const Color(0xFFBF1E2E),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(height: 20),
         Text(
           _homeConfig.bienvenidaTexto,
           textAlign: TextAlign.center,
-          style: FlutterFlowTheme.of(context).bodyLarge.override(
-                fontFamily: FlutterFlowTheme.of(context).bodyLargeFamily,
-                color: Colors.white,
-                fontSize: 16.0,
-                lineHeight: 1.55,
-                letterSpacing: 0.0,
-                useGoogleFonts: !FlutterFlowTheme.of(context).bodyLargeIsCustom,
-              ),
+          style: const TextStyle(
+            color: Color(0xFFD0D8E8),
+            fontSize: 15,
+            height: 1.65,
+            letterSpacing: 0.1,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildServicesHeroCard(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6.0),
-      child: Container(
-        height: 300.0,
-        decoration: const BoxDecoration(
-          color: _surfaceColor,
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              'assets/images/WhatsApp_Image_2025-08-23_at_10.39.52.jpeg',
-              fit: BoxFit.cover,
+    final svcUrl = _homeConfig.serviciosImageUrl;
+    return SizedBox(
+      height: 220,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          svcUrl.isNotEmpty
+              ? Image.network(svcUrl, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Image.asset(
+                    'assets/images/WhatsApp_Image_2025-08-23_at_10.39.52.jpeg',
+                    fit: BoxFit.cover))
+              : Image.asset(
+                  'assets/images/WhatsApp_Image_2025-08-23_at_10.39.52.jpeg',
+                  fit: BoxFit.cover,
+                ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xAA000714),
+                  Color(0x884A1B00),
+                ],
+              ),
             ),
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0x22000000),
-                    Color(0xAA4A1B00),
-                  ],
+          ),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.white30),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 8),
+                    ],
+                  ),
+                  child: const Text(
+                    'CADA SEMANA',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Nuestros Servicios',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    shadows: [
+                      Shadow(color: Colors.black.withOpacity(0.9), blurRadius: 20, offset: const Offset(0, 2)),
+                      Shadow(color: Colors.black.withOpacity(0.7), blurRadius: 40, offset: Offset.zero),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScheduleCards(BuildContext context) {
+    final lines = _homeConfig.serviciosTexto
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F1C30),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF1E2E4A)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0x22BF1E2E),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.calendar_today_rounded,
+                    color: Color(0xFFBF1E2E), size: 18),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Horarios y Ministerios',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
-            Center(
-              child: Text(
-                'NUESTROS SERVICIOS',
-                textAlign: TextAlign.center,
-                style: FlutterFlowTheme.of(context).headlineSmall.override(
-                      fontFamily:
-                          FlutterFlowTheme.of(context).headlineSmallFamily,
-                      color: Colors.white,
-                      fontSize: 28.0,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                      useGoogleFonts:
-                          !FlutterFlowTheme.of(context).headlineSmallIsCustom,
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...lines.map((line) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 6),
+                      width: 5,
+                      height: 5,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFBF1E2E),
+                        shape: BoxShape.circle,
+                      ),
                     ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        line,
+                        style: const TextStyle(
+                          color: Color(0xFFD0D8E8),
+                          fontSize: 14,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  static const String _googleMapsUrl =
+      'https://www.google.com/maps/search/?api=1&query=Iglesia+CJC+Costa+Rica';
+  static const String _appleMapsUrl =
+      'https://maps.apple.com/place?place-id=I1EBA9E5BF15CD72B&address=Avenida+39%2C+San+Jose%2C+Costa+Rica&coordinate=9.952379%2C-84.050348&name=Iglesia+CJC&_provider=9902';
+  static const String _wazeMapUrl =
+      'https://www.waze.com/ul?ll=9.952379,-84.050348&navigate=yes';
+
+  Widget _buildQuickActionsRow(BuildContext context) {
+    return Row(
+      children: [
+        // WhatsApp
+        Expanded(
+          child: _quickActionBtn(
+            icon: const FaIcon(FontAwesomeIcons.whatsapp, color: Color(0xFF25D366), size: 22),
+            label: 'WhatsApp',
+            sublabel: 'Consultas',
+            bgColor: const Color(0x2225D366),
+            borderColor: const Color(0xFF1E3A2A),
+            onTap: () => launchURL('https://wa.me/50670939483'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Ubicación
+        Expanded(
+          child: _quickActionBtn(
+            icon: const Icon(Icons.location_on_rounded, color: Color(0xFF4285F4), size: 22),
+            label: 'Ubicación',
+            sublabel: 'Cómo llegar',
+            bgColor: const Color(0x224285F4),
+            borderColor: const Color(0xFF1E2E4A),
+            onTap: () => _showMapsSheet(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _quickActionBtn({
+    required Widget icon,
+    required String label,
+    required String sublabel,
+    required Color bgColor,
+    required Color borderColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F1C30),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(10),
               ),
+              child: icon,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700)),
+                  Text(sublabel,
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 11)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white24, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMapsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF111D2E),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('¿Cómo querés llegar?',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            const Text('Iglesia CJC · Avenida 39, San José',
+                style: TextStyle(color: Colors.white54, fontSize: 13)),
+            const SizedBox(height: 20),
+            _mapsOption(
+              logoUrl: 'https://www.gstatic.com/images/branding/product/2x/maps_96dp.png',
+              fallbackIcon: const FaIcon(FontAwesomeIcons.google, color: Colors.white, size: 18),
+              label: 'Google Maps',
+              bgColor: const Color(0xFF1A73E8),
+              onTap: () { Navigator.pop(context); launchURL(_googleMapsUrl); },
+            ),
+            const SizedBox(height: 10),
+            _mapsOption(
+              logoUrl: 'https://www.gstatic.com/images/branding/product/2x/waze_96dp.png',
+              fallbackIcon: const FaIcon(FontAwesomeIcons.waze, color: Colors.white, size: 18),
+              label: 'Waze',
+              bgColor: const Color(0xFF33CCFF),
+              onTap: () { Navigator.pop(context); launchURL(_wazeMapUrl); },
+            ),
+            const SizedBox(height: 10),
+            _mapsOption(
+              logoUrl: 'https://cdn.jim-nielsen.com/ios/512/maps-2023-03-27.png',
+              fallbackIcon: _appleMapsIcon(),
+              label: 'Apple Maps',
+              bgColor: const Color(0xFF1C1C1E),
+              onTap: () { Navigator.pop(context); launchURL(_appleMapsUrl); },
             ),
           ],
         ),
@@ -709,71 +1129,163 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     );
   }
 
-  Widget _buildMinistryGroups(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          'Servicios',
-          textAlign: TextAlign.center,
-          style: FlutterFlowTheme.of(context).headlineSmall.override(
-                fontFamily: FlutterFlowTheme.of(context).headlineSmallFamily,
-                color: Colors.white,
-                fontSize: 22.0,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.0,
-                useGoogleFonts:
-                    !FlutterFlowTheme.of(context).headlineSmallIsCustom,
-              ),
+  Widget _appleMapsIcon() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF5AC8FA), Color(0xFF34C759), Color(0xFFFFCC00)],
+          ),
         ),
-        const SizedBox(height: 18.0),
-        Text(
-          _homeConfig.serviciosTexto,
-          textAlign: TextAlign.center,
-          style: FlutterFlowTheme.of(context).titleLarge.override(
-                fontFamily: FlutterFlowTheme.of(context).titleLargeFamily,
-                color: Colors.white,
-                fontSize: 16.0,
-                fontWeight: FontWeight.w500,
-                lineHeight: 1.45,
-                letterSpacing: 0.0,
-                useGoogleFonts:
-                    !FlutterFlowTheme.of(context).titleLargeIsCustom,
-              ),
-        ),
-      ],
+        child: const Icon(Icons.navigation_rounded, color: Colors.white, size: 18),
+      ),
     );
   }
 
-  Widget _buildContactRow(
+  Widget _mapsOption({
+    required String? logoUrl,
+    required Widget fallbackIcon,
+    required String label,
+    required Color bgColor,
+    required VoidCallback onTap,
+  }) {
+    Widget logoWidget;
+    if (logoUrl != null) {
+      logoWidget = ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: CachedNetworkImage(
+          imageUrl: logoUrl,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorWidget: (_, __, ___) => Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(10)),
+            child: Center(child: fallbackIcon),
+          ),
+        ),
+      );
+    } else {
+      logoWidget = SizedBox(width: 40, height: 40, child: Center(child: fallbackIcon));
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: bgColor.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: bgColor.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            logoWidget,
+            const SizedBox(width: 14),
+            Text(label,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600)),
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white38, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactCard(BuildContext context) {
+    return InkWell(
+      onTap: () => _openExternalLink(context, _homeConfig.telefono, 'telefono'),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F1C30),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF1E2E4A)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0x2240C072),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.phone_rounded,
+                  color: Color(0xFF40C072), size: 22),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Contáctanos',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700)),
+                  SizedBox(height: 2),
+                  Text('Llamar por teléfono',
+                      style: TextStyle(
+                          color: Colors.white54, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: Colors.white38, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconButton(
     BuildContext context, {
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
+    required Color color,
+    required VoidCallback onPressed,
   }) {
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18.0),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F1C30),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF1E2E4A)),
+        ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: _mutedTextColor,
-              size: 22.0,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(width: 12.0),
-            Text(
-              label,
-              style: FlutterFlowTheme.of(context).bodyLarge.override(
-                    fontFamily: FlutterFlowTheme.of(context).bodyLargeFamily,
-                    color: _mutedTextColor,
-                    letterSpacing: 0.0,
-                    useGoogleFonts:
-                        !FlutterFlowTheme.of(context).bodyLargeIsCustom,
-                  ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(label,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600)),
             ),
+            const Icon(Icons.chevron_right_rounded,
+                color: Colors.white38, size: 22),
           ],
         ),
       ),
@@ -781,31 +1293,41 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   }
 
   Widget _buildSocialRow(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _buildSocialButton(
-          context,
-          icon: FontAwesomeIcons.youtube,
-          label: 'YouTube',
-          color: const Color(0xFFFF0000),
-          onTap: () => _openExternalLink(context, _homeConfig.youtubeUrl, 'YouTube'),
-        ),
-        const SizedBox(width: 26.0),
-        _buildSocialButton(
-          context,
-          icon: FontAwesomeIcons.instagram,
-          label: 'Instagram',
-          color: const Color(0xFFE1306C),
-          onTap: () => _openExternalLink(context, _homeConfig.instagramUrl, 'Instagram'),
-        ),
-        const SizedBox(width: 26.0),
-        _buildSocialButton(
-          context,
-          icon: FontAwesomeIcons.facebook,
-          label: 'Facebook',
-          color: const Color(0xFF1877F2),
-          onTap: () => _openExternalLink(context, _homeConfig.facebookUrl, 'Facebook'),
+        _buildSectionLabel('SÍGUENOS'),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildSocialButton(
+              context,
+              icon: FontAwesomeIcons.youtube,
+              label: 'YouTube',
+              color: const Color(0xFFFF0000),
+              bg: const Color(0x22FF0000),
+              onTap: () => _openExternalLink(context, _homeConfig.youtubeUrl, 'YouTube'),
+            ),
+            const SizedBox(width: 16),
+            _buildSocialButton(
+              context,
+              icon: FontAwesomeIcons.instagram,
+              label: 'Instagram',
+              color: const Color(0xFFE1306C),
+              bg: const Color(0x22E1306C),
+              onTap: () => _openExternalLink(context, _homeConfig.instagramUrl, 'Instagram'),
+            ),
+            const SizedBox(width: 16),
+            _buildSocialButton(
+              context,
+              icon: FontAwesomeIcons.facebook,
+              label: 'Facebook',
+              color: const Color(0xFF1877F2),
+              bg: const Color(0x221877F2),
+              onTap: () => _openExternalLink(context, _homeConfig.facebookUrl, 'Facebook'),
+            ),
+          ],
         ),
       ],
     );
@@ -817,19 +1339,35 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     required String label,
     required VoidCallback onTap,
     required Color color,
+    required Color bg,
   }) {
     return Semantics(
       label: label,
       button: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(26.0),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: FaIcon(
-            icon,
-            color: color,
-            size: 34.0,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withOpacity(0.25)),
+          ),
+          child: Column(
+            children: [
+              FaIcon(icon, color: color, size: 26),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -953,70 +1491,64 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     );
   }
 
-  Widget _buildGradientButton(
-    BuildContext context, {
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return Align(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFF8C1520),
-              Color(0xFFBF1E2E),
-            ],
+  // Muestra foto de perfil o iniciales del nombre
+  Widget _buildUserAvatar(dynamic user, double radius) {
+    final meta = user?.userMetadata as Map?;
+    final rawPhoto = _dbPhotoUrl ?? (meta?['avatar_url'] as String?);
+    final photoUrl = (rawPhoto != null && rawPhoto.isNotEmpty) ? rawPhoto : null;
+    final name = _dbName ??
+        (meta?['full_name'] as String?) ??
+        (meta?['nombre'] as String?) ??
+        ((user?.email as String?)?.split('@').first ?? '');
+    final initials = name.trim().isEmpty
+        ? 'CJC'
+        : name.trim().split(' ').take(2).map((w) => w[0].toUpperCase()).join();
+
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundColor: const Color(0xFF1E2E4A),
+        child: ClipOval(
+          child: Image.network(
+            photoUrl,
+            width: radius * 2,
+            height: radius * 2,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _initialsAvatar(initials, radius),
           ),
-          borderRadius: BorderRadius.circular(999.0),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x33BF1E2E),
-              blurRadius: 12.0,
-              offset: Offset(0.0, 6.0),
-            ),
-          ],
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(999.0),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 26.0,
-                vertical: 14.0,
-              ),
-              child: Text(
-                label,
-                style: FlutterFlowTheme.of(context).titleMedium.override(
-                      fontFamily:
-                          FlutterFlowTheme.of(context).titleMediumFamily,
-                      color: Colors.white,
-                      fontSize: 17.0,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.0,
-                      useGoogleFonts:
-                          !FlutterFlowTheme.of(context).titleMediumIsCustom,
-                    ),
-              ),
-            ),
-          ),
+      );
+    }
+    return _initialsAvatar(initials, radius);
+  }
+
+  Widget _initialsAvatar(String initials, double radius) {
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: const Color(0xFF1E2E4A),
+      child: Text(
+        initials,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: radius * 0.55,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
         ),
       ),
     );
   }
 
   Widget _buildNotificationBell(BuildContext context) {
-    final uid = AuthService.instance.currentUser?.uid;
+    final uid = AuthService.instance.currentUser?.id;
     if (uid == null) {
-      return IconButton(
+      return _smallIconBtn(
+        icon: Icons.notifications_rounded,
+        tooltip: 'Anuncios',
         onPressed: () => context.pushNamed(AnunciosPageWidget.routeName),
-        icon: const Icon(Icons.notifications_rounded,
-            color: Colors.white, size: 28.0),
       );
     }
     return StreamBuilder<List<Oracion>>(
-      stream: FirebaseService.instance.misOracionesStream(uid),
+      stream: SupabaseService.instance.misOracionesStream(uid),
       builder: (context, snapshot) {
         final oraciones = snapshot.data ?? [];
         final totalOrantes =
@@ -1025,20 +1557,20 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            IconButton(
+            _smallIconBtn(
+              icon: Icons.notifications_rounded,
+              tooltip: 'Mis oraciones',
               onPressed: () async {
                 await _markOrantesAsSeen(totalOrantes);
                 if (context.mounted) {
                   context.pushNamed(MisOracionesPageWidget.routeName);
                 }
               },
-              icon: const Icon(Icons.notifications_rounded,
-                  color: Colors.white, size: 28.0),
             ),
             if (hasNew)
               Positioned(
-                right: 6,
-                top: 6,
+                right: 0,
+                top: 0,
                 child: Container(
                   padding: const EdgeInsets.all(3),
                   decoration: const BoxDecoration(
@@ -1067,19 +1599,101 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
 
   Widget _buildDivider() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 22.0),
-      child: Divider(
-        height: 1.0,
-        thickness: 1.0,
-        color: _dividerColor,
+    return const SizedBox(height: 24);
+  }
+
+  Widget _buildSectionLabel(String text) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 20,
+          height: 2,
+          decoration: BoxDecoration(
+            color: const Color(0xFFBF1E2E),
+            borderRadius: BorderRadius.circular(1),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Color(0xFFBF1E2E),
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2.0,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          width: 20,
+          height: 2,
+          decoration: BoxDecoration(
+            color: const Color(0xFFBF1E2E),
+            borderRadius: BorderRadius.circular(1),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGpsCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required Color accentColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: accentColor.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: accentColor, size: 22),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: accentColor.withOpacity(0.8),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildLiveBanner(BuildContext context) {
     return StreamBuilder<LiveConfig?>(
-      stream: FirebaseService.instance.liveConfigStream(),
+      stream: SupabaseService.instance.liveConfigStream(),
       builder: (context, snapshot) {
         final live = snapshot.data;
         if (live == null || !live.activo || live.videoId.isEmpty) {

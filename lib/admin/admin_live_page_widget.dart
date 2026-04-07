@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 class AdminLivePageWidget extends StatefulWidget {
@@ -41,7 +41,7 @@ class _AdminLivePageWidgetState extends State<AdminLivePageWidget> {
   }
 
   Future<void> _loadConfig() async {
-    final config = await FirebaseService.instance.getLiveConfig();
+    final config = await SupabaseService.instance.getLiveConfig();
     if (!mounted) return;
     if (config != null) {
       _videoIdCtrl.text = config.videoId;
@@ -59,7 +59,7 @@ class _AdminLivePageWidgetState extends State<AdminLivePageWidget> {
     }
     setState(() => _saving = true);
     try {
-      await FirebaseService.instance.saveLiveConfig(
+      await SupabaseService.instance.saveLiveConfig(
         videoId: _videoIdCtrl.text,
         titulo: _tituloCtrl.text,
         descripcion: _descripcionCtrl.text,

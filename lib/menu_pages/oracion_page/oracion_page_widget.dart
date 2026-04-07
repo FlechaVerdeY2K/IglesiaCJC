@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 import '/backend/auth_service.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -50,7 +50,7 @@ class _OracionPageWidgetState extends State<OracionPageWidget> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _enviando = true);
     try {
-      await FirebaseService.instance.crearOracion(
+      await SupabaseService.instance.crearOracion(
         nombre: _nombreCtrl.text.trim(),
         peticion: _peticionCtrl.text.trim(),
         anonima: _anonima,
@@ -193,7 +193,7 @@ class _OracionPageWidgetState extends State<OracionPageWidget> {
             const SizedBox(height: 12),
             // ── Lista ────────────────────────────────────────────────────────
             StreamBuilder<List<Oracion>>(
-              stream: FirebaseService.instance.oracionesPublicasStream(),
+              stream: SupabaseService.instance.oracionesPublicasStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
@@ -258,7 +258,7 @@ class _OracionPageWidgetState extends State<OracionPageWidget> {
 
   Widget _buildOracionCard(Oracion oracion) {
     final fecha = DateFormat('d MMM', 'es').format(oracion.fecha);
-    final uid = AuthService.instance.currentUser?.uid;
+    final uid = AuthService.instance.currentUser?.id;
     final yaOro = uid != null && oracion.orantesUids.contains(uid);
 
     return Container(
@@ -313,7 +313,7 @@ class _OracionPageWidgetState extends State<OracionPageWidget> {
                 return;
               }
               if (yaOro) return;
-              await FirebaseService.instance.orarPor(oracion.id, uid);
+              await SupabaseService.instance.orarPor(oracion.id, uid);
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

@@ -1,5 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 import '/backend/auth_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -69,7 +68,7 @@ class _UserLoginPageWidgetState extends State<UserLoginPageWidget> {
     try {
       await AuthService.instance.signInWithEmail(email, pass);
       if (mounted) _goAfterLogin();
-    } on FirebaseAuthException catch (e) {
+    } on AuthException catch (e) {
       _showError(AuthService.errorMessage(e));
     } finally {
       _setLoading(false);
@@ -77,16 +76,13 @@ class _UserLoginPageWidgetState extends State<UserLoginPageWidget> {
   }
 
   Future<void> _loginWithGoogle() async {
-    // google_sign_in no soporta Flutter Web — solo mobile
-    if (kIsWeb) {
-      _showError('Google Sign-In solo está disponible en la app móvil. Usá email/contraseña.');
-      return;
-    }
     _setLoading(true);
     try {
       final result = await AuthService.instance.signInWithGoogle();
+      // En web result == null porque el flujo es por redirect,
+      // onAuthStateChange en nav.dart maneja la sesión al volver
       if (result != null && mounted) _goAfterLogin();
-    } catch (_) {
+    } catch (e) {
       _showError('No se pudo iniciar sesión con Google.');
     } finally {
       _setLoading(false);

@@ -1,36 +1,31 @@
 import 'package:provider/provider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
-import '/backend/firebase_service.dart';
-import 'firebase_options.dart';
+import '/backend/supabase_service.dart';
+import 'supabase_options.dart';
 import 'index.dart';
-
-/// Manejar mensajes FCM cuando la app está en background/terminada.
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoRouter.optionURLReflectsImperativeAPIs = true;
   usePathUrlStrategy();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+  );
 
-  // Run FCM/notifications init in the background — don't block the splash
-  FirebaseService.instance.initialize();
+  // Inicializar notificaciones locales via Realtime (no bloquea el arranque)
+  SupabaseService.instance.initialize();
 
-  // Poblar Firestore con datos iniciales si las colecciones están vacías
-  FirebaseService.instance.seedDatosIniciales();
+  // Poblar Supabase con datos iniciales si las tablas están vacías
+  SupabaseService.instance.seedDatosIniciales().catchError((_) {});
 
   await FlutterFlowTheme.initialize();
 

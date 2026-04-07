@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 import '/backend/auth_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -61,7 +61,7 @@ class _UserRegisterPageWidgetState extends State<UserRegisterPageWidget> {
         password: pass,
       );
       if (mounted) context.go('/homePage');
-    } on FirebaseAuthException catch (e) {
+    } on AuthException catch (e) {
       _showError(AuthService.errorMessage(e));
     } finally {
       _setLoading(false);

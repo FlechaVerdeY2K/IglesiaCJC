@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import 'admin_devocional_page_widget.dart';
@@ -30,7 +30,7 @@ class _AdminPanelPageWidgetState extends State<AdminPanelPageWidget> {
   }
 
   Future<void> _checkAdmin() async {
-    final admin = await FirebaseService.instance.isAdmin;
+    final admin = await SupabaseService.instance.isAdmin;
     if (!mounted) return;
     if (!admin) {
       context.go('/homePage');
@@ -44,7 +44,7 @@ class _AdminPanelPageWidgetState extends State<AdminPanelPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseService.instance.currentUser;
+    final user = SupabaseService.instance.currentUser;
 
     if (_checking) {
       return const Scaffold(
@@ -75,7 +75,7 @@ class _AdminPanelPageWidgetState extends State<AdminPanelPageWidget> {
             icon: const Icon(Icons.logout_rounded, color: _muted),
             tooltip: 'Cerrar sesión',
             onPressed: () async {
-              await FirebaseService.instance.signOut();
+              await SupabaseService.instance.signOut();
               if (context.mounted) context.goNamed('HomePage');
             },
           ),

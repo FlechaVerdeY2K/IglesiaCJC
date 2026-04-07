@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -73,7 +73,7 @@ class _GaleriaPageWidgetState extends State<GaleriaPageWidget> {
         centerTitle: true,
       ),
       body: StreamBuilder<List<FotoGaleria>>(
-        stream: FirebaseService.instance.galeriaStream(),
+        stream: SupabaseService.instance.galeriaStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

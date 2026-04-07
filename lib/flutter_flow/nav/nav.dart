@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -24,14 +24,15 @@ class AppStateNotifier extends ChangeNotifier {
   static AppStateNotifier get instance => _instance ??= AppStateNotifier._();
 
   bool showSplashImage = true;
-  bool _isLoggedIn = FirebaseAuth.instance.currentUser != null;
+  bool _isLoggedIn = Supabase.instance.client.auth.currentUser != null;
   bool get isLoggedIn => _isLoggedIn;
 
-  StreamSubscription<User?>? _authSubscription;
+  StreamSubscription<AuthState>? _authSubscription;
 
   void listenToAuthChanges() {
-    _authSubscription ??= FirebaseAuth.instance.authStateChanges().listen((user) {
-      _isLoggedIn = user != null;
+    _authSubscription ??=
+        Supabase.instance.client.auth.onAuthStateChange.listen((state) {
+      _isLoggedIn = state.session != null;
       notifyListeners();
     });
   }
@@ -249,6 +250,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: UserRegisterPageWidget.routeName,
           path: UserRegisterPageWidget.routePath,
           builder: (context, params) => const UserRegisterPageWidget(),
+        ),
+        FFRoute(
+          name: PerfilPageWidget.routeName,
+          path: PerfilPageWidget.routePath,
+          builder: (context, params) => const PerfilPageWidget(),
         ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

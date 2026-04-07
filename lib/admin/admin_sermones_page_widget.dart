@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 class AdminSermonesPageWidget extends StatelessWidget {
@@ -40,7 +40,7 @@ class AdminSermonesPageWidget extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<List<Sermon>>(
-        stream: FirebaseService.instance.todosSermonesStream(),
+        stream: SupabaseService.instance.todosSermonesStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -112,7 +112,7 @@ class AdminSermonesPageWidget extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await FirebaseService.instance.eliminarSermon(id);
+              await SupabaseService.instance.eliminarSermon(id);
             },
             child: const Text('Eliminar',
                 style: TextStyle(color: Colors.redAccent)),
@@ -401,7 +401,7 @@ class _SermonFormState extends State<_SermonForm> {
     setState(() => _saving = true);
     try {
       if (widget.item == null) {
-        await FirebaseService.instance.crearSermon(
+        await SupabaseService.instance.crearSermon(
           titulo: _tituloCtrl.text.trim(),
           descripcion: _descCtrl.text.trim(),
           videoId: _videoCtrl.text.trim(),
@@ -410,7 +410,7 @@ class _SermonFormState extends State<_SermonForm> {
           activo: _activo,
         );
       } else {
-        await FirebaseService.instance.actualizarSermon(
+        await SupabaseService.instance.actualizarSermon(
           widget.item!.id,
           titulo: _tituloCtrl.text.trim(),
           descripcion: _descCtrl.text.trim(),

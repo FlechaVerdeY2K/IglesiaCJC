@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 
@@ -30,8 +30,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     super.initState();
     // Si ya está logueado como admin, ir directo al panel
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (FirebaseService.instance.currentUser != null) {
-        final admin = await FirebaseService.instance.isAdmin;
+      if (SupabaseService.instance.currentUser != null) {
+        final admin = await SupabaseService.instance.isAdmin;
         if (admin && mounted) {
           context.goNamed(AdminPanelPageWidget.routeName);
         }
@@ -55,7 +55,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       _loading = true;
       _error = null;
     });
-    final err = await FirebaseService.instance.signIn(
+    final err = await SupabaseService.instance.signIn(
       _emailCtrl.text.trim(),
       _passCtrl.text,
     );

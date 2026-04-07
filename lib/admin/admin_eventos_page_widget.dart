@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 class AdminEventosPageWidget extends StatelessWidget {
@@ -40,7 +40,7 @@ class AdminEventosPageWidget extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<List<Evento>>(
-        stream: FirebaseService.instance.todosEventosStream(),
+        stream: SupabaseService.instance.todosEventosStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -112,7 +112,7 @@ class AdminEventosPageWidget extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await FirebaseService.instance.eliminarEvento(id);
+              await SupabaseService.instance.eliminarEvento(id);
             },
             child: const Text('Eliminar',
                 style: TextStyle(color: Colors.redAccent)),
@@ -468,7 +468,7 @@ class _EventoFormState extends State<_EventoForm> {
       final url =
           _urlCtrl.text.trim().isEmpty ? null : _urlCtrl.text.trim();
       if (widget.item == null) {
-        await FirebaseService.instance.crearEvento(
+        await SupabaseService.instance.crearEvento(
           titulo: _tituloCtrl.text.trim(),
           descripcion: _descCtrl.text.trim(),
           fecha: _fecha,
@@ -477,7 +477,7 @@ class _EventoFormState extends State<_EventoForm> {
           imageUrl: url,
         );
       } else {
-        await FirebaseService.instance.actualizarEvento(
+        await SupabaseService.instance.actualizarEvento(
           widget.item!.id,
           titulo: _tituloCtrl.text.trim(),
           descripcion: _descCtrl.text.trim(),

@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -64,7 +64,7 @@ class _PastoresPageWidgetState extends State<PastoresPageWidget> {
         centerTitle: true,
       ),
       body: StreamBuilder<List<Pastor>>(
-        stream: FirebaseService.instance.pastoresStream(),
+        stream: SupabaseService.instance.pastoresStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
+import 'youtube_embed_web.dart' if (dart.library.io) 'youtube_embed_stub.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +68,7 @@ class _LivePageWidgetState extends State<LivePageWidget> {
         centerTitle: true,
       ),
       body: FutureBuilder<LiveConfig?>(
-        future: FirebaseService.instance.getLiveConfig(),
+        future: SupabaseService.instance.getLiveConfig(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -85,46 +86,25 @@ class _LivePageWidgetState extends State<LivePageWidget> {
   }
 
   Widget _buildLivePlayer(BuildContext context, LiveConfig live) {
-    final thumbUrl =
-        'https://img.youtube.com/vi/${live.videoId}/maxresdefault.jpg';
     final videoUrl = 'https://www.youtube.com/watch?v=${live.videoId}';
 
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Thumbnail con overlay EN VIVO ──
+          // ── Reproductor embebido ──
           Stack(
             children: [
               AspectRatio(
                 aspectRatio: 16 / 9,
-                child: CachedNetworkImage(
-                  imageUrl: thumbUrl,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => Container(
-                    color: _surface,
-                    child: const Icon(Icons.video_library_rounded,
-                        color: Colors.white38, size: 64),
-                  ),
-                ),
+                child: buildYoutubeEmbed(live.videoId),
               ),
-              Positioned.fill(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0x00000000), Color(0xCC000000)],
-                    ),
-                  ),
-                ),
-              ),
+              // Badge EN VIVO
               Positioned(
-                top: 12,
-                left: 12,
+                top: 10,
+                left: 10,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: Colors.red,
                     borderRadius: BorderRadius.circular(4),
@@ -141,28 +121,6 @@ class _LivePageWidgetState extends State<LivePageWidget> {
                               fontSize: 12,
                               letterSpacing: 0.5)),
                     ],
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: Center(
-                  child: GestureDetector(
-                    onTap: () => launchURL(videoUrl),
-                    child: Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.92),
-                        borderRadius: BorderRadius.circular(34),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withOpacity(0.4),
-                              blurRadius: 12)
-                        ],
-                      ),
-                      child: const Icon(Icons.play_arrow_rounded,
-                          color: Colors.white, size: 44),
-                    ),
                   ),
                 ),
               ),
@@ -191,12 +149,13 @@ class _LivePageWidgetState extends State<LivePageWidget> {
                   ),
                 ],
                 const SizedBox(height: 20),
-                FilledButton.icon(
+                OutlinedButton.icon(
                   onPressed: () => launchURL(videoUrl),
-                  icon: const Icon(Icons.open_in_new_rounded),
-                  label: const Text('Ver en YouTube'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.red,
+                  icon: const Icon(Icons.open_in_new_rounded, color: Colors.white54),
+                  label: const Text('Abrir en YouTube',
+                      style: TextStyle(color: Colors.white54)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF1E2E4A)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),

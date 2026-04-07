@@ -1,4 +1,4 @@
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -64,7 +64,7 @@ class _RegistroGpsPageWidgetState extends State<RegistroGpsPageWidget> {
     }
     setState(() => _submitting = true);
     try {
-      await FirebaseService.instance.registrarGPS({
+      await SupabaseService.instance.registrarGPS({
         'nombre': _nombreCtrl.text.trim(),
         'apellidos': _apellidosCtrl.text.trim(),
         'telefono': _telefonoCtrl.text.trim(),

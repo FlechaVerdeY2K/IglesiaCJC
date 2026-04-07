@@ -1,4 +1,4 @@
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -63,7 +63,7 @@ class _EquiposPageWidgetState extends State<EquiposPageWidget> {
         centerTitle: true,
       ),
       body: StreamBuilder<List<Equipo>>(
-        stream: FirebaseService.instance.equiposStream(),
+        stream: SupabaseService.instance.equiposStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -75,7 +75,7 @@ class _SermonPageWidgetState extends State<SermonPageWidget> {
         ],
       ),
       body: StreamBuilder<List<Sermon>>(
-        stream: FirebaseService.instance.sermonesStream(),
+        stream: SupabaseService.instance.sermonesStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

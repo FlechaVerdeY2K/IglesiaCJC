@@ -43,3 +43,4 @@ export '/admin/admin_devocional_page_widget.dart' show AdminDevocionalPageWidget
 export '/admin/admin_home_config_page_widget.dart' show AdminHomeConfigPageWidget;
 export '/main_pages/user_login_page_widget.dart' show UserLoginPageWidget;
 export '/main_pages/user_register_page_widget.dart' show UserRegisterPageWidget;
+export '/main_pages/perfil_page_widget.dart' show PerfilPageWidget;

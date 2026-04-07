@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 class AdminAnunciosPageWidget extends StatelessWidget {
@@ -40,7 +40,7 @@ class AdminAnunciosPageWidget extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<List<Anuncio>>(
-        stream: FirebaseService.instance.todosAnunciosStream(),
+        stream: SupabaseService.instance.todosAnunciosStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -111,7 +111,7 @@ class AdminAnunciosPageWidget extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await FirebaseService.instance.eliminarAnuncio(id);
+              await SupabaseService.instance.eliminarAnuncio(id);
             },
             child: const Text('Eliminar',
                 style: TextStyle(color: Colors.redAccent)),
@@ -339,7 +339,7 @@ class _AnuncioFormState extends State<_AnuncioForm> {
       final url =
           _urlCtrl.text.trim().isEmpty ? null : _urlCtrl.text.trim();
       if (widget.item == null) {
-        await FirebaseService.instance.crearAnuncio(
+        await SupabaseService.instance.crearAnuncio(
           titulo: _tituloCtrl.text.trim(),
           descripcion: _descCtrl.text.trim(),
           fecha: _fecha,
@@ -347,7 +347,7 @@ class _AnuncioFormState extends State<_AnuncioForm> {
           imagenUrl: url,
         );
       } else {
-        await FirebaseService.instance.actualizarAnuncio(
+        await SupabaseService.instance.actualizarAnuncio(
           widget.item!.id,
           titulo: _tituloCtrl.text.trim(),
           descripcion: _descCtrl.text.trim(),

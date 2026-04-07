@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 import '/backend/auth_service.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 
@@ -17,7 +17,7 @@ class MisOracionesPageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = AuthService.instance.currentUser?.uid ?? '';
+    final uid = AuthService.instance.currentUser?.id ?? '';
 
     return Scaffold(
       backgroundColor: _bg,
@@ -36,7 +36,7 @@ class MisOracionesPageWidget extends StatelessWidget {
         centerTitle: true,
       ),
       body: StreamBuilder<List<Oracion>>(
-        stream: FirebaseService.instance.misOracionesStream(uid),
+        stream: SupabaseService.instance.misOracionesStream(uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

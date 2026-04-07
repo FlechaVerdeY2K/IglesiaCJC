@@ -1,4 +1,4 @@
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -107,7 +107,7 @@ class _RecursosPageWidgetState extends State<RecursosPageWidget>
         ),
       ),
       body: StreamBuilder<List<Recurso>>(
-        stream: FirebaseService.instance.recursosStream(),
+        stream: SupabaseService.instance.recursosStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

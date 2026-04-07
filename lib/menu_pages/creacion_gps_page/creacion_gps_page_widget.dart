@@ -1,4 +1,4 @@
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -64,7 +64,7 @@ class _CreacionGpsPageWidgetState extends State<CreacionGpsPageWidget> {
     }
     setState(() => _submitting = true);
     try {
-      await FirebaseService.instance.solicitarCreacionGPS({
+      await SupabaseService.instance.solicitarCreacionGPS({
         'nombreLider': _nombreLiderCtrl.text.trim(),
         'telefono': _telefonoCtrl.text.trim(),
         'barrio': _barrioCtrl.text.trim(),

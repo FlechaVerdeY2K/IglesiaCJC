@@ -22,14 +22,14 @@ class _UbicacionPageWidgetState extends State<UbicacionPageWidget> {
   static const Color _surface = Color(0xFF0F1C30);
   static const Color _accent = Color(0xFFBF1E2E);
 
-  // ── Actualiza estas URLs con la ubicación real ──
-  static const String _wazeUrl = 'https://waze.com/ul/hd1u0x7u3j';
+  static const String _wazeUrl =
+      'https://www.waze.com/ul?ll=9.952379,-84.050348&navigate=yes';
   static const String _googleMapsUrl =
       'https://www.google.com/maps/search/?api=1&query=Iglesia+CJC+Costa+Rica';
   static const String _appleMapsUrl =
-      'https://maps.apple.com/?q=Iglesia+CJC+Costa+Rica';
+      'https://maps.apple.com/place?place-id=I1EBA9E5BF15CD72B&address=Avenida+39%2C+San+Jose%2C+Costa+Rica&coordinate=9.952379%2C-84.050348&name=Iglesia+CJC&_provider=9902';
   static const String _direccion =
-      'Costa Rica\n(Actualiza la dirección exacta)';
+      'Avenida 39, San José, Costa Rica';
 
   late UbicacionPageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
+import '/backend/cloudinary_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 class AdminHomeConfigPageWidget extends StatefulWidget {
@@ -31,6 +32,10 @@ class _AdminHomeConfigPageWidgetState
   final _instagramCtrl = TextEditingController();
   final _facebookCtrl = TextEditingController();
 
+  String _heroImageUrl = '';
+  String _serviciosImageUrl = '';
+  bool _uploadingHero = false;
+  bool _uploadingSvc = false;
   bool _loading = true;
   bool _saving = false;
 
@@ -41,7 +46,7 @@ class _AdminHomeConfigPageWidgetState
   }
 
   Future<void> _loadConfig() async {
-    final config = await FirebaseService.instance.getHomeConfig();
+    final config = await SupabaseService.instance.getHomeConfig();
     _tituloCtrl.text = config.bienvenidaTitulo;
     _textoCtrl.text = config.bienvenidaTexto;
     _serviciosCtrl.text = config.serviciosTexto;
@@ -50,13 +55,17 @@ class _AdminHomeConfigPageWidgetState
     _youtubeCtrl.text = config.youtubeUrl;
     _instagramCtrl.text = config.instagramUrl;
     _facebookCtrl.text = config.facebookUrl;
-    if (mounted) setState(() => _loading = false);
+    if (mounted) setState(() {
+      _heroImageUrl = config.heroImageUrl;
+      _serviciosImageUrl = config.serviciosImageUrl;
+      _loading = false;
+    });
   }
 
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await FirebaseService.instance.saveHomeConfig(HomeConfig(
+      await SupabaseService.instance.saveHomeConfig(HomeConfig(
         bienvenidaTitulo: _tituloCtrl.text.trim(),
         bienvenidaTexto: _textoCtrl.text.trim(),
         serviciosTexto: _serviciosCtrl.text.trim(),
@@ -65,6 +74,8 @@ class _AdminHomeConfigPageWidgetState
         youtubeUrl: _youtubeCtrl.text.trim(),
         instagramUrl: _instagramCtrl.text.trim(),
         facebookUrl: _facebookCtrl.text.trim(),
+        heroImageUrl: _heroImageUrl,
+        serviciosImageUrl: _serviciosImageUrl,
       ));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -138,6 +149,42 @@ class _AdminHomeConfigPageWidgetState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _sectionLabel('IMÁGENES'),
+                  const SizedBox(height: 12),
+                  _ImagePicker(
+                    label: 'Foto principal (Hero)',
+                    imageUrl: _heroImageUrl,
+                    uploading: _uploadingHero,
+                    onTap: () async {
+                      setState(() => _uploadingHero = true);
+                      try {
+                        final url = await CloudinaryService.instance
+                            .pickAndUpload(folder: 'home');
+                        if (url != null && mounted) setState(() => _heroImageUrl = url);
+                      } finally {
+                        if (mounted) setState(() => _uploadingHero = false);
+                      }
+                    },
+                    onRemove: () => setState(() => _heroImageUrl = ''),
+                  ),
+                  const SizedBox(height: 12),
+                  _ImagePicker(
+                    label: 'Foto Servicios',
+                    imageUrl: _serviciosImageUrl,
+                    uploading: _uploadingSvc,
+                    onTap: () async {
+                      setState(() => _uploadingSvc = true);
+                      try {
+                        final url = await CloudinaryService.instance
+                            .pickAndUpload(folder: 'home');
+                        if (url != null && mounted) setState(() => _serviciosImageUrl = url);
+                      } finally {
+                        if (mounted) setState(() => _uploadingSvc = false);
+                      }
+                    },
+                    onRemove: () => setState(() => _serviciosImageUrl = ''),
+                  ),
+                  const SizedBox(height: 24),
                   _sectionLabel('BIENVENIDA'),
                   const SizedBox(height: 12),
                   _Field(
@@ -232,6 +279,125 @@ class _AdminHomeConfigPageWidgetState
           letterSpacing: 1.2,
         ),
       );
+}
+
+class _ImagePicker extends StatelessWidget {
+  final String label;
+  final String imageUrl;
+  final bool uploading;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  const _ImagePicker({
+    required this.label,
+    required this.imageUrl,
+    required this.uploading,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFFBF1E2E);
+    const surface = Color(0xFF111D2E);
+    const border = Color(0xFF1E2E4A);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Stack(
+            children: [
+              // Preview o placeholder
+              Container(
+                height: 150,
+                width: double.infinity,
+                color: surface,
+                child: imageUrl.isNotEmpty
+                    ? Image.network(imageUrl, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Center(
+                            child: Icon(Icons.broken_image_rounded,
+                                color: Colors.white24, size: 40)))
+                    : const Center(
+                        child: Icon(Icons.image_outlined,
+                            color: Colors.white24, size: 40)),
+              ),
+              // Overlay con botones
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: border),
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.black.withOpacity(imageUrl.isNotEmpty ? 0.35 : 0),
+                  ),
+                  child: uploading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _btn(
+                              icon: imageUrl.isNotEmpty
+                                  ? Icons.swap_horiz_rounded
+                                  : Icons.upload_rounded,
+                              label: imageUrl.isNotEmpty ? 'Cambiar' : 'Subir foto',
+                              color: accent,
+                              onTap: onTap,
+                            ),
+                            if (imageUrl.isNotEmpty) ...[
+                              const SizedBox(width: 12),
+                              _btn(
+                                icon: Icons.delete_outline_rounded,
+                                label: 'Quitar',
+                                color: Colors.white54,
+                                onTap: onRemove,
+                              ),
+                            ],
+                          ],
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _btn({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.6)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 6),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontSize: 13, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Field extends StatelessWidget {

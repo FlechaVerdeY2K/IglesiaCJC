@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../backend/firebase_service.dart';
+import '../backend/supabase_service.dart';
 
 class AdminOracionPageWidget extends StatelessWidget {
   static const String routeName = 'AdminOracionPage';
@@ -47,8 +47,8 @@ class _PedidosTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stream = estado == 'pendiente'
-        ? FirebaseService.instance.oracionesPendientesStream()
-        : FirebaseService.instance.oracionesPublicasStream();
+        ? SupabaseService.instance.oracionesPendientesStream()
+        : SupabaseService.instance.oracionesPublicasStream();
 
     return StreamBuilder<List<Oracion>>(
       stream: stream,
@@ -197,7 +197,7 @@ class _PedidoCard extends StatelessWidget {
   }
 
   Future<void> _aprobar(BuildContext context, String id) async {
-    await FirebaseService.instance.aprobarOracion(id);
+    await SupabaseService.instance.aprobarOracion(id);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -210,7 +210,7 @@ class _PedidoCard extends StatelessWidget {
   }
 
   Future<void> _rechazar(BuildContext context, String id) async {
-    await FirebaseService.instance.rechazarOracion(id);
+    await SupabaseService.instance.rechazarOracion(id);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

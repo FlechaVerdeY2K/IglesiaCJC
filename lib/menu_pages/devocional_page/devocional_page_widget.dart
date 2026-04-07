@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -65,7 +65,7 @@ class _DevocionalPageWidgetState extends State<DevocionalPageWidget> {
         centerTitle: true,
       ),
       body: FutureBuilder<Devocional?>(
-        future: FirebaseService.instance.getDevocionalHoy(),
+        future: SupabaseService.instance.getDevocionalHoy(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

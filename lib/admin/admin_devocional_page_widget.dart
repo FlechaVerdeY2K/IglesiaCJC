@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '/backend/firebase_service.dart';
+import '/backend/supabase_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 class AdminDevocionalPageWidget extends StatelessWidget {
@@ -40,7 +40,7 @@ class AdminDevocionalPageWidget extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<List<Devocional>>(
-        stream: FirebaseService.instance.devoccionalesStream(),
+        stream: SupabaseService.instance.devoccionalesStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -108,7 +108,7 @@ class AdminDevocionalPageWidget extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await FirebaseService.instance.eliminarDevocional(dev.id);
+              await SupabaseService.instance.eliminarDevocional(dev.id);
             },
             child: const Text('Eliminar',
                 style: TextStyle(color: Colors.redAccent)),
@@ -258,7 +258,7 @@ class _DevocionalFormState extends State<_DevocionalForm> {
     setState(() => _loading = true);
     try {
       if (widget.dev == null) {
-        await FirebaseService.instance.crearDevocional(
+        await SupabaseService.instance.crearDevocional(
           titulo: _tituloCtrl.text,
           versiculo: _versiculoCtrl.text,
           referencia: _referenciaCtrl.text,
@@ -266,7 +266,7 @@ class _DevocionalFormState extends State<_DevocionalForm> {
           fecha: _fecha,
         );
       } else {
-        await FirebaseService.instance.actualizarDevocional(
+        await SupabaseService.instance.actualizarDevocional(
           widget.dev!.id,
           titulo: _tituloCtrl.text,
           versiculo: _versiculoCtrl.text,
