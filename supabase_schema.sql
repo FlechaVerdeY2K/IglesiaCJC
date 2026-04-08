@@ -106,14 +106,70 @@ create table if not exists public.equipos (
 
 -- Eventos
 create table if not exists public.eventos (
-  id          uuid primary key default gen_random_uuid(),
-  titulo      text not null default '',
-  descripcion text not null default '',
-  fecha       timestamptz default now(),
-  lugar       text,
-  image_url   text,
-  activo      boolean default true
+  id             uuid primary key default gen_random_uuid(),
+  titulo         text not null default '',
+  descripcion    text not null default '',
+  fecha          timestamptz default now(),
+  lugar          text,
+  lat            double precision,
+  lng            double precision,
+  image_url      text,
+  activo         boolean default true,
+  visibilidad    text default 'todos',   -- 'todos' | 'miembros' | 'rol'
+  rol_requerido  text                    -- solo aplica cuando visibilidad = 'rol'
 );
+
+-- Migración: agregar columnas nuevas si la tabla ya existe
+alter table public.eventos add column if not exists lat            double precision;
+alter table public.eventos add column if not exists lng            double precision;
+alter table public.eventos add column if not exists visibilidad    text default 'todos';
+alter table public.eventos add column if not exists rol_requerido  text;
+
+-- Migración: visibilidad en anuncios
+alter table public.anuncios add column if not exists visibilidad    text default 'todos';
+alter table public.anuncios add column if not exists rol_requerido  text;
+
+-- Solicitudes de equipos
+create table if not exists public.equipo_solicitudes (
+  id             uuid primary key default gen_random_uuid(),
+  usuario_id     uuid references auth.users not null,
+  equipo_id      uuid references public.equipos not null,
+  equipo_nombre  text not null default '',
+  usuario_nombre text not null default '',
+  usuario_email  text not null default '',
+  estado         text not null default 'pendiente', -- 'pendiente' | 'aprobado' | 'rechazado'
+  motivo         text,
+  creado_en      timestamptz not null default now(),
+  actualizado_en timestamptz not null default now()
+);
+-- RLS: usuario solo ve sus propias solicitudes; admin ve todas
+alter table public.equipo_solicitudes enable row level security;
+create policy "usuario_own" on public.equipo_solicitudes
+  for all using (auth.uid() = usuario_id);
+create policy "admin_all" on public.equipo_solicitudes
+  for all using (
+    exists (select 1 from public.usuarios where id = auth.uid() and rol = 'admin')
+  );
+
+-- Notificaciones personales
+create table if not exists public.notificaciones (
+  id          uuid primary key default gen_random_uuid(),
+  usuario_id  uuid references auth.users not null,
+  titulo      text not null,
+  cuerpo      text not null default '',
+  tipo        text not null default 'general',
+  leido       boolean not null default false,
+  creado_en   timestamptz not null default now()
+);
+alter table public.notificaciones enable row level security;
+-- Usuario solo ve sus propias notificaciones
+create policy "usuario_own_notif" on public.notificaciones
+  for all using (auth.uid() = usuario_id);
+-- Admins pueden insertar notificaciones para cualquier usuario
+create policy "admin_insert_notif" on public.notificaciones
+  for insert with check (
+    exists (select 1 from public.usuarios where id = auth.uid() and rol = 'admin')
+  );
 
 -- Configuración Home (singleton — solo 1 fila con id=1)
 create table if not exists public.config_home (

@@ -148,7 +148,7 @@ class _NavBarPageState extends State<NavBarPage> {
   Widget build(BuildContext context) {
     final tabs = {
       HomePageWidget.routeName: const HomePageWidget(),
-      UbicacionPageWidget.routeName: const UbicacionPageWidget(),
+      EquiposPageWidget.routeName: const EquiposPageWidget(),
       EventsPageWidget.routeName: const EventsPageWidget(),
     };
     final tabKeys = tabs.keys.toList();
@@ -162,6 +162,7 @@ class _NavBarPageState extends State<NavBarPage> {
         visible: responsiveVisibility(
           context: context,
           tabletLandscape: false,
+          desktop: false,
         ),
         child: BottomNavigationBar(
           currentIndex: currentIndex,
@@ -193,7 +194,7 @@ class _NavBarPageState extends State<NavBarPage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.calendar_today_outlined, size: 24.0),
               activeIcon: Icon(Icons.calendar_month_rounded, size: 24.0),
-              label: 'Calendario CJC',
+              label: 'Calendario',
               tooltip: '',
             ),
           ],
