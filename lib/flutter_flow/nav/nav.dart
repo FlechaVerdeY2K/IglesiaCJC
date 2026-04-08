@@ -116,11 +116,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: PastoresPageWidget.routeName,
           path: PastoresPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => PastoresPageWidget(),
         ),
         FFRoute(
           name: EquiposPageWidget.routeName,
           path: EquiposPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => EquiposPageWidget(),
         ),
         FFRoute(
@@ -136,6 +138,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: OfrendasPageWidget.routeName,
           path: OfrendasPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => OfrendasPageWidget(),
         ),
         FFRoute(
@@ -148,11 +151,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: AnunciosPageWidget.routeName,
           path: AnunciosPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => AnunciosPageWidget(),
         ),
         FFRoute(
           name: DevocionalPageWidget.routeName,
           path: DevocionalPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => DevocionalPageWidget(),
         ),
         FFRoute(
@@ -170,11 +175,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: GaleriaPageWidget.routeName,
           path: GaleriaPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => GaleriaPageWidget(),
         ),
         FFRoute(
           name: RecursosPageWidget.routeName,
           path: RecursosPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => RecursosPageWidget(),
         ),
         FFRoute(
@@ -192,6 +199,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: PlaylistPageWidget.routeName,
           path: PlaylistPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => PlaylistPageWidget(),
         ),
         FFRoute(
@@ -225,6 +233,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const AdminOracionPageWidget(),
         ),
         FFRoute(
+          name: AdminRecursosPageWidget.routeName,
+          path: AdminRecursosPageWidget.routePath,
+          builder: (context, params) => const AdminRecursosPageWidget(),
+        ),
+        FFRoute(
           name: AdminLivePageWidget.routeName,
           path: AdminLivePageWidget.routePath,
           builder: (context, params) => const AdminLivePageWidget(),
@@ -238,6 +251,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: AdminHomeConfigPageWidget.routeName,
           path: AdminHomeConfigPageWidget.routePath,
           builder: (context, params) => const AdminHomeConfigPageWidget(),
+        ),
+        FFRoute(
+          name: AdminPastoresPageWidget.routeName,
+          path: AdminPastoresPageWidget.routePath,
+          builder: (context, params) => const AdminPastoresPageWidget(),
+        ),
+        FFRoute(
+          name: AdminEquiposSolicitudesPageWidget.routeName,
+          path: AdminEquiposSolicitudesPageWidget.routePath,
+          builder: (context, params) => const AdminEquiposSolicitudesPageWidget(),
         ),
         FFRoute(
           name: UserLoginPageWidget.routeName,
@@ -387,29 +410,73 @@ class FFRoute {
           final child = page;
 
           final transitionInfo = state.transitionInfo;
-          return transitionInfo.hasTransition
-              ? CustomTransitionPage(
-                  key: state.pageKey,
-                  name: state.name,
-                  child: child,
-                  transitionDuration: transitionInfo.duration,
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) =>
-                          PageTransition(
-                    type: transitionInfo.transitionType,
-                    duration: transitionInfo.duration,
-                    reverseDuration: transitionInfo.duration,
-                    alignment: transitionInfo.alignment,
-                    child: child,
-                  ).buildTransitions(
-                    context,
-                    animation,
-                    secondaryAnimation,
-                    child,
-                  ),
-                )
-              : MaterialPage(
-                  key: state.pageKey, name: state.name, child: child);
+          if (transitionInfo.hasTransition) {
+            return CustomTransitionPage(
+              key: state.pageKey,
+              name: state.name,
+              child: child,
+              transitionDuration: transitionInfo.duration,
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) =>
+                      PageTransition(
+                type: transitionInfo.transitionType,
+                duration: transitionInfo.duration,
+                reverseDuration: transitionInfo.duration,
+                alignment: transitionInfo.alignment,
+                child: child,
+              ).buildTransitions(
+                context,
+                animation,
+                secondaryAnimation,
+                child,
+              ),
+            );
+          }
+          // Default: CJC logo flash on every navigation
+          return CustomTransitionPage(
+            key: state.pageKey,
+            name: state.name,
+            child: child,
+            transitionDuration: const Duration(milliseconds: 850),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              // On back/pop: simple fade, no logo
+              if (animation.status == AnimationStatus.reverse) {
+                return FadeTransition(opacity: animation, child: child);
+              }
+              final t = animation.value;
+              // Overlay: full [0→0.55], fade-out [0.55→1.0]
+              double overlayOpacity;
+              if (t < 0.55) {
+                overlayOpacity = 1.0;
+              } else {
+                overlayOpacity = 1.0 - (t - 0.55) / 0.45;
+              }
+
+              return Stack(
+                children: [
+                  // Page always rendered underneath (so it loads while logo is visible)
+                  child,
+                  // Logo overlay fades in → holds → fades out
+                  if (overlayOpacity > 0.01)
+                    IgnorePointer(
+                      child: Opacity(
+                        opacity: overlayOpacity.clamp(0.0, 1.0),
+                        child: Container(
+                          color: const Color(0xFF080E1E),
+                          child: Center(
+                            child: Image.asset(
+                              'assets/images/LOGO_CJC_BLANCO_(1).png',
+                              width: MediaQuery.sizeOf(context).width * 0.55,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          );
         },
         routes: routes,
       );

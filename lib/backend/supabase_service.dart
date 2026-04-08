@@ -27,6 +27,7 @@ class HomeConfig {
   final String facebookUrl;
   final String heroImageUrl;
   final String serviciosImageUrl;
+  final String ofrendasImageUrl;
 
   const HomeConfig({
     required this.bienvenidaTitulo,
@@ -39,6 +40,7 @@ class HomeConfig {
     required this.facebookUrl,
     this.heroImageUrl = '',
     this.serviciosImageUrl = '',
+    this.ofrendasImageUrl = '',
   });
 
   static HomeConfig get defaults => const HomeConfig(
@@ -68,8 +70,9 @@ class HomeConfig {
             d['instagram_url'] as String? ?? HomeConfig.defaults.instagramUrl,
         facebookUrl:
             d['facebook_url'] as String? ?? HomeConfig.defaults.facebookUrl,
-        heroImageUrl: d['hero_image_url'] as String? ?? '',
-        serviciosImageUrl: d['servicios_image_url'] as String? ?? '',
+        heroImageUrl: d['hero_image_url']?.toString() ?? '',
+        serviciosImageUrl: d['servicios_image_url']?.toString() ?? '',
+        ofrendasImageUrl: d['ofrendas_image_url']?.toString() ?? '',
       );
 }
 
@@ -228,6 +231,8 @@ class Recurso {
   final String descripcion;
   final String url;
   final String tipo;
+  final String audiencia; // 'general' | 'equipos'
+  final String? equipoId;  // linked team (null = admin resource)
   final DateTime fecha;
 
   const Recurso({
@@ -236,6 +241,8 @@ class Recurso {
     required this.descripcion,
     required this.url,
     required this.tipo,
+    required this.audiencia,
+    this.equipoId,
     required this.fecha,
   });
 
@@ -245,6 +252,8 @@ class Recurso {
         descripcion: d['descripcion'] as String? ?? '',
         url: d['url'] as String? ?? '',
         tipo: d['tipo'] as String? ?? 'pdf',
+        audiencia: d['audiencia']?.toString() ?? 'general',
+        equipoId: d['equipo_id'] as String?,
         fecha: d['fecha'] != null
             ? DateTime.parse(d['fecha'] as String)
             : DateTime.now(),
@@ -305,14 +314,88 @@ class Equipo {
       );
 }
 
+class EquipoSolicitud {
+  final String id;
+  final String usuarioId;
+  final String equipoId;
+  final String equipoNombre;
+  final String usuarioNombre;
+  final String usuarioEmail;
+  final String estado; // 'pendiente' | 'aprobado' | 'rechazado'
+  final String? motivo;
+  final DateTime creadoEn;
+
+  const EquipoSolicitud({
+    required this.id,
+    required this.usuarioId,
+    required this.equipoId,
+    required this.equipoNombre,
+    required this.usuarioNombre,
+    required this.usuarioEmail,
+    required this.estado,
+    this.motivo,
+    required this.creadoEn,
+  });
+
+  factory EquipoSolicitud.fromMap(Map<String, dynamic> d) => EquipoSolicitud(
+        id: d['id'] as String? ?? '',
+        usuarioId: d['usuario_id'] as String? ?? '',
+        equipoId: d['equipo_id'] as String? ?? '',
+        equipoNombre: d['equipo_nombre'] as String? ?? '',
+        usuarioNombre: d['usuario_nombre'] as String? ?? '',
+        usuarioEmail: d['usuario_email'] as String? ?? '',
+        estado: d['estado'] as String? ?? 'pendiente',
+        motivo: d['motivo'] as String?,
+        creadoEn: d['creado_en'] != null
+            ? DateTime.parse(d['creado_en'] as String)
+            : DateTime.now(),
+      );
+}
+
+class Notificacion {
+  final String id;
+  final String usuarioId;
+  final String titulo;
+  final String cuerpo;
+  final String tipo; // 'equipo' | 'general'
+  final bool leido;
+  final DateTime creadoEn;
+
+  const Notificacion({
+    required this.id,
+    required this.usuarioId,
+    required this.titulo,
+    required this.cuerpo,
+    required this.tipo,
+    required this.leido,
+    required this.creadoEn,
+  });
+
+  factory Notificacion.fromMap(Map<String, dynamic> d) => Notificacion(
+        id: d['id'] as String? ?? '',
+        usuarioId: d['usuario_id'] as String? ?? '',
+        titulo: d['titulo'] as String? ?? '',
+        cuerpo: d['cuerpo'] as String? ?? '',
+        tipo: d['tipo'] as String? ?? 'general',
+        leido: d['leido'] as bool? ?? false,
+        creadoEn: d['creado_en'] != null
+            ? DateTime.parse(d['creado_en'] as String)
+            : DateTime.now(),
+      );
+}
+
 class Evento {
   final String id;
   final String titulo;
   final String descripcion;
   final DateTime fecha;
   final String? lugar;
+  final double? lat;
+  final double? lng;
   final String? imageUrl;
   final bool activo;
+  final String visibilidad; // 'todos' | 'miembros' | 'rol'
+  final String? rolRequerido;
 
   const Evento({
     required this.id,
@@ -320,8 +403,12 @@ class Evento {
     required this.descripcion,
     required this.fecha,
     this.lugar,
+    this.lat,
+    this.lng,
     this.imageUrl,
     required this.activo,
+    this.visibilidad = 'todos',
+    this.rolRequerido,
   });
 
   factory Evento.fromMap(Map<String, dynamic> d) => Evento(
@@ -332,8 +419,12 @@ class Evento {
             ? DateTime.parse(d['fecha'] as String)
             : DateTime.now(),
         lugar: d['lugar'] as String?,
+        lat: (d['lat'] as num?)?.toDouble(),
+        lng: (d['lng'] as num?)?.toDouble(),
         imageUrl: d['image_url'] as String?,
         activo: d['activo'] as bool? ?? true,
+        visibilidad: d['visibilidad'] as String? ?? 'todos',
+        rolRequerido: d['rol_requerido'] as String?,
       );
 }
 
@@ -344,6 +435,8 @@ class Anuncio {
   final String? imagenUrl;
   final DateTime fecha;
   final bool activo;
+  final String visibilidad; // 'todos' | 'miembros' | 'rol'
+  final String? rolRequerido;
 
   const Anuncio({
     required this.id,
@@ -352,6 +445,8 @@ class Anuncio {
     this.imagenUrl,
     required this.fecha,
     required this.activo,
+    this.visibilidad = 'todos',
+    this.rolRequerido,
   });
 
   factory Anuncio.fromMap(Map<String, dynamic> d) => Anuncio(
@@ -363,6 +458,8 @@ class Anuncio {
             ? DateTime.parse(d['fecha'] as String)
             : DateTime.now(),
         activo: d['activo'] as bool? ?? true,
+        visibilidad: d['visibilidad'] as String? ?? 'todos',
+        rolRequerido: d['rol_requerido'] as String?,
       );
 }
 
@@ -521,17 +618,20 @@ class SupabaseService {
     await saveHomeImages(
       heroImageUrl: config.heroImageUrl,
       serviciosImageUrl: config.serviciosImageUrl,
+      ofrendasImageUrl: config.ofrendasImageUrl,
     );
   }
 
   Future<void> saveHomeImages({
     required String heroImageUrl,
     required String serviciosImageUrl,
+    String ofrendasImageUrl = '',
   }) async {
     try {
       await _db.from('config_home').update({
         'hero_image_url': heroImageUrl,
         'servicios_image_url': serviciosImageUrl,
+        'ofrendas_image_url': ofrendasImageUrl,
       }).eq('id', 1);
     } catch (_) {
       // Las columnas aún no existen en la BD — ignorar hasta migración
@@ -635,6 +735,30 @@ class SupabaseService {
       'reflexion': reflexion.trim(),
       'fecha': fecha.toIso8601String(),
     });
+
+    // Notificar a todos los usuarios registrados
+    final notifTitulo = '📖 Devocional del día';
+    final notifCuerpo = referencia.trim().isNotEmpty
+        ? '"${versiculo.trim().length > 60 ? versiculo.trim().substring(0, 60) + '…' : versiculo.trim()}" — ${referencia.trim()}'
+        : titulo.trim().isNotEmpty
+            ? titulo.trim()
+            : 'El devocional de hoy ya está disponible';
+
+    try {
+      final usuarios = await _db.from('usuarios').select('id');
+      final rows = (usuarios as List).map((u) => {
+        'usuario_id': u['id'],
+        'titulo': notifTitulo,
+        'cuerpo': notifCuerpo,
+        'tipo': 'devocional',
+      }).toList();
+      if (rows.isNotEmpty) {
+        await _db.from('notificaciones').insert(rows);
+      }
+    } catch (_) {}
+
+    // Notificación local para el admin que publicó
+    _showLocalNotification(notifTitulo, notifCuerpo);
   }
 
   Future<void> actualizarDevocional(
@@ -663,19 +787,34 @@ class SupabaseService {
     return _db
         .from('oraciones')
         .stream(primaryKey: ['id'])
-        .eq('estado', 'aprobada')
         .order('fecha', ascending: false)
-        .limit(50)
-        .map((rows) => rows.map(Oracion.fromMap).toList());
+        .map((rows) => rows
+            .map(Oracion.fromMap)
+            .where((o) => o.estado == 'aprobada')
+            .take(50)
+            .toList());
   }
 
   Stream<List<Oracion>> oracionesPendientesStream() {
     return _db
         .from('oraciones')
         .stream(primaryKey: ['id'])
-        .eq('estado', 'pendiente')
         .order('fecha', ascending: false)
-        .map((rows) => rows.map(Oracion.fromMap).toList());
+        .map((rows) => rows
+            .map(Oracion.fromMap)
+            .where((o) => o.estado == 'pendiente')
+            .toList());
+  }
+
+  Stream<List<Oracion>> oracionesRechazadasStream() {
+    return _db
+        .from('oraciones')
+        .stream(primaryKey: ['id'])
+        .order('fecha', ascending: false)
+        .map((rows) => rows
+            .map(Oracion.fromMap)
+            .where((o) => o.estado == 'rechazada')
+            .toList());
   }
 
   Future<void> crearOracion({
@@ -729,6 +868,9 @@ class SupabaseService {
   Future<void> rechazarOracion(String id) async =>
       _db.from('oraciones').update({'estado': 'rechazada'}).eq('id', id);
 
+  Future<void> revertirOracion(String id) async =>
+      _db.from('oraciones').update({'estado': 'pendiente'}).eq('id', id);
+
   // ── Galería ─────────────────────────────────────────────────────────────────
 
   Stream<List<FotoGaleria>> galeriaStream({String? categoria}) {
@@ -765,6 +907,73 @@ class SupabaseService {
         .map((rows) => rows.map(Recurso.fromMap).toList());
   }
 
+  Stream<List<Recurso>> recursosEquipoStream(String equipoId) {
+    return _db
+        .from('recursos')
+        .stream(primaryKey: ['id'])
+        .eq('equipo_id', equipoId)
+        .order('fecha', ascending: false)
+        .map((rows) => rows.map(Recurso.fromMap).toList());
+  }
+
+  Future<void> crearRecursoDeEquipo({
+    required String titulo,
+    required String descripcion,
+    required String url,
+    required String tipo,
+    required String equipoId,
+  }) async {
+    await _db.from('recursos').insert({
+      'titulo': titulo.trim(),
+      'descripcion': descripcion.trim(),
+      'url': url.trim(),
+      'tipo': tipo,
+      'audiencia': 'equipos',
+      'equipo_id': equipoId,
+      'fecha': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> crearRecurso({
+    required String titulo,
+    required String descripcion,
+    required String url,
+    required String tipo,
+    required String audiencia,
+    required DateTime fecha,
+  }) async {
+    await _db.from('recursos').insert({
+      'titulo': titulo.trim(),
+      'descripcion': descripcion.trim(),
+      'url': url.trim(),
+      'tipo': tipo,
+      'audiencia': audiencia,
+      'fecha': fecha.toIso8601String(),
+    });
+  }
+
+  Future<void> actualizarRecurso(
+    String id, {
+    required String titulo,
+    required String descripcion,
+    required String url,
+    required String tipo,
+    required String audiencia,
+    required DateTime fecha,
+  }) async {
+    await _db.from('recursos').update({
+      'titulo': titulo.trim(),
+      'descripcion': descripcion.trim(),
+      'url': url.trim(),
+      'tipo': tipo,
+      'audiencia': audiencia,
+      'fecha': fecha.toIso8601String(),
+    }).eq('id', id);
+  }
+
+  Future<void> eliminarRecurso(String id) async =>
+      _db.from('recursos').delete().eq('id', id);
+
   // ── Pastores ────────────────────────────────────────────────────────────────
 
   Stream<List<Pastor>> pastoresStream() {
@@ -775,6 +984,14 @@ class SupabaseService {
         .map((rows) => rows.map(Pastor.fromMap).toList());
   }
 
+  Future<void> upsertPastor(Map<String, dynamic> data) async {
+    await _db.from('pastores').upsert(data);
+  }
+
+  Future<void> deletePastor(String id) async {
+    await _db.from('pastores').delete().eq('id', id);
+  }
+
   // ── Equipos ─────────────────────────────────────────────────────────────────
 
   Stream<List<Equipo>> equiposStream() {
@@ -783,6 +1000,174 @@ class SupabaseService {
         .stream(primaryKey: ['id'])
         .order('orden')
         .map((rows) => rows.map(Equipo.fromMap).toList());
+  }
+
+  // ── Solicitudes de Equipos ───────────────────────────────────────────────────
+
+  /// Returns null on success, or an error message.
+  Future<String?> enviarSolicitudEquipo({
+    required String equipoId,
+    required String equipoNombre,
+  }) async {
+    final user = _db.auth.currentUser;
+    if (user == null) return 'No autenticado';
+    // Check for existing active solicitud
+    final existing = await _db
+        .from('equipo_solicitudes')
+        .select()
+        .eq('usuario_id', user.id)
+        .inFilter('estado', ['pendiente', 'aprobado'])
+        .limit(1);
+    if ((existing as List).isNotEmpty) {
+      final r = existing.first as Map<String, dynamic>;
+      if (r['estado'] == 'aprobado') {
+        return 'Ya eres miembro del equipo "${r['equipo_nombre']}"';
+      }
+      return 'Ya tienes una solicitud pendiente para "${r['equipo_nombre']}"';
+    }
+    final profile = await getUserProfile(user.id);
+    await _db.from('equipo_solicitudes').insert({
+      'usuario_id': user.id,
+      'equipo_id': equipoId,
+      'equipo_nombre': equipoNombre,
+      'usuario_nombre': profile['nombre'] ?? '',
+      'usuario_email': user.email ?? '',
+      'estado': 'pendiente',
+    });
+    return null;
+  }
+
+  Stream<EquipoSolicitud?> miSolicitudStream() {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) return Stream.value(null);
+    return _db
+        .from('equipo_solicitudes')
+        .stream(primaryKey: ['id'])
+        .eq('usuario_id', uid)
+        .order('creado_en', ascending: false)
+        .map((rows) =>
+            rows.isEmpty ? null : EquipoSolicitud.fromMap(rows.first));
+  }
+
+  Future<EquipoSolicitud?> miSolicitudPorEquipo(String equipoId) async {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) return null;
+    final rows = await _db
+        .from('equipo_solicitudes')
+        .select()
+        .eq('usuario_id', uid)
+        .eq('equipo_id', equipoId)
+        .order('creado_en', ascending: false)
+        .limit(1);
+    return (rows as List).isEmpty
+        ? null
+        : EquipoSolicitud.fromMap(rows.first as Map<String, dynamic>);
+  }
+
+  Stream<List<EquipoSolicitud>> solicitudesPorEquipoStream(String equipoId) {
+    return _db
+        .from('equipo_solicitudes')
+        .stream(primaryKey: ['id'])
+        .eq('equipo_id', equipoId)
+        .order('creado_en', ascending: false)
+        .map((rows) => rows.map(EquipoSolicitud.fromMap).toList());
+  }
+
+  Stream<List<EquipoSolicitud>> todasSolicitudesEquipoStream() {
+    return _db
+        .from('equipo_solicitudes')
+        .stream(primaryKey: ['id'])
+        .order('creado_en', ascending: false)
+        .map((rows) => rows.map(EquipoSolicitud.fromMap).toList());
+  }
+
+  Future<void> aprobarSolicitud(String solicitudId) async {
+    // 1. Fetch solicitud for user info
+    final rows = await _db
+        .from('equipo_solicitudes')
+        .select('usuario_id, equipo_nombre')
+        .eq('id', solicitudId)
+        .limit(1);
+    if ((rows as List).isEmpty) return;
+    final row = rows.first as Map<String, dynamic>;
+
+    // 2. Update estado
+    await _db.from('equipo_solicitudes').update({
+      'estado': 'aprobado',
+      'actualizado_en': DateTime.now().toIso8601String(),
+    }).eq('id', solicitudId);
+
+    // 3. Insert personal notification for the user
+    final titulo = '¡Bienvenido/a al equipo!';
+    final cuerpo = 'Tu solicitud para unirte a "${row['equipo_nombre']}" fue aprobada. 🎉';
+    await _db.from('notificaciones').insert({
+      'usuario_id': row['usuario_id'],
+      'titulo': titulo,
+      'cuerpo': cuerpo,
+      'tipo': 'equipo',
+    });
+
+    // 4. Push local notification if this device belongs to the same user
+    _showLocalNotification(titulo, cuerpo);
+  }
+
+  Future<void> rechazarSolicitud(String solicitudId, {String motivo = ''}) async {
+    // 1. Fetch solicitud
+    final rows = await _db
+        .from('equipo_solicitudes')
+        .select('usuario_id, equipo_nombre')
+        .eq('id', solicitudId)
+        .limit(1);
+    if ((rows as List).isEmpty) return;
+    final row = rows.first as Map<String, dynamic>;
+
+    // 2. Update estado
+    await _db.from('equipo_solicitudes').update({
+      'estado': 'rechazado',
+      'motivo': motivo,
+      'actualizado_en': DateTime.now().toIso8601String(),
+    }).eq('id', solicitudId);
+
+    // 3. Insert personal notification
+    final titulo = 'Solicitud de equipo';
+    final cuerpo = motivo.isNotEmpty
+        ? 'Tu solicitud para "${row['equipo_nombre']}" no fue aprobada: $motivo'
+        : 'Tu solicitud para "${row['equipo_nombre']}" no fue aprobada en esta ocasión.';
+    await _db.from('notificaciones').insert({
+      'usuario_id': row['usuario_id'],
+      'titulo': titulo,
+      'cuerpo': cuerpo,
+      'tipo': 'equipo',
+    });
+
+    _showLocalNotification(titulo, cuerpo);
+  }
+
+  // ── Notificaciones personales ────────────────────────────────────────────────
+
+  Stream<List<Notificacion>> misNotificacionesStream() {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) return Stream.value([]);
+    return _db
+        .from('notificaciones')
+        .stream(primaryKey: ['id'])
+        .eq('usuario_id', uid)
+        .order('creado_en', ascending: false)
+        .map((rows) => rows.map(Notificacion.fromMap).toList());
+  }
+
+  Future<void> marcarNotificacionLeida(String id) async {
+    await _db.from('notificaciones').update({'leido': true}).eq('id', id);
+  }
+
+  Future<void> marcarTodasLeidas() async {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) return;
+    await _db
+        .from('notificaciones')
+        .update({'leido': true})
+        .eq('usuario_id', uid)
+        .eq('leido', false);
   }
 
   // ── Eventos ─────────────────────────────────────────────────────────────────
@@ -949,13 +1334,17 @@ class SupabaseService {
     required DateTime fecha,
     required bool activo,
     String? imagenUrl,
+    String visibilidad = 'todos',
+    String? rolRequerido,
   }) async {
     await _db.from('anuncios').insert({
       'titulo': titulo,
       'descripcion': descripcion,
       'fecha': fecha.toIso8601String(),
       'activo': activo,
+      'visibilidad': visibilidad,
       if (imagenUrl != null && imagenUrl.isNotEmpty) 'imagen_url': imagenUrl,
+      if (rolRequerido != null && rolRequerido.isNotEmpty) 'rol_requerido': rolRequerido,
     });
   }
 
@@ -966,6 +1355,8 @@ class SupabaseService {
     required DateTime fecha,
     required bool activo,
     String? imagenUrl,
+    String visibilidad = 'todos',
+    String? rolRequerido,
   }) async {
     await _db.from('anuncios').update({
       'titulo': titulo,
@@ -973,6 +1364,8 @@ class SupabaseService {
       'fecha': fecha.toIso8601String(),
       'activo': activo,
       'imagen_url': imagenUrl ?? '',
+      'visibilidad': visibilidad,
+      'rol_requerido': rolRequerido,
     }).eq('id', id);
   }
 
@@ -995,15 +1388,23 @@ class SupabaseService {
     required DateTime fecha,
     required bool activo,
     String? lugar,
+    double? lat,
+    double? lng,
     String? imageUrl,
+    String visibilidad = 'todos',
+    String? rolRequerido,
   }) async {
     await _db.from('eventos').insert({
       'titulo': titulo,
       'descripcion': descripcion,
       'fecha': fecha.toIso8601String(),
       'activo': activo,
+      'visibilidad': visibilidad,
       if (lugar != null && lugar.isNotEmpty) 'lugar': lugar,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
       if (imageUrl != null && imageUrl.isNotEmpty) 'image_url': imageUrl,
+      if (rolRequerido != null && rolRequerido.isNotEmpty) 'rol_requerido': rolRequerido,
     });
   }
 
@@ -1014,7 +1415,11 @@ class SupabaseService {
     required DateTime fecha,
     required bool activo,
     String? lugar,
+    double? lat,
+    double? lng,
     String? imageUrl,
+    String visibilidad = 'todos',
+    String? rolRequerido,
   }) async {
     await _db.from('eventos').update({
       'titulo': titulo,
@@ -1022,7 +1427,11 @@ class SupabaseService {
       'fecha': fecha.toIso8601String(),
       'activo': activo,
       'lugar': lugar ?? '',
+      'lat': lat,
+      'lng': lng,
       'image_url': imageUrl ?? '',
+      'visibilidad': visibilidad,
+      'rol_requerido': rolRequerido,
     }).eq('id', id);
   }
 
