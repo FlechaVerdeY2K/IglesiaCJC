@@ -65,11 +65,12 @@ class AdminDevocionalPageWidget extends StatelessWidget {
             );
           }
           return ListView.separated(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
             itemCount: devs.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (_, i) => _DevCard(
               dev: devs[i],
+              isToday: _isToday(devs[i].fecha),
               onEdit: () => _showForm(context, devs[i]),
               onDelete: () => _confirmDelete(context, devs[i]),
             ),
@@ -86,6 +87,11 @@ class AdminDevocionalPageWidget extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => _DevocionalForm(dev: dev),
     );
+  }
+
+  bool _isToday(DateTime fecha) {
+    final now = DateTime.now();
+    return fecha.year == now.year && fecha.month == now.month && fecha.day == now.day;
   }
 
   void _confirmDelete(BuildContext context, Devocional dev) {
@@ -121,77 +127,121 @@ class AdminDevocionalPageWidget extends StatelessWidget {
 
 class _DevCard extends StatelessWidget {
   final Devocional dev;
+  final bool isToday;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const _DevCard(
-      {required this.dev, required this.onEdit, required this.onDelete});
+  const _DevCard({
+    required this.dev,
+    required this.onEdit,
+    required this.onDelete,
+    this.isToday = false,
+  });
 
   static const Color _surface = Color(0xFF0F1C30);
   static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
+  static const Color _gold = Color(0xFFD4A017);
 
   @override
   Widget build(BuildContext context) {
     final fecha = DateFormat('d MMM yyyy', 'es').format(dev.fecha);
+    final color = isToday ? _gold : _accent;
+
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF1E2E4A)),
+        border: Border.all(
+          color: isToday ? _gold.withOpacity(0.4) : const Color(0xFF1E2E4A),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.auto_stories_rounded, color: _accent, size: 16),
-              const SizedBox(width: 6),
-              Text(fecha,
-                  style: const TextStyle(color: _muted, fontSize: 12)),
-              const Spacer(),
-              IconButton(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_rounded,
-                    color: Colors.white38, size: 20),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Barra lateral de color
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(14),
+                  bottomLeft: Radius.circular(14),
+                ),
               ),
-              const SizedBox(width: 12),
-              IconButton(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline_rounded,
-                    color: Colors.redAccent, size: 20),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.auto_stories_rounded, color: color, size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          isToday ? 'HOY · $fecha' : fecha,
+                          style: TextStyle(
+                            color: isToday ? _gold : _muted,
+                            fontSize: 11,
+                            fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                            letterSpacing: isToday ? 0.5 : 0,
+                          ),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: onEdit,
+                          child: const Icon(Icons.edit_rounded,
+                              color: Colors.white38, size: 18),
+                        ),
+                        const SizedBox(width: 14),
+                        GestureDetector(
+                          onTap: onDelete,
+                          child: const Icon(Icons.delete_outline_rounded,
+                              color: Colors.redAccent, size: 18),
+                        ),
+                      ],
+                    ),
+                    if (dev.titulo.isNotEmpty) ...[  
+                      const SizedBox(height: 7),
+                      Text(
+                        dev.titulo,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Text(
+                      '"${dev.versiculo}"',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '— ${dev.referencia}',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-          if (dev.titulo.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              dev.titulo,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600),
             ),
           ],
-          const SizedBox(height: 6),
-          Text(
-            '"${dev.versiculo}"',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-                fontStyle: FontStyle.italic),
-          ),
-          const SizedBox(height: 4),
-          Text('— ${dev.referencia}',
-              style: const TextStyle(color: _accent, fontSize: 12)),
-        ],
+        ),
       ),
     );
   }
@@ -291,18 +341,18 @@ class _DevocionalFormState extends State<_DevocionalForm> {
           bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: const BoxDecoration(
-          color: _bg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          color: Color(0xFF080E1E),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Handle
               Center(
                 child: Container(
-                  width: 40,
-                  height: 4,
+                  width: 36, height: 4,
                   decoration: BoxDecoration(
                     color: Colors.white24,
                     borderRadius: BorderRadius.circular(2),
@@ -310,21 +360,38 @@ class _DevocionalFormState extends State<_DevocionalForm> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text(
-                isEdit ? 'Editar devocional' : 'Nuevo devocional',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700),
+
+              // Título del form
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4A017).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.auto_stories_rounded,
+                        color: Color(0xFFD4A017), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    isEdit ? 'Editar devocional' : 'Nuevo devocional',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // Fecha
+              _FormLabel('FECHA'),
+              const SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickDate,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   decoration: BoxDecoration(
                     color: const Color(0xFF111D2E),
                     borderRadius: BorderRadius.circular(10),
@@ -333,61 +400,56 @@ class _DevocionalFormState extends State<_DevocionalForm> {
                   child: Row(
                     children: [
                       const Icon(Icons.calendar_today_rounded,
-                          color: _accent, size: 18),
+                          color: Color(0xFFD4A017), size: 16),
                       const SizedBox(width: 10),
                       Text(fechaStr,
                           style: const TextStyle(
                               color: Colors.white, fontSize: 14)),
                       const Spacer(),
                       const Icon(Icons.edit_calendar_rounded,
-                          color: Colors.white38, size: 16),
+                          color: Colors.white24, size: 16),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
 
-              _Field(
-                controller: _tituloCtrl,
-                label: 'Título (opcional)',
-                maxLines: 1,
-              ),
-              const SizedBox(height: 14),
-              _Field(
-                controller: _versiculoCtrl,
-                label: 'Versículo *',
-                maxLines: 4,
-              ),
-              const SizedBox(height: 14),
-              _Field(
-                controller: _referenciaCtrl,
-                label: 'Referencia * (ej: Juan 3:16)',
-                maxLines: 1,
-              ),
-              const SizedBox(height: 14),
-              _Field(
-                controller: _reflexionCtrl,
-                label: 'Reflexión',
-                maxLines: 6,
-              ),
-              const SizedBox(height: 24),
+              _FormLabel('TÍTULO (OPCIONAL)'),
+              const SizedBox(height: 8),
+              _Field(controller: _tituloCtrl, label: 'Título del devocional', maxLines: 1),
+              const SizedBox(height: 18),
+
+              _FormLabel('VERSÍCULO *'),
+              const SizedBox(height: 8),
+              _Field(controller: _versiculoCtrl, label: 'Escribe el versículo...', maxLines: 4),
+              const SizedBox(height: 18),
+
+              _FormLabel('REFERENCIA *'),
+              const SizedBox(height: 8),
+              _Field(controller: _referenciaCtrl, label: 'Ej: Juan 3:16', maxLines: 1),
+              const SizedBox(height: 18),
+
+              _FormLabel('REFLEXIÓN'),
+              const SizedBox(height: 8),
+              _Field(controller: _reflexionCtrl, label: 'Reflexión o comentario...', maxLines: 6),
+              const SizedBox(height: 28),
 
               SizedBox(
-                height: 50,
+                height: 52,
                 child: ElevatedButton(
                   onPressed: _loading ? null : _save,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _accent,
-                    foregroundColor: Colors.black,
+                    backgroundColor: const Color(0xFFBF1E2E),
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
                   ),
                   child: _loading
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
+                          width: 20, height: 20,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.black))
+                              strokeWidth: 2, color: Colors.white))
                       : Text(
                           isEdit ? 'Guardar cambios' : 'Publicar devocional',
                           style: const TextStyle(
@@ -437,6 +499,24 @@ class _Field extends StatelessWidget {
           borderSide:
               const BorderSide(color: Color(0xFFBF1E2E), width: 1.5),
         ),
+      ),
+    );
+  }
+}
+
+class _FormLabel extends StatelessWidget {
+  final String text;
+  const _FormLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Color(0xFFB5B5B5),
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.2,
       ),
     );
   }
