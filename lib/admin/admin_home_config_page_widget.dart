@@ -34,8 +34,10 @@ class _AdminHomeConfigPageWidgetState
 
   String _heroImageUrl = '';
   String _serviciosImageUrl = '';
+  String _ofrendasImageUrl = '';
   bool _uploadingHero = false;
   bool _uploadingSvc = false;
+  bool _uploadingOfrendas = false;
   bool _loading = true;
   bool _saving = false;
 
@@ -58,6 +60,7 @@ class _AdminHomeConfigPageWidgetState
     if (mounted) setState(() {
       _heroImageUrl = config.heroImageUrl;
       _serviciosImageUrl = config.serviciosImageUrl;
+      _ofrendasImageUrl = config.ofrendasImageUrl;
       _loading = false;
     });
   }
@@ -76,6 +79,7 @@ class _AdminHomeConfigPageWidgetState
         facebookUrl: _facebookCtrl.text.trim(),
         heroImageUrl: _heroImageUrl,
         serviciosImageUrl: _serviciosImageUrl,
+        ofrendasImageUrl: _ofrendasImageUrl,
       ));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -183,6 +187,23 @@ class _AdminHomeConfigPageWidgetState
                       }
                     },
                     onRemove: () => setState(() => _serviciosImageUrl = ''),
+                  ),
+                  const SizedBox(height: 12),
+                  _ImagePicker(
+                    label: 'Foto Ofrendas',
+                    imageUrl: _ofrendasImageUrl,
+                    uploading: _uploadingOfrendas,
+                    onTap: () async {
+                      setState(() => _uploadingOfrendas = true);
+                      try {
+                        final url = await CloudinaryService.instance
+                            .pickAndUpload(folder: 'home');
+                        if (url != null && mounted) setState(() => _ofrendasImageUrl = url);
+                      } finally {
+                        if (mounted) setState(() => _uploadingOfrendas = false);
+                      }
+                    },
+                    onRemove: () => setState(() => _ofrendasImageUrl = ''),
                   ),
                   const SizedBox(height: 24),
                   _sectionLabel('BIENVENIDA'),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import '../backend/supabase_service.dart';
+import '../flutter_flow/flutter_flow_util.dart';
 
 class AdminOracionPageWidget extends StatelessWidget {
   static const String routeName = 'AdminOracionPage';
@@ -12,27 +12,71 @@ class AdminOracionPageWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: const Color(0xFF080E1E),
         appBar: AppBar(
-          backgroundColor: const Color(0xFF16213E),
-          foregroundColor: Colors.white,
-          title: const Text('Moderación de Oración'),
-          bottom: const TabBar(
-            labelColor: Color(0xFF4FC3F7),
-            unselectedLabelColor: Colors.white54,
-            indicatorColor: Color(0xFF4FC3F7),
-            tabs: [
-              Tab(icon: Icon(Icons.pending_actions), text: 'Pendientes'),
-              Tab(icon: Icon(Icons.check_circle_outline), text: 'Aprobadas'),
-            ],
+          backgroundColor: const Color(0xFF0D1628),
+          elevation: 0,
+          toolbarHeight: 56,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
+            onPressed: () => context.safePop(),
+          ),
+          title: const Text('Moderación de Oración',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700)),
+          centerTitle: true,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(44),
+            child: Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                    bottom: BorderSide(color: Color(0xFF1E2E4A), width: 1)),
+              ),
+              child: TabBar(
+                labelColor: Colors.white,
+                unselectedLabelColor: const Color(0xFF4A6A8A),
+                indicatorColor: const Color(0xFFBF1E2E),
+                indicatorWeight: 2,
+                labelStyle: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w700),
+                unselectedLabelStyle:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                tabs: const [
+                  Tab(
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.pending_actions_rounded, size: 15),
+                      SizedBox(width: 5),
+                      Text('Pendientes'),
+                    ]),
+                  ),
+                  Tab(
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.check_circle_outline_rounded, size: 15),
+                      SizedBox(width: 5),
+                      Text('Aprobadas'),
+                    ]),
+                  ),
+                  Tab(
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.cancel_outlined, size: 15),
+                      SizedBox(width: 5),
+                      Text('Rechazadas'),
+                    ]),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-        body: TabBarView(
+        body: const TabBarView(
           children: [
             _PedidosTab(estado: 'pendiente'),
             _PedidosTab(estado: 'aprobada'),
+            _PedidosTab(estado: 'rechazada'),
           ],
         ),
       ),
@@ -40,185 +84,315 @@ class AdminOracionPageWidget extends StatelessWidget {
   }
 }
 
+// ── Tab ───────────────────────────────────────────────────────────────────────
 class _PedidosTab extends StatelessWidget {
   final String estado;
   const _PedidosTab({required this.estado});
 
+  Stream<List<Oracion>> get _stream {
+    switch (estado) {
+      case 'pendiente':
+        return SupabaseService.instance.oracionesPendientesStream();
+      case 'rechazada':
+        return SupabaseService.instance.oracionesRechazadasStream();
+      default:
+        return SupabaseService.instance.oracionesPublicasStream();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final stream = estado == 'pendiente'
-        ? SupabaseService.instance.oracionesPendientesStream()
-        : SupabaseService.instance.oracionesPublicasStream();
-
     return StreamBuilder<List<Oracion>>(
-      stream: stream,
+      stream: _stream,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF4FC3F7)));
+              child: CircularProgressIndicator(
+                  color: Color(0xFFBF1E2E), strokeWidth: 2));
         }
-        if (!snap.hasData || snap.data!.isEmpty) {
+        final pedidos = snap.data ?? [];
+        if (pedidos.isEmpty) {
+          final (icon, msg) = switch (estado) {
+            'pendiente'  => (Icons.inbox_rounded, 'No hay pedidos pendientes'),
+            'rechazada'  => (Icons.cancel_outlined, 'No hay pedidos rechazados'),
+            _            => (Icons.favorite_outline_rounded, 'No hay pedidos aprobados'),
+          };
           return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  estado == 'pendiente' ? Icons.inbox : Icons.sentiment_satisfied,
-                  color: Colors.white38,
-                  size: 64,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  estado == 'pendiente'
-                      ? 'No hay pedidos pendientes'
-                      : 'No hay pedidos aprobados',
-                  style: const TextStyle(color: Colors.white54, fontSize: 16),
-                ),
-              ],
-            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(icon, color: Colors.white24, size: 48),
+              const SizedBox(height: 12),
+              Text(msg,
+                  style: const TextStyle(
+                      color: Colors.white38, fontSize: 14)),
+            ]),
           );
         }
-
-        final pedidos = snap.data!;
         return ListView.separated(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
           itemCount: pedidos.length,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (context, i) {
-            final o = pedidos[i];
-            return _PedidoCard(oracion: o, esPendiente: estado == 'pendiente');
-          },
+          itemBuilder: (context, i) =>
+              _PedidoCard(oracion: pedidos[i], estado: estado),
         );
       },
     );
   }
 }
 
+// ── Card ──────────────────────────────────────────────────────────────────────
 class _PedidoCard extends StatelessWidget {
   final Oracion oracion;
-  final bool esPendiente;
+  final String estado;
 
-  const _PedidoCard({required this.oracion, required this.esPendiente});
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _border  = Color(0xFF1E2E4A);
+  static const Color _muted   = Color(0xFFB5B5B5);
+  static const Color _accent  = Color(0xFFBF1E2E);
+
+  const _PedidoCard({required this.oracion, required this.estado});
 
   @override
   Widget build(BuildContext context) {
-    final fmt = DateFormat('dd MMM yyyy • HH:mm', 'es');
-    final fecha = fmt.format(oracion.fecha);
+    final fecha = DateFormat('d MMM · HH:mm', 'es').format(oracion.fecha);
+    final initials = oracion.nombre.isNotEmpty
+        ? oracion.nombre.trim().split(' ').take(2).map((w) => w[0]).join()
+        : '?';
 
-    return Card(
-      color: const Color(0xFF16213E),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Header ─────────────────────────────────────────────────────
             Row(
               children: [
-                const Icon(Icons.person, color: Color(0xFF4FC3F7), size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  oracion.nombre,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15),
-                ),
-                if (oracion.anonima) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white12,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text('Anónimo',
-                        style:
-                            TextStyle(color: Colors.white54, fontSize: 10)),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _accent.withOpacity(0.10),
+                    border: Border.all(
+                        color: _accent.withOpacity(0.25), width: 1.5),
                   ),
-                ],
-                const Spacer(),
+                  alignment: Alignment.center,
+                  child: oracion.anonima
+                      ? const Icon(Icons.person_outline_rounded,
+                          color: Color(0xFF7A4A5A), size: 16)
+                      : Text(initials.toUpperCase(),
+                          style: const TextStyle(
+                              color: Color(0xFFCC6677),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(oracion.nombre,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14)),
+                      if (oracion.anonima) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A1A2A),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: const Color(0xFF2A2A3A)),
+                          ),
+                          child: const Text('Anónimo',
+                              style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 Text(fecha,
-                    style:
-                        const TextStyle(color: Colors.white38, fontSize: 11)),
+                    style: const TextStyle(
+                        color: Color(0xFF4A6A8A), fontSize: 11)),
               ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              oracion.peticion,
-              style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+            const SizedBox(height: 12),
+
+            // ── Texto ───────────────────────────────────────────────────────
+            Text(oracion.peticion,
+                style: const TextStyle(
+                    color: _muted, fontSize: 13, height: 1.6)),
+            const SizedBox(height: 14),
+
+            // ── Acciones según estado ───────────────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: _buildActions(context),
             ),
-            if (esPendiente) ...[
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => _rechazar(context, oracion.id),
-                    icon: const Icon(Icons.close, size: 16),
-                    label: const Text('Rechazar'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                      side: const BorderSide(color: Colors.redAccent),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(
-                    onPressed: () => _aprobar(context, oracion.id),
-                    icon: const Icon(Icons.check, size: 16),
-                    label: const Text('Aprobar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4FC3F7),
-                      foregroundColor: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ] else ...[
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: OutlinedButton.icon(
-                  onPressed: () => _rechazar(context, oracion.id),
-                  icon: const Icon(Icons.undo, size: 16),
-                  label: const Text('Quitar'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.orange,
-                    side: const BorderSide(color: Colors.orange),
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  Future<void> _aprobar(BuildContext context, String id) async {
-    await SupabaseService.instance.aprobarOracion(id);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Pedido aprobado y publicado'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+  List<Widget> _buildActions(BuildContext context) {
+    switch (estado) {
+      case 'pendiente':
+        return [
+          _ActionBtn(
+            label: 'Rechazar',
+            icon: Icons.close_rounded,
+            color: const Color(0xFFBF1E2E),
+            bgColor: const Color(0xFF1A0808),
+            borderColor: const Color(0xFF3A1515),
+            onTap: () => _rechazar(context),
+          ),
+          const SizedBox(width: 8),
+          _ActionBtn(
+            label: 'Aprobar',
+            icon: Icons.check_rounded,
+            color: const Color(0xFF4CAF50),
+            bgColor: const Color(0xFF0A1F0A),
+            borderColor: const Color(0xFF1A3A1A),
+            onTap: () => _aprobar(context),
+          ),
+        ];
+      case 'aprobada':
+        return [
+          _ActionBtn(
+            label: 'Revertir a pendiente',
+            icon: Icons.undo_rounded,
+            color: const Color(0xFFD4A017),
+            bgColor: const Color(0xFF1A1400),
+            borderColor: const Color(0xFF3A2A00),
+            onTap: () => _revertir(context),
+          ),
+        ];
+      case 'rechazada':
+        return [
+          _ActionBtn(
+            label: 'Revertir a pendiente',
+            icon: Icons.undo_rounded,
+            color: const Color(0xFFD4A017),
+            bgColor: const Color(0xFF1A1400),
+            borderColor: const Color(0xFF3A2A00),
+            onTap: () => _revertir(context),
+          ),
+          const SizedBox(width: 8),
+          _ActionBtn(
+            label: 'Aprobar',
+            icon: Icons.check_rounded,
+            color: const Color(0xFF4CAF50),
+            bgColor: const Color(0xFF0A1F0A),
+            borderColor: const Color(0xFF1A3A1A),
+            onTap: () => _aprobar(context),
+          ),
+        ];
+      default:
+        return [];
     }
   }
 
-  Future<void> _rechazar(BuildContext context, String id) async {
-    await SupabaseService.instance.rechazarOracion(id);
+  void _showSnack(BuildContext ctx, String msg, {bool success = false}) {
+    final width = MediaQuery.of(ctx).size.width;
+    ScaffoldMessenger.of(ctx)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(
+        content: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(
+            success
+                ? Icons.check_circle_rounded
+                : Icons.info_outline_rounded,
+            color: Colors.white,
+            size: 15,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+              child: Text(msg,
+                  style: const TextStyle(
+                      fontSize: 13, color: Colors.white))),
+        ]),
+        backgroundColor:
+            success ? const Color(0xFF1A3A2A) : const Color(0xFF1A2A3A),
+        behavior: SnackBarBehavior.floating,
+        width: width > 480 ? 360.0 : width - 40,
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ));
+  }
+
+  Future<void> _aprobar(BuildContext context) async {
+    await SupabaseService.instance.aprobarOracion(oracion.id);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pedido rechazado'),
-          backgroundColor: Color(0xFFB00020),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _showSnack(context, 'Aprobado y publicado', success: true);
     }
+  }
+
+  Future<void> _rechazar(BuildContext context) async {
+    await SupabaseService.instance.rechazarOracion(oracion.id);
+    if (context.mounted) _showSnack(context, 'Pedido rechazado');
+  }
+
+  Future<void> _revertir(BuildContext context) async {
+    await SupabaseService.instance.revertirOracion(oracion.id);
+    if (context.mounted) _showSnack(context, 'Movido a pendientes');
+  }
+}
+
+// ── Botón de acción ───────────────────────────────────────────────────────────
+class _ActionBtn extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final Color bgColor;
+  final Color borderColor;
+  final VoidCallback onTap;
+
+  const _ActionBtn({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.bgColor,
+    required this.borderColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: borderColor),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: color, size: 15),
+          const SizedBox(width: 6),
+          Text(label,
+              style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
+        ]),
+      ),
+    );
   }
 }
