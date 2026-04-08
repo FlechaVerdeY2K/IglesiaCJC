@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '/backend/supabase_service.dart';
+import '/backend/cloudinary_service.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 class AdminAnunciosPageWidget extends StatelessWidget {
@@ -213,29 +214,36 @@ class _AnuncioForm extends StatefulWidget {
 class _AnuncioFormState extends State<_AnuncioForm> {
   static const Color _accent = Color(0xFFBF1E2E);
   static const Color _muted = Color(0xFFB5B5B5);
+  static const Color _surface = Color(0xFF0F1C30);
 
   late final TextEditingController _tituloCtrl;
   late final TextEditingController _descCtrl;
-  late final TextEditingController _urlCtrl;
+  late final TextEditingController _rolCtrl;
   late DateTime _fecha;
   late bool _activo;
+  late String _visibilidad;
+  String? _imageUrl;
   bool _saving = false;
+  bool _uploadingImage = false;
+  bool _showPreview = false;
 
   @override
   void initState() {
     super.initState();
     _tituloCtrl = TextEditingController(text: widget.item?.titulo ?? '');
-    _descCtrl = TextEditingController(text: widget.item?.descripcion ?? '');
-    _urlCtrl = TextEditingController(text: widget.item?.imagenUrl ?? '');
-    _fecha = widget.item?.fecha ?? DateTime.now();
-    _activo = widget.item?.activo ?? true;
+    _descCtrl   = TextEditingController(text: widget.item?.descripcion ?? '');
+    _rolCtrl    = TextEditingController(text: widget.item?.rolRequerido ?? '');
+    _fecha       = widget.item?.fecha ?? DateTime.now();
+    _activo      = widget.item?.activo ?? true;
+    _visibilidad = widget.item?.visibilidad ?? 'todos';
+    _imageUrl    = widget.item?.imagenUrl;
   }
 
   @override
   void dispose() {
     _tituloCtrl.dispose();
     _descCtrl.dispose();
-    _urlCtrl.dispose();
+    _rolCtrl.dispose();
     super.dispose();
   }
 
@@ -252,56 +260,159 @@ class _AnuncioFormState extends State<_AnuncioForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              widget.item == null ? 'Nuevo Anuncio' : 'Editar Anuncio',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 20),
-            _Field(label: 'Título *', controller: _tituloCtrl),
-            const SizedBox(height: 12),
-            _Field(
-                label: 'Descripción *',
-                controller: _descCtrl,
-                maxLines: 3),
-            const SizedBox(height: 12),
-            _Field(
-                label: 'URL de imagen (opcional)',
-                controller: _urlCtrl),
-            const SizedBox(height: 12),
-            _DateRow(
-              fecha: _fecha,
-              onTap: () async {
-                final d = await showDatePicker(
-                  context: context,
-                  initialDate: _fecha,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2030),
-                  builder: (c, child) => Theme(
-                    data: ThemeData.dark().copyWith(
-                        colorScheme:
-                            const ColorScheme.dark(primary: _accent)),
-                    child: child!,
+            // ── Encabezado ───────────────────────────────────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.item == null ? 'Nuevo Anuncio' : 'Editar Anuncio',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700),
                   ),
-                );
-                if (d != null) setState(() => _fecha = d);
-              },
+                ),
+                TextButton.icon(
+                  onPressed: () => setState(() => _showPreview = !_showPreview),
+                  icon: Icon(
+                    _showPreview ? Icons.edit_rounded : Icons.preview_rounded,
+                    size: 16,
+                    color: _accent,
+                  ),
+                  label: Text(
+                    _showPreview ? 'Editar' : 'Preview',
+                    style: const TextStyle(color: _accent, fontSize: 13),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            _SwitchRow(
-              label: 'Visible para todos',
-              value: _activo,
-              onChanged: (v) => setState(() => _activo = v),
-            ),
+            const SizedBox(height: 16),
+
+            if (_showPreview) ...[  
+              // ── PREVIEW del anuncio ──────────────────────────────────
+              const Text('Vista previa',
+                  style: TextStyle(color: _muted, fontSize: 12)),
+              const SizedBox(height: 8),
+              _AnuncioPreview(
+                titulo: _tituloCtrl.text,
+                descripcion: _descCtrl.text,
+                fecha: _fecha,
+                imageUrl: _imageUrl,
+              ),
+            ] else ...[  
+              // ── FORMULARIO ───────────────────────────────────────────
+              _Field(label: 'Título *', controller: _tituloCtrl,
+                  onChanged: (_) => setState(() {})),
+              const SizedBox(height: 12),
+              _Field(
+                  label: 'Descripción *',
+                  controller: _descCtrl,
+                  maxLines: 3,
+                  onChanged: (_) => setState(() {})),
+              const SizedBox(height: 16),
+
+              // ── Imagen ───────────────────────────────────────────────
+              const Text('Imagen del anuncio',
+                  style: TextStyle(color: _muted, fontSize: 12)),
+              const SizedBox(height: 8),
+              if (_imageUrl != null && _imageUrl!.isNotEmpty) ...[  
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    _imageUrl!,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 160,
+                      color: const Color(0xFF1E2E4A),
+                      child: const Icon(Icons.broken_image_outlined,
+                          color: Colors.white24, size: 40),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(children: [
+                  Expanded(
+                    child: _outlineBtn(
+                      icon: Icons.edit_rounded,
+                      label: 'Cambiar imagen',
+                      onTap: _pickImage,
+                      loading: _uploadingImage,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _outlineBtn(
+                    icon: Icons.delete_outline_rounded,
+                    label: 'Quitar',
+                    color: Colors.redAccent,
+                    onTap: () => setState(() => _imageUrl = null),
+                  ),
+                ]),
+              ] else
+                _outlineBtn(
+                  icon: Icons.add_photo_alternate_outlined,
+                  label: _uploadingImage
+                      ? 'Subiendo…'
+                      : 'Subir imagen desde dispositivo',
+                  onTap: _pickImage,
+                  loading: _uploadingImage,
+                  fullWidth: true,
+                ),
+              const SizedBox(height: 16),
+
+              // ── Fecha ────────────────────────────────────────────────
+              _DateRow(
+                fecha: _fecha,
+                onTap: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _fecha,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                    builder: (c, child) => Theme(
+                      data: ThemeData.dark().copyWith(
+                          colorScheme:
+                              const ColorScheme.dark(primary: _accent)),
+                      child: child!,
+                    ),
+                  );
+                  if (d != null) setState(() => _fecha = d);
+                },
+              ),
+              const SizedBox(height: 12),
+              // ── Visibilidad ──────────────────────────────────────────
+              const Text('Visibilidad',
+                  style: TextStyle(color: _muted, fontSize: 12)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _VisChip(label: 'Todos',    value: 'todos',    group: _visibilidad, onTap: (v) => setState(() => _visibilidad = v)),
+                  const SizedBox(width: 8),
+                  _VisChip(label: 'Miembros', value: 'miembros', group: _visibilidad, onTap: (v) => setState(() => _visibilidad = v)),
+                  const SizedBox(width: 8),
+                  _VisChip(label: 'Por rol',  value: 'rol',      group: _visibilidad, onTap: (v) => setState(() => _visibilidad = v)),
+                ],
+              ),
+              if (_visibilidad == 'rol') ...[  
+                const SizedBox(height: 10),
+                _Field(label: 'Rol requerido', controller: _rolCtrl),
+              ],
+              const SizedBox(height: 12),
+              _SwitchRow(
+                label: 'Activo',
+                value: _activo,
+                onChanged: (v) => setState(() => _activo = v),
+              ),
+            ],
+
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _accent,
-                  foregroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
@@ -312,15 +423,66 @@ class _AnuncioFormState extends State<_AnuncioForm> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.black))
+                            strokeWidth: 2, color: Colors.white))
                     : Text(
-                        widget.item == null
-                            ? 'Publicar Anuncio'
-                            : 'Guardar Cambios',
+                        widget.item == null ? 'Publicar Anuncio' : 'Guardar Cambios',
                         style: const TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    setState(() => _uploadingImage = true);
+    try {
+      final url =
+          await CloudinaryService.instance.pickAndUpload(folder: 'anuncios');
+      if (url != null && mounted) setState(() => _imageUrl = url);
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
+  Widget _outlineBtn({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color color = _accent,
+    bool loading = false,
+    bool fullWidth = false,
+  }) {
+    return InkWell(
+      onTap: loading ? null : onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: fullWidth ? double.infinity : null,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: color.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (loading)
+              SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: color))
+            else
+              Icon(icon, color: color, size: 16),
+            const SizedBox(width: 8),
+            Text(label,
+                style: TextStyle(
+                    color: color,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -336,15 +498,16 @@ class _AnuncioFormState extends State<_AnuncioForm> {
     }
     setState(() => _saving = true);
     try {
-      final url =
-          _urlCtrl.text.trim().isEmpty ? null : _urlCtrl.text.trim();
+      final rol = _visibilidad == 'rol' ? _rolCtrl.text.trim() : null;
       if (widget.item == null) {
         await SupabaseService.instance.crearAnuncio(
           titulo: _tituloCtrl.text.trim(),
           descripcion: _descCtrl.text.trim(),
           fecha: _fecha,
           activo: _activo,
-          imagenUrl: url,
+          imagenUrl: _imageUrl,
+          visibilidad: _visibilidad,
+          rolRequerido: rol,
         );
       } else {
         await SupabaseService.instance.actualizarAnuncio(
@@ -353,7 +516,9 @@ class _AnuncioFormState extends State<_AnuncioForm> {
           descripcion: _descCtrl.text.trim(),
           fecha: _fecha,
           activo: _activo,
-          imagenUrl: url,
+          imagenUrl: _imageUrl,
+          visibilidad: _visibilidad,
+          rolRequerido: rol,
         );
       }
       if (mounted) Navigator.pop(context);
@@ -368,16 +533,107 @@ class _AnuncioFormState extends State<_AnuncioForm> {
   }
 }
 
+// ── Preview fiel al card real ──────────────────────────────────────────────────
+class _AnuncioPreview extends StatelessWidget {
+  final String titulo;
+  final String descripcion;
+  final DateTime fecha;
+  final String? imageUrl;
+
+  static const Color _accentColor = Color(0xFFBF1E2E);
+  static const Color _surfaceColor = Color(0xFF0F1C30);
+
+  const _AnuncioPreview({
+    required this.titulo,
+    required this.descripcion,
+    required this.fecha,
+    this.imageUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fechaStr = DateFormat('d MMM yyyy', 'es').format(fecha);
+    return Container(
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF1E2E4A)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (imageUrl != null && imageUrl!.isNotEmpty)
+            Image.network(
+              imageUrl!,
+              height: 180,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                height: 180,
+                color: const Color(0xFF1E2E4A),
+                child: const Icon(Icons.image_not_supported_outlined,
+                    color: Colors.white38, size: 40),
+              ),
+            )
+          else
+            Container(
+              height: 120,
+              color: const Color(0xFF1E2E4A),
+              child: const Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.image_outlined, color: Colors.white24, size: 36),
+                  SizedBox(height: 6),
+                  Text('Sin imagen', style: TextStyle(color: Colors.white24, fontSize: 12)),
+                ]),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titulo.isEmpty ? 'Título del anuncio' : titulo,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  descripcion.isEmpty ? 'Descripción del anuncio…' : descripcion,
+                  style: const TextStyle(
+                      color: Color(0xFFB5B5B5), fontSize: 14, height: 1.5),
+                ),
+                const SizedBox(height: 12),
+                Row(children: [
+                  const Icon(Icons.calendar_today_outlined,
+                      color: _accentColor, size: 14),
+                  const SizedBox(width: 6),
+                  Text(fechaStr,
+                      style: const TextStyle(
+                          color: _accentColor, fontSize: 12)),
+                ]),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Widgets reutilizables del formulario ──────────────────────────────────────
 
 class _Field extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final int maxLines;
+  final ValueChanged<String>? onChanged;
   static const Color _muted = Color(0xFFB5B5B5);
 
   const _Field(
-      {required this.label, required this.controller, this.maxLines = 1});
+      {required this.label, required this.controller, this.maxLines = 1, this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -389,6 +645,7 @@ class _Field extends StatelessWidget {
         TextField(
           controller: controller,
           maxLines: maxLines,
+          onChanged: onChanged,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             filled: true,
@@ -431,6 +688,48 @@ class _DateRow extends StatelessWidget {
             Text(DateFormat('d MMM yyyy', 'es').format(fecha),
                 style: const TextStyle(color: Colors.white)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VisChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final String group;
+  final ValueChanged<String> onTap;
+  static const Color _accent = Color(0xFFBF1E2E);
+
+  const _VisChip({
+    required this.label,
+    required this.value,
+    required this.group,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = value == group;
+    return GestureDetector(
+      onTap: () => onTap(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? _accent : const Color(0xFF1E2E4A),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? _accent : Colors.white24,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : Colors.white60,
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
       ),
     );
