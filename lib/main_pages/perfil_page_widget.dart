@@ -361,6 +361,33 @@ class _PerfilPageWidgetState extends State<PerfilPageWidget> {
 
                   const SizedBox(height: 32),
 
+                  // ── Mi Equipo ─────────────────────────────────────────────
+                  StreamBuilder<EquipoSolicitud?>(
+                    stream: SupabaseService.instance.miSolicitudStream(),
+                    builder: (context, snap) {
+                      final s = snap.data;
+                      if (s == null) return const SizedBox();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'MI EQUIPO',
+                            style: TextStyle(
+                              color: _accent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _EquipoStatusCard(solicitud: s),
+                        ],
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 32),
+
                   // ── Cerrar sesión ─────────────────────────────────────────
                   SizedBox(
                     width: double.infinity,
@@ -517,6 +544,102 @@ class _PerfilPageWidgetState extends State<PerfilPageWidget> {
             letterSpacing: 1,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Equipo status card ────────────────────────────────────────────────────────
+class _EquipoStatusCard extends StatelessWidget {
+  final EquipoSolicitud solicitud;
+
+  static const Color _surface = Color(0xFF0F1C30);
+  static const Color _border  = Color(0xFF1E2E4A);
+
+  const _EquipoStatusCard({required this.solicitud});
+
+  Color get _color {
+    switch (solicitud.estado) {
+      case 'aprobado':  return const Color(0xFF40C072);
+      case 'rechazado': return Colors.redAccent;
+      default:          return const Color(0xFFD4A017);
+    }
+  }
+
+  IconData get _icon {
+    switch (solicitud.estado) {
+      case 'aprobado':  return Icons.check_circle_rounded;
+      case 'rechazado': return Icons.cancel_rounded;
+      default:          return Icons.hourglass_top_rounded;
+    }
+  }
+
+  String get _estadoLabel {
+    switch (solicitud.estado) {
+      case 'aprobado':  return 'Miembro activo';
+      case 'rechazado': return 'Solicitud rechazada';
+      default:          return 'Solicitud pendiente';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _color.withOpacity(0.35)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(_icon, color: _color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      solicitud.equipoNombre,
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(_estadoLabel,
+                        style: TextStyle(color: _color, fontSize: 12, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (solicitud.estado == 'rechazado' &&
+              solicitud.motivo != null &&
+              solicitud.motivo!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Motivo: ${solicitud.motivo}',
+                style: const TextStyle(color: Colors.redAccent, fontSize: 13, height: 1.4),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

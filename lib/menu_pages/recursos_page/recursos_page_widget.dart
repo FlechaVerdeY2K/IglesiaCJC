@@ -25,7 +25,7 @@ class _RecursosPageWidgetState extends State<RecursosPageWidget>
   late RecursosPageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final List<String> _tabs = ['Todos', 'PDF', 'Audio', 'Video'];
+  final List<String> _tabs = ['Todos', 'Equipos', 'PDF', 'Audio', 'Video'];
   late TabController _tabController;
 
   @override
@@ -51,6 +51,8 @@ class _RecursosPageWidgetState extends State<RecursosPageWidget>
         return Icons.headphones_rounded;
       case 'video':
         return Icons.play_circle_outline_rounded;
+      case 'equipos':
+        return Icons.groups_rounded;
       default:
         return Icons.insert_drive_file_rounded;
     }
@@ -115,15 +117,28 @@ class _RecursosPageWidgetState extends State<RecursosPageWidget>
           }
           final todos = snapshot.data ?? [];
           if (todos.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.library_books_rounded,
-                      color: Colors.white24, size: 72),
-                  SizedBox(height: 16),
-                  Text('Los recursos llegarán pronto',
-                      style: TextStyle(color: _muted, fontSize: 16)),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.library_books_rounded,
+                        color: Colors.white24, size: 48),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Los recursos llegarán pronto',
+                      style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  const Text('Vuelve pronto',
+                      style: TextStyle(color: Colors.white30, fontSize: 13)),
                 ],
               ),
             );
@@ -131,75 +146,177 @@ class _RecursosPageWidgetState extends State<RecursosPageWidget>
           return TabBarView(
             controller: _tabController,
             children: _tabs.map((tab) {
-              final filtered = tab == 'Todos'
-                  ? todos
-                  : todos
-                      .where((r) =>
-                          r.tipo.toLowerCase() == tab.toLowerCase())
-                      .toList();
+              final List<Recurso> filtered;
+              if (tab == 'Todos') {
+                filtered = todos;
+              } else if (tab == 'Equipos') {
+                filtered = todos
+                    .where((r) => r.audiencia == 'equipos')
+                    .toList();
+              } else {
+                filtered = todos
+                    .where((r) =>
+                        r.tipo.toLowerCase() == tab.toLowerCase())
+                    .toList();
+              }
               if (filtered.isEmpty) {
-                return const Center(
-                  child: Text('Sin recursos en esta categoría',
-                      style: TextStyle(color: _muted)),
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(_iconForTipo(tab.toLowerCase()),
+                          color: Colors.white24, size: 48),
+                      const SizedBox(height: 12),
+                      Text(
+                          tab == 'Equipos'
+                              ? 'Sin recursos para equipos'
+                              : 'Sin recursos de tipo $tab',
+                          style: const TextStyle(
+                              color: Colors.white38, fontSize: 14)),
+                    ],
+                  ),
                 );
               }
-              return ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: filtered.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, i) {
-                  final r = filtered[i];
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: _surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: _colorForTipo(r.tipo).withOpacity(0.3)),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      leading: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: _colorForTipo(r.tipo).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(_iconForTipo(r.tipo),
-                            color: _colorForTipo(r.tipo), size: 26),
-                      ),
-                      title: Text(
-                        r.titulo,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15),
-                      ),
-                      subtitle: r.descripcion.isNotEmpty
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                r.descripcion,
-                                style: const TextStyle(
-                                    color: _muted, fontSize: 13),
-                              ),
-                            )
-                          : null,
-                      trailing: IconButton(
-                        icon: const Icon(Icons.open_in_new_rounded,
-                            color: _accent),
-                        onPressed: () => launchURL(r.url),
-                        tooltip: 'Abrir',
-                      ),
-                    ),
-                  );
-                },
-              );
+              // Para el tab Equipos cargamos el mapa id→nombre
+              if (tab == 'Equipos') {
+                return StreamBuilder<List<Equipo>>(
+                  stream: SupabaseService.instance.equiposStream(),
+                  builder: (context, eqSnap) {
+                    final equipoMap = <String, String>{
+                      for (final e in eqSnap.data ?? []) e.id: e.nombre
+                    };
+                    return _buildList(filtered, equipoMap);
+                  },
+                );
+              }
+              return _buildList(filtered, {});
             }).toList(),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildList(List<Recurso> items, Map<String, String> equipoMap) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final r = items[i];
+        final color = _colorForTipo(r.tipo);
+        final equipoNombre = r.equipoId != null ? equipoMap[r.equipoId] : null;
+        return Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            onTap: () => launchURL(r.url),
+            borderRadius: BorderRadius.circular(14),
+            splashColor: color.withOpacity(0.1),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: color.withOpacity(0.25)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50, height: 50,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(_iconForTipo(r.tipo), color: color, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(r.titulo,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14)),
+                        if (r.descripcion.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(r.descripcion,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: Color(0xFF8FA3BF),
+                                  fontSize: 12,
+                                  height: 1.4)),
+                        ],
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                r.tipo.toUpperCase(),
+                                style: TextStyle(
+                                    color: color,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8),
+                              ),
+                            ),
+                            if (equipoNombre != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF26A69A).withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.groups_rounded,
+                                        color: Color(0xFF26A69A), size: 11),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      equipoNombre,
+                                      style: const TextStyle(
+                                          color: Color(0xFF26A69A),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.open_in_new_rounded,
+                        color: color, size: 16),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

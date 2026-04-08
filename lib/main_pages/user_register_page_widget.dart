@@ -63,6 +63,8 @@ class _UserRegisterPageWidgetState extends State<UserRegisterPageWidget> {
       if (mounted) context.go('/homePage');
     } on AuthException catch (e) {
       _showError(AuthService.errorMessage(e));
+    } catch (e) {
+      _showError(e.toString());
     } finally {
       _setLoading(false);
     }

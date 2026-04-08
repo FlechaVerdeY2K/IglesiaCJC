@@ -41,6 +41,10 @@ class _HomePageWidgetState extends State<HomePageWidget>
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // Streams stored in state to avoid recreation on rebuild
+  Stream<List<Oracion>>? _oracionesStream;
+  Stream<List<Notificacion>>? _notifsStream;
+
   late AnimationController _drawerCtrl;
   late Animation<double> _drawerAnim;
 
@@ -56,6 +60,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
     _listenHomeConfig();
     _checkAdmin();
     _loadUserProfile();
+    _initNotifStreams();
 
     _drawerCtrl = AnimationController(
       vsync: this,
@@ -106,6 +111,13 @@ class _HomePageWidgetState extends State<HomePageWidget>
   Future<void> _checkAdmin() async {
     final admin = await SupabaseService.instance.isAdmin;
     if (mounted) setState(() => _isAdmin = admin);
+  }
+
+  void _initNotifStreams() {
+    final uid = AuthService.instance.currentUser?.id;
+    if (uid == null) return;
+    _oracionesStream = SupabaseService.instance.misOracionesStream(uid);
+    _notifsStream = SupabaseService.instance.misNotificacionesStream();
   }
 
   void _listenHomeConfig() {
@@ -253,48 +265,52 @@ class _HomePageWidgetState extends State<HomePageWidget>
                   child: _buildSocialRow(context),
                 ),
                 const SizedBox(height: 32),
-                // Ofrendas
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildDonationCard(context),
-                ),
-                const SizedBox(height: 32),
-                // GPS
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildSectionLabel('Grupos de Proceso Semanal'),
-                ),
-                const SizedBox(height: 14),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildGpsCard(
-                          context,
-                          icon: Icons.group_add_rounded,
-                          title: 'Unirme a un GPS',
-                          subtitle: 'Sé parte de un grupo',
-                          color: const Color(0xFF1B4332),
-                          accentColor: const Color(0xFF40C072),
-                          onTap: () => context.pushNamed(RegistroGpsPageWidget.routeName),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildGpsCard(
-                          context,
-                          icon: Icons.add_home_work_rounded,
-                          title: 'Iniciar un GPS',
-                          subtitle: 'Abrí tu propio grupo',
-                          color: const Color(0xFF1A237E),
-                          accentColor: const Color(0xFF7986CB),
-                          onTap: () => context.pushNamed(CreacionGpsPageWidget.routeName),
-                        ),
-                      ),
-                    ],
+                // Ofrendas (solo logueados)
+                if (AuthService.instance.currentUser != null) ...[  
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildDonationCard(context),
                   ),
-                ),
+                  const SizedBox(height: 32),
+                ],
+                // GPS (solo logueados)
+                if (AuthService.instance.currentUser != null) ...[  
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildSectionLabel('Grupos de Proceso Semanal'),
+                  ),
+                  const SizedBox(height: 14),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildGpsCard(
+                            context,
+                            icon: Icons.group_add_rounded,
+                            title: 'Unirme a un GPS',
+                            subtitle: 'Sé parte de un grupo',
+                            color: const Color(0xFF1B4332),
+                            accentColor: const Color(0xFF40C072),
+                            onTap: () => context.pushNamed(RegistroGpsPageWidget.routeName),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildGpsCard(
+                            context,
+                            icon: Icons.add_home_work_rounded,
+                            title: 'Iniciar un GPS',
+                            subtitle: 'Abrí tu propio grupo',
+                            color: const Color(0xFF1A237E),
+                            accentColor: const Color(0xFF7986CB),
+                            onTap: () => context.pushNamed(CreacionGpsPageWidget.routeName),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 40),
                 // Logo footer
                 Center(
@@ -310,7 +326,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
             ),
           ),
         ),
-          ),
+      ),
           // ── Scrim ──────────────────────────────────────────────────────────
           AnimatedBuilder(
             animation: _drawerAnim,
@@ -345,28 +361,38 @@ class _HomePageWidgetState extends State<HomePageWidget>
     final user = AuthService.instance.currentUser;
     return Material(
       color: const Color(0xFF080E1E),
-      elevation: 16,
+      elevation: 24,
+      shadowColor: Colors.black,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Header perfil ────────────────────────────────────────────────
+            // ── Header ──────────────────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
               decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF1A0A10), Color(0xFF0D1628)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 border: Border(
                     bottom: BorderSide(color: Color(0xFF1E2E4A))),
               ),
+              padding: const EdgeInsets.fromLTRB(20, 20, 16, 20),
               child: user != null
                   ? Row(children: [
-                      Tooltip(
-                        message: 'Ver perfil',
-                        child: InkWell(
-                          onTap: () {
-                            _closeDrawer();
-                            context.pushNamed(PerfilPageWidget.routeName).then((_) => _loadUserProfile());
-                          },
-                          borderRadius: BorderRadius.circular(24),
+                      // Avatar
+                      GestureDetector(
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(PerfilPageWidget.routeName).then((_) => _loadUserProfile());
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: const Color(0xFFBF1E2E), width: 2),
+                          ),
                           child: _buildUserAvatar(user, 24),
                         ),
                       ),
@@ -384,63 +410,72 @@ class _HomePageWidgetState extends State<HomePageWidget>
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w600),
+                                  fontWeight: FontWeight.w700),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            const SizedBox(height: 2),
                             Text(
                               user.email ?? '',
                               style: const TextStyle(
-                                  color: Colors.white38, fontSize: 12),
+                                  color: Color(0xFF6B7FA3), fontSize: 11),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-                      _smallIconBtn(
-                        icon: Icons.person_rounded,
-                        tooltip: 'Ver perfil',
-                        onPressed: () {
-                          _closeDrawer();
-                          context.pushNamed(PerfilPageWidget.routeName);
-                        },
-                      ),
-                      _smallIconBtn(
-                        icon: Icons.logout_rounded,
-                        tooltip: 'Cerrar sesión',
-                        onPressed: () async {
-                          _closeDrawer();
-                          await AuthService.instance.signOut();
-                          if (mounted) context.go(UserLoginPageWidget.routePath);
-                        },
+                      // Logout
+                      Tooltip(
+                        message: 'Cerrar sesión',
+                        child: InkWell(
+                          onTap: () async {
+                            _closeDrawer();
+                            await AuthService.instance.signOut();
+                            if (mounted) context.go(UserLoginPageWidget.routePath);
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.logout_rounded,
+                                color: Color(0xFF6B7FA3), size: 18),
+                          ),
+                        ),
                       ),
                     ])
                   : InkWell(
                       onTap: () {
                         _closeDrawer();
-                        context
-                            .pushNamed(UserLoginPageWidget.routeName);
+                        context.pushNamed(UserLoginPageWidget.routeName);
                       },
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            vertical: 10, horizontal: 12),
+                            vertical: 12, horizontal: 14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0D1628),
-                          borderRadius: BorderRadius.circular(10),
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFFBF1E2E).withOpacity(0.15),
+                              const Color(0xFFBF1E2E).withOpacity(0.05),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                              color: const Color(0xFF1E2E4A)),
+                              color: const Color(0xFFBF1E2E).withOpacity(0.4)),
                         ),
                         child: const Row(children: [
                           Icon(Icons.login_rounded,
                               color: Color(0xFFBF1E2E), size: 20),
                           SizedBox(width: 10),
-                          Text('Iniciar sesión / Registrarse',
+                          Text('Iniciar sesión',
                               style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w500)),
+                                  fontWeight: FontWeight.w600)),
                         ]),
                       ),
                     ),
@@ -451,16 +486,19 @@ class _HomePageWidgetState extends State<HomePageWidget>
                 children: [
                   // ── Información ─────────────────────────────────────────
                   _buildDrawerSection('Información'),
-                  _buildDrawerItem(context,
-                      icon: Icons.campaign_rounded,
-                      label: 'Anuncios',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(AnunciosPageWidget.routeName);
-                      }),
+                  if (AuthService.instance.currentUser != null)
+                    _buildDrawerItem(context,
+                        icon: Icons.campaign_rounded,
+                        label: 'Anuncios',
+                        iconColor: const Color(0xFFBF1E2E),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(AnunciosPageWidget.routeName);
+                        }),
                   _buildDrawerItem(context,
                       icon: Icons.access_time_rounded,
                       label: 'Horarios',
+                      iconColor: const Color(0xFF4A90D9),
                       onTap: () {
                         _closeDrawer();
                         context.pushNamed(HorariosPageWidget.routeName);
@@ -468,6 +506,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                   _buildDrawerItem(context,
                       icon: Icons.location_on_rounded,
                       label: 'Ubicación',
+                      iconColor: const Color(0xFF27AE60),
                       onTap: () {
                         _closeDrawer();
                         context.pushNamed(UbicacionPageWidget.routeName);
@@ -475,98 +514,119 @@ class _HomePageWidgetState extends State<HomePageWidget>
                   _buildDrawerItem(context,
                       icon: Icons.phone_rounded,
                       label: 'Contacto',
+                      iconColor: const Color(0xFF8E44AD),
                       onTap: () {
                         _closeDrawer();
                         context.pushNamed(ContactoPageWidget.routeName);
                       }),
-                  _buildDrawerItem(context,
-                      icon: Icons.volunteer_activism_rounded,
-                      label: 'Ofrendas',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(OfrendasPageWidget.routeName);
-                      }),
+                  if (AuthService.instance.currentUser != null)
+                    _buildDrawerItem(context,
+                        icon: Icons.volunteer_activism_rounded,
+                        label: 'Ofrendas',
+                        iconColor: const Color(0xFFD4A017),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(OfrendasPageWidget.routeName);
+                        }),
 
-                  // ── Comunidad ────────────────────────────────────────────
-                  _buildDrawerSection('Comunidad'),
-                  _buildDrawerItem(context,
-                      icon: Icons.people_rounded,
-                      label: 'Pastores',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(PastoresPageWidget.routeName);
-                      }),
-                  _buildDrawerItem(context,
-                      icon: Icons.groups_rounded,
-                      label: 'Equipos',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(EquiposPageWidget.routeName);
-                      }),
-                  _buildDrawerItem(context,
-                      icon: Icons.favorite_rounded,
-                      label: 'Pedidos de Oración',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(OracionPageWidget.routeName);
-                      }),
+                  // ── Comunidad (solo logueados) ───────────────────────────
+                  if (AuthService.instance.currentUser != null) ...[
+                    _buildDrawerSection('Comunidad'),
+                    _buildDrawerItem(context,
+                        icon: Icons.people_rounded,
+                        label: 'Pastores',
+                        iconColor: const Color(0xFF4A90D9),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(PastoresPageWidget.routeName);
+                        }),
+                    _buildDrawerItem(context,
+                        icon: Icons.groups_rounded,
+                        label: 'Equipos',
+                        iconColor: const Color(0xFF27AE60),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(EquiposPageWidget.routeName);
+                        }),
+                    _buildDrawerItem(context,
+                        icon: Icons.favorite_rounded,
+                        label: 'Pedidos de Oración',
+                        iconColor: const Color(0xFFBF1E2E),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(OracionPageWidget.routeName);
+                        }),
+                  ],
 
-                  // ── Crecimiento ──────────────────────────────────────────
-                  _buildDrawerSection('Crecimiento'),
-                  _buildDrawerItem(context,
-                      icon: Icons.book_rounded,
-                      label: 'Devocional',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(DevocionalPageWidget.routeName);
-                      }),
-                  _buildDrawerItem(context,
-                      icon: Icons.library_books_rounded,
-                      label: 'Recursos',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(RecursosPageWidget.routeName);
-                      }),
-                  _buildDrawerItem(context,
-                      icon: Icons.music_note_rounded,
-                      label: 'Playlist',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(PlaylistPageWidget.routeName);
-                      }),
+                  // ── Crecimiento (solo logueados) ─────────────────────────
+                  if (AuthService.instance.currentUser != null) ...[
+                    _buildDrawerSection('Crecimiento'),
+                    _buildDrawerItem(context,
+                        icon: Icons.auto_stories_rounded,
+                        label: 'Devocional',
+                        iconColor: const Color(0xFFD4A017),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(DevocionalPageWidget.routeName);
+                        }),
+                    _buildDrawerItem(context,
+                        icon: Icons.library_books_rounded,
+                        label: 'Recursos',
+                        iconColor: const Color(0xFF4A90D9),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(RecursosPageWidget.routeName);
+                        }),
+                    _buildDrawerItem(context,
+                        icon: Icons.music_note_rounded,
+                        label: 'Playlist',
+                        iconColor: const Color(0xFF8E44AD),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(PlaylistPageWidget.routeName);
+                        }),
+                  ],
 
-                  // ── GPS ──────────────────────────────────────────────────
-                  _buildDrawerSection('GPS'),
-                  _buildDrawerItem(context,
-                      icon: Icons.group_add_rounded,
-                      label: 'Unirme a un GPS',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(RegistroGpsPageWidget.routeName);
-                      }),
-                  _buildDrawerItem(context,
-                      icon: Icons.add_location_alt_rounded,
-                      label: 'Iniciar un GPS',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(CreacionGpsPageWidget.routeName);
-                      }),
+                  // ── GPS (solo logueados) ─────────────────────────────────
+                  if (AuthService.instance.currentUser != null) ...[
+                    _buildDrawerSection('GPS'),
+                    _buildDrawerItem(context,
+                        icon: Icons.group_add_rounded,
+                        label: 'Unirme a un GPS',
+                        iconColor: const Color(0xFF27AE60),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(RegistroGpsPageWidget.routeName);
+                        }),
+                    _buildDrawerItem(context,
+                        icon: Icons.add_location_alt_rounded,
+                        label: 'Iniciar un GPS',
+                        iconColor: const Color(0xFF4A90D9),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(CreacionGpsPageWidget.routeName);
+                        }),
+                  ],
 
-                  // ── Multimedia ───────────────────────────────────────────
-                  _buildDrawerSection('Multimedia'),
-                  _buildDrawerItem(context,
-                      icon: Icons.photo_library_rounded,
-                      label: 'Galería',
-                      onTap: () {
-                        _closeDrawer();
-                        context.pushNamed(GaleriaPageWidget.routeName);
-                      }),
+                  // ── Multimedia (solo logueados) ──────────────────────────
+                  if (AuthService.instance.currentUser != null) ...[
+                    _buildDrawerSection('Multimedia'),
+                    _buildDrawerItem(context,
+                        icon: Icons.photo_library_rounded,
+                        label: 'Galería',
+                        iconColor: const Color(0xFF8E44AD),
+                        onTap: () {
+                          _closeDrawer();
+                          context.pushNamed(GaleriaPageWidget.routeName);
+                        }),
+                  ],
 
                   // ── App ──────────────────────────────────────────────────
                   _buildDrawerSection('App'),
                   _buildDrawerItem(context,
                       icon: Icons.share_rounded,
                       label: 'Compartir App',
+                      iconColor: const Color(0xFF4A90D9),
                       onTap: () {
                         _closeDrawer();
                         Share.share(
@@ -595,15 +655,27 @@ class _HomePageWidgetState extends State<HomePageWidget>
 
   Widget _buildDrawerSection(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          color: Color(0xFFBF1E2E),
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-        ),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
+      child: Row(
+        children: [
+          Container(
+            width: 3, height: 12,
+            decoration: BoxDecoration(
+              color: const Color(0xFFBF1E2E),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              color: Color(0xFF8FA3BF),
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -680,29 +752,49 @@ class _HomePageWidgetState extends State<HomePageWidget>
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    Color? iconColor,
   }) {
-    return ListTile(
-      onTap: onTap,
-      leading: Icon(icon, color: Colors.white70, size: 20),
-      title: Text(
-        label,
-        style: FlutterFlowTheme.of(context).titleSmall.override(
-              fontFamily: FlutterFlowTheme.of(context).titleSmallFamily,
-              color: Colors.white,
-              fontSize: 14,
-              letterSpacing: 0.0,
-              useGoogleFonts: !FlutterFlowTheme.of(context).titleSmallIsCustom,
+    final color = iconColor ?? const Color(0xFFBF1E2E);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          highlightColor: color.withOpacity(0.08),
+          splashColor: color.withOpacity(0.12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 34, height: 34,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, color: color, size: 17),
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded,
+                    color: Color(0xFF3A4D66), size: 18),
+              ],
             ),
+          ),
+        ),
       ),
-      trailing: const Icon(
-        Icons.chevron_right_rounded,
-        color: Colors.white70,
-        size: 18,
-      ),
-      dense: true,
-      visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-      minLeadingWidth: 24,
     );
   }
 
@@ -713,31 +805,58 @@ class _HomePageWidgetState extends State<HomePageWidget>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          heroUrl.isNotEmpty
-              ? Image.network(heroUrl, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Image.asset(
-                    'assets/images/WhatsApp_Image_2025-08-23_at_10.40.17.jpeg',
-                    fit: BoxFit.cover))
-              : Image.asset(
-                  'assets/images/WhatsApp_Image_2025-08-23_at_10.40.17.jpeg',
-                  fit: BoxFit.cover,
+          // Fondo: imagen del admin si existe, sino degradado oscuro
+          if (heroUrl.isNotEmpty)
+            Image.network(
+              heroUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF0D1628), Color(0xFF1A0A0D), Color(0xFF080E1E)],
+                  ),
                 ),
-          // Gradiente: transparente arriba → negro sólido abajo (zona del texto)
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: [0.0, 0.35, 0.65, 1.0],
-                colors: [
-                  Color(0x00000000),
-                  Color(0x33000000),
-                  Color(0xCC000000),
-                  Color(0xFF080E1E),
-                ],
+              ),
+            )
+          else
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF0D1628), Color(0xFF1A0A0D), Color(0xFF080E1E)],
+                ),
               ),
             ),
-          ),
+          // Overlay oscuro sobre la imagen para legibilidad del texto
+          if (heroUrl.isNotEmpty)
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.4, 0.7, 1.0],
+                  colors: [
+                    Color(0x44000000),
+                    Color(0x66000000),
+                    Color(0xCC000000),
+                    Color(0xFF080E1E),
+                  ],
+                ),
+              ),
+            )
+          else
+            // Patrón decorativo sutil cuando no hay imagen
+            Positioned(
+              top: -40,
+              right: -40,
+              child: Opacity(
+                opacity: 0.06,
+                child: const Icon(Icons.church_rounded, size: 280, color: Colors.white),
+              ),
+            ),
           // Contenido centrado
           Positioned(
             bottom: 32,
@@ -926,16 +1045,17 @@ class _HomePageWidgetState extends State<HomePageWidget>
         .where((l) => l.isNotEmpty)
         .toList();
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1C30),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFF1E2E4A)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
@@ -957,33 +1077,17 @@ class _HomePageWidgetState extends State<HomePageWidget>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           ...lines.map((line) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 6),
-                      width: 5,
-                      height: 5,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFBF1E2E),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        line,
-                        style: const TextStyle(
-                          color: Color(0xFFD0D8E8),
-                          fontSize: 14,
-                          height: 1.45,
-                        ),
-                      ),
-                    ),
-                  ],
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  line,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFFD0D8E8),
+                    fontSize: 14,
+                    height: 1.45,
+                  ),
                 ),
               )),
         ],
@@ -1346,35 +1450,17 @@ class _HomePageWidgetState extends State<HomePageWidget>
       button: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withOpacity(0.25)),
-          ),
-          child: Column(
-            children: [
-              FaIcon(icon, color: color, size: 26),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: FaIcon(icon, color: color, size: 32),
         ),
       ),
     );
   }
 
   Widget _buildDonationCard(BuildContext context) {
+    final ofrendasUrl = _homeConfig.ofrendasImageUrl;
     return InkWell(
       onTap: () => context.pushNamed(OfrendasPageWidget.routeName),
       borderRadius: BorderRadius.circular(8.0),
@@ -1382,12 +1468,17 @@ class _HomePageWidgetState extends State<HomePageWidget>
         height: 188.0,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8.0),
-          image: const DecorationImage(
-            image: AssetImage(
-              'assets/images/WhatsApp_Image_2025-08-25_at_06.58.19.jpeg',
-            ),
-            fit: BoxFit.cover,
-          ),
+          image: ofrendasUrl.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(ofrendasUrl),
+                  fit: BoxFit.cover,
+                )
+              : const DecorationImage(
+                  image: AssetImage(
+                    'assets/images/WhatsApp_Image_2025-08-25_at_06.58.19.jpeg',
+                  ),
+                  fit: BoxFit.cover,
+                ),
         ),
         child: Container(
           padding: const EdgeInsets.all(18.0),
@@ -1540,7 +1631,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
 
   Widget _buildNotificationBell(BuildContext context) {
     final uid = AuthService.instance.currentUser?.id;
-    if (uid == null) {
+    if (uid == null || _oracionesStream == null || _notifsStream == null) {
       return _smallIconBtn(
         icon: Icons.notifications_rounded,
         tooltip: 'Anuncios',
@@ -1548,52 +1639,73 @@ class _HomePageWidgetState extends State<HomePageWidget>
       );
     }
     return StreamBuilder<List<Oracion>>(
-      stream: SupabaseService.instance.misOracionesStream(uid),
-      builder: (context, snapshot) {
-        final oraciones = snapshot.data ?? [];
+      stream: _oracionesStream,
+      builder: (context, snapOr) {
+        final oraciones = snapOr.data ?? [];
         final totalOrantes =
             oraciones.fold<int>(0, (sum, o) => sum + o.orantes);
-        final hasNew = totalOrantes > _lastSeenOrantes;
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            _smallIconBtn(
-              icon: Icons.notifications_rounded,
-              tooltip: 'Mis oraciones',
-              onPressed: () async {
-                await _markOrantesAsSeen(totalOrantes);
-                if (context.mounted) {
-                  context.pushNamed(MisOracionesPageWidget.routeName);
-                }
-              },
-            ),
-            if (hasNew)
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF4CAF50),
-                    shape: BoxShape.circle,
-                  ),
-                  constraints:
-                      const BoxConstraints(minWidth: 16, minHeight: 16),
-                  child: Text(
-                    (totalOrantes - _lastSeenOrantes) > 99
-                        ? '99+'
-                        : '${totalOrantes - _lastSeenOrantes}',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800),
-                    textAlign: TextAlign.center,
-                  ),
+        final newOrantes = (totalOrantes - _lastSeenOrantes).clamp(0, 999);
+
+        return StreamBuilder<List<Notificacion>>(
+          stream: _notifsStream,
+          builder: (context, snapNotif) {
+            final notifs = snapNotif.data ?? [];
+            final unreadNotifs = notifs.where((n) => !n.leido).length;
+            final totalBadge = newOrantes + unreadNotifs;
+
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                _smallIconBtn(
+                  icon: Icons.notifications_rounded,
+                  tooltip: 'Notificaciones',
+                  onPressed: () async {
+                    await _markOrantesAsSeen(totalOrantes);
+                    if (context.mounted) {
+                      _showNotificationsSheet(context, notifs, oraciones);
+                    }
+                  },
                 ),
-              ),
-          ],
+                if (totalBadge > 0)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4CAF50),
+                        shape: BoxShape.circle,
+                      ),
+                      constraints:
+                          const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        totalBadge > 99 ? '99+' : '$totalBadge',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+
+  void _showNotificationsSheet(
+      BuildContext context, List<Notificacion> notifs, List<Oracion> oraciones) {
+    // Mark all personal notifs as read
+    SupabaseService.instance.marcarTodasLeidas();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _NotificationsSheet(notifs: notifs, oraciones: oraciones),
     );
   }
 
@@ -1799,6 +1911,442 @@ class _PulsingDotState extends State<_PulsingDot>
           color: Colors.white,
           shape: BoxShape.circle,
         ),
+      ),
+    );
+  }
+}
+
+// ── Notifications Sheet ───────────────────────────────────────────────────────
+class _NotificationsSheet extends StatefulWidget {
+  final List<Notificacion> notifs;
+  final List<Oracion> oraciones;
+
+  const _NotificationsSheet({required this.notifs, required this.oraciones});
+
+  @override
+  State<_NotificationsSheet> createState() => _NotificationsSheetState();
+}
+
+class _NotificationsSheetState extends State<_NotificationsSheet> {
+  static const Color _bg      = Color(0xFF0B1526);
+  static const Color _surface = Color(0xFF1A2A42);
+  static const Color _accent  = Color(0xFFBF1E2E);
+
+  int _tab = 0; // 0 = notifs, 1 = oraciones
+
+  static String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inSeconds < 60) return 'Ahora';
+    if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
+    if (diff.inHours < 24)   return 'Hace ${diff.inHours} h';
+    if (diff.inDays == 1)    return 'Ayer';
+    if (diff.inDays < 7)     return 'Hace ${diff.inDays} días';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final oracionesConOr = widget.oraciones
+        .where((o) => o.orantes > 0)
+        .toList()
+      ..sort((a, b) => b.orantes.compareTo(a.orantes));
+
+    final unread = widget.notifs.where((n) => !n.leido).length;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      height: MediaQuery.of(context).size.height * 0.50,
+      child: Column(
+        children: [
+          // ── Handle ──
+          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ── Header ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                const Icon(Icons.notifications_rounded,
+                    color: Colors.white70, size: 20),
+                const SizedBox(width: 8),
+                const Text('Notificaciones',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800)),
+                if (unread > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _accent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text('$unread',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800)),
+                  ),
+                ],
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded,
+                      color: Colors.white54, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                  splashRadius: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // ── Tabs ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                _TabPill(
+                  label: 'Avisos',
+                  count: widget.notifs.length,
+                  active: _tab == 0,
+                  onTap: () => setState(() => _tab = 0),
+                ),
+                const SizedBox(width: 8),
+                _TabPill(
+                  label: 'Oraciones',
+                  count: oracionesConOr.length,
+                  active: _tab == 1,
+                  onTap: () => setState(() => _tab = 1),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Divider(color: Color(0xFF1A2A42), height: 1),
+
+          // ── Content ──
+          Expanded(
+            child: _tab == 0
+                ? _buildNotifsTab(widget.notifs)
+                : _buildOracionesTab(oracionesConOr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotifsTab(List<Notificacion> notifs) {
+    if (notifs.isEmpty) {
+      return const _EmptyState(
+        icon: Icons.mark_email_read_rounded,
+        label: 'Todo al día',
+        sub: 'No tienes notificaciones',
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      itemCount: notifs.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) =>
+          _NotifTile(notif: notifs[i], timeAgo: _timeAgo(notifs[i].creadoEn)),
+    );
+  }
+
+  Widget _buildOracionesTab(List<Oracion> oraciones) {
+    if (oraciones.isEmpty) {
+      return const _EmptyState(
+        icon: Icons.volunteer_activism_rounded,
+        label: 'Sin respuestas aún',
+        sub: 'Cuando alguien ore por ti, aparecerá aquí',
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      itemCount: oraciones.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) => _OracionTile(oracion: oraciones[i]),
+    );
+  }
+}
+
+class _TabPill extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _TabPill({
+    required this.label,
+    required this.count,
+    required this.active,
+    required this.onTap,
+  });
+
+  static const Color _accent = Color(0xFFBF1E2E);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: active ? _accent : const Color(0xFF1A2A42),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: active ? _accent : const Color(0xFF2A3D58),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label,
+                style: TextStyle(
+                    color: active ? Colors.white : Colors.white54,
+                    fontSize: 13,
+                    fontWeight:
+                        active ? FontWeight.w700 : FontWeight.w500)),
+            if (count > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: active
+                      ? Colors.white.withOpacity(0.25)
+                      : _accent.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('$count',
+                    style: TextStyle(
+                        color: active ? Colors.white : _accent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String sub;
+
+  const _EmptyState(
+      {required this.icon, required this.label, required this.sub});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: Colors.white24, size: 40),
+            ),
+            const SizedBox(height: 16),
+            Text(label,
+                style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(sub,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.white30, fontSize: 13, height: 1.4)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotifTile extends StatelessWidget {
+  final Notificacion notif;
+  final String timeAgo;
+  static const Color _surface = Color(0xFF1A2A42);
+  static const Color _accent  = Color(0xFFBF1E2E);
+
+  const _NotifTile({required this.notif, required this.timeAgo});
+
+  @override
+  Widget build(BuildContext context) {
+    final isEquipo = notif.tipo == 'equipo';
+    final isDevo = notif.tipo == 'devocional';
+    final isAprobado = notif.cuerpo.contains('aprobada');
+    final Color color;
+    final IconData icon;
+    if (isDevo) {
+      color = const Color(0xFFD4A017);
+      icon = Icons.auto_stories_rounded;
+    } else if (isEquipo) {
+      color = isAprobado ? const Color(0xFF40C072) : _accent;
+      icon = isAprobado ? Icons.check_circle_rounded : Icons.cancel_rounded;
+    } else {
+      color = _accent;
+      icon = Icons.notifications_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: notif.leido
+            ? const Color(0xFF111E33)
+            : color.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: notif.leido
+              ? const Color(0xFF1A2A42)
+              : color.withOpacity(0.35),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icon pill
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
+            alignment: Alignment.center,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(notif.titulo,
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: notif.leido
+                                  ? FontWeight.w500
+                                  : FontWeight.w700)),
+                    ),
+                    Text(timeAgo,
+                        style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 11)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(notif.cuerpo,
+                    style: const TextStyle(
+                        color: Color(0xFF8FA3BF),
+                        fontSize: 12,
+                        height: 1.4)),
+              ],
+            ),
+          ),
+          if (!notif.leido) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 8, height: 8,
+              margin: const EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OracionTile extends StatelessWidget {
+  final Oracion oracion;
+  static const Color _accent = Color(0xFFBF1E2E);
+
+  const _OracionTile({required this.oracion});
+
+  @override
+  Widget build(BuildContext ctx) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111E33),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF1A2A42)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: _accent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(Icons.favorite_rounded, color: _accent, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              oracion.peticion,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 13, height: 1.4),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _accent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _accent.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${oracion.orantes}',
+                    style: const TextStyle(
+                        color: _accent,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(width: 4),
+                const Text('🙏', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
