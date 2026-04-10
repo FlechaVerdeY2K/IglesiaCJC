@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
-import { Menu, X, ChevronDown, User } from "lucide-react";
+import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 const supabase = createBrowserClient(
@@ -147,7 +147,7 @@ export default function Navbar() {
                 <div className="w-7 h-7 rounded-full border border-accent/40 flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
                   {avatarUrl
                     ? <img src={avatarUrl} className="w-7 h-7 rounded-full object-cover" alt="avatar" />
-                    : <User size={14} className="text-accent" />
+                    : <UserIcon size={14} className="text-accent" />
                   }
                 </div>
                 <span className="text-xs text-white/60 group-hover:text-white max-w-0 group-hover:max-w-[8rem] overflow-hidden whitespace-nowrap pl-0 group-hover:pl-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
