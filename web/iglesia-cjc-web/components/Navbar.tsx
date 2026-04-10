@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
@@ -13,7 +14,7 @@ const supabase = createBrowserClient(
 
 // Links públicos (sin login)
 const PUBLIC_LINKS = [
-  { href: "/sermones", label: "Sermones" },
+  { href: "/sermones", label: "Prédicas" },
   { href: "/eventos", label: "Eventos" },
   { href: "/live", label: "En Vivo" },
   { href: "/contacto", label: "Contacto" },
@@ -32,8 +33,18 @@ const MEMBER_LINKS = [
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [memberOpen, setMemberOpen] = useState(false);
   const pathname = usePathname();
+
+  const toggleMenu = () => {
+    if (open) {
+      setClosing(true);
+      setTimeout(() => { setOpen(false); setClosing(false); }, 400);
+    } else {
+      setOpen(true);
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -43,7 +54,9 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (open) { setClosing(true); setTimeout(() => { setOpen(false); setClosing(false); }, 400); }
+  }, [pathname]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -56,10 +69,19 @@ export default function Navbar() {
         <div className="flex items-center h-16 gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white font-bold text-sm">
-              CJC
+            <Image src="/logo-cjc.png" alt="Logo CJC" width={36} height={36} className="object-contain" />
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="w-[2px] h-8 bg-[#BF1E2E] rounded-full" />
+              <div className="flex flex-col leading-none gap-[3px]">
+                <span className="text-[9px] font-bold tracking-[4px] uppercase text-white/30">Comunidad</span>
+                <span
+                  className="text-[12px] font-black tracking-widest uppercase"
+                  style={{ color: "#fff", textShadow: "0 0 12px rgba(255,255,255,0.25)" }}
+                >
+                  Jesucristo es el camino
+                </span>
+              </div>
             </div>
-            <span className="font-bold text-white text-lg hidden sm:block">Iglesia CJC</span>
           </Link>
 
           {/* Desktop nav */}
@@ -86,7 +108,7 @@ export default function Navbar() {
                   Comunidad <ChevronDown size={14} className={memberOpen ? "rotate-180 transition-transform" : "transition-transform"} />
                 </button>
                 {memberOpen && (
-                  <div className="absolute top-full left-0 mt-1 bg-surface border border-border rounded-xl shadow-xl py-2 min-w-[160px] z-50">
+                  <div className="absolute top-full left-0 mt-1 bg-surface border border-border rounded-xl shadow-xl py-2 min-w-40 z-50">
                     {MEMBER_LINKS.map((l) => (
                       <Link
                         key={l.href}
@@ -107,7 +129,7 @@ export default function Navbar() {
           <div className="hidden lg:flex items-center gap-3 shrink-0 ml-auto">
             {user ? (
               <>
-                <Link href="/perfil" className="text-muted hover:text-white text-sm transition-colors truncate max-w-[180px]">
+                <Link href="/perfil" className="text-muted hover:text-white text-sm transition-colors truncate max-w-45">
                   {user.email}
                 </Link>
                 <button onClick={handleSignOut} className="btn-secondary text-sm py-2 px-4">
@@ -127,15 +149,23 @@ export default function Navbar() {
           </div>
 
           {/* Mobile hamburger */}
-          <button className="lg:hidden ml-auto text-white p-1" onClick={() => setOpen(!open)}>
-            {open ? <X size={24} /> : <Menu size={24} />}
+          <button className="lg:hidden ml-auto text-white p-1 relative w-7 h-7" onClick={toggleMenu}>
+            <span className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${open ? "opacity-0 rotate-90 scale-50" : "opacity-100 rotate-0 scale-100"}`}>
+              <Menu size={24} />
+            </span>
+            <span className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${open ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-50"}`}>
+              <X size={24} />
+            </span>
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
-      {open && (
-        <div className="lg:hidden bg-surface border-t border-border px-6 py-4 flex flex-col gap-1 max-h-[80vh] overflow-y-auto">
+      {(open || closing) && (
+        <div
+          className="lg:hidden bg-surface border-t border-border px-6 py-4 flex flex-col gap-1 max-h-[80vh] overflow-y-auto"
+          style={{ animation: closing ? "menu-slide-up 0.4s ease forwards" : "menu-slide-down 0.4s ease forwards", transformOrigin: "top" }}
+        >
           <p className="text-muted text-xs uppercase font-bold tracking-wider mb-2 mt-1">General</p>
           {PUBLIC_LINKS.map((l) => (
             <Link key={l.href} href={l.href} className="text-muted hover:text-white py-2 text-sm">

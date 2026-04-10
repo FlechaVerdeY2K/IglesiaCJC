@@ -50,3 +50,4 @@ app.*.map.json
 /.templateengine/
 /releases_windows.json
 /all-blobs.txt
+.vercel

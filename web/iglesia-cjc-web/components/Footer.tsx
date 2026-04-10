@@ -1,55 +1,78 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-border mt-20">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
+    <footer className="relative mt-6 border-t border-white/5 overflow-hidden">
+      {/* glow rojo fondo */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-125 h-32 rounded-full blur-[80px] pointer-events-none" style={{ background: "rgba(191,30,46,0.07)" }} />
+
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
+
+          {/* Brand */}
+          <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white font-bold text-sm">
-                CJC
+              <Image src="/logo-cjc.png" alt="Logo CJC" width={36} height={36} className="object-contain" />
+              <div className="flex items-center gap-2">
+                <div className="w-0.5 h-8 bg-[#BF1E2E] rounded-full" />
+                <div className="flex flex-col leading-none gap-0.75">
+                  <span className="text-[9px] font-bold tracking-[4px] uppercase text-white/30">Iglesia</span>
+                  <span className="text-[15px] font-black tracking-tight text-white">Casa CJC</span>
+                </div>
               </div>
-              <span className="font-bold text-white text-lg">Iglesia CJC</span>
             </div>
-            <p className="text-muted text-sm leading-relaxed">
+            <p className="text-white/35 text-sm leading-relaxed max-w-xs">
               Una familia que camina en adoración y servicio a Dios.
             </p>
           </div>
+
+          {/* Navegación */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Navegación</h4>
-            <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-3 rounded-full bg-accent" />
+              <h4 className="text-white/60 text-[10px] font-bold tracking-[3px] uppercase">Navegación</h4>
+            </div>
+            <div className="flex flex-col gap-2.5">
               {[
-                { href: "/sermones", label: "Sermones" },
+                { href: "/sermones", label: "Prédicas" },
                 { href: "/eventos", label: "Eventos" },
                 { href: "/devocionales", label: "Devocionales" },
                 { href: "/galeria", label: "Galería" },
                 { href: "/pastores", label: "Pastores" },
               ].map((l) => (
-                <Link key={l.href} href={l.href} className="text-muted hover:text-white text-sm transition-colors">
+                <Link key={l.href} href={l.href} className="text-white/40 hover:text-white text-sm transition-colors">
                   {l.label}
                 </Link>
               ))}
             </div>
           </div>
+
+          {/* Comunidad */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Comunidad</h4>
-            <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-3 rounded-full bg-accent" />
+              <h4 className="text-white/60 text-[10px] font-bold tracking-[3px] uppercase">Comunidad</h4>
+            </div>
+            <div className="flex flex-col gap-2.5">
               {[
                 { href: "/equipos", label: "GPS – Grupos" },
                 { href: "/live", label: "En Vivo" },
                 { href: "/oraciones", label: "Oraciones" },
                 { href: "/contacto", label: "Contacto" },
               ].map((l) => (
-                <Link key={l.href} href={l.href} className="text-muted hover:text-white text-sm transition-colors">
+                <Link key={l.href} href={l.href} className="text-white/40 hover:text-white text-sm transition-colors">
                   {l.label}
                 </Link>
               ))}
             </div>
           </div>
         </div>
-        <div className="border-t border-border mt-10 pt-6 text-center text-muted text-xs">
-          © {new Date().getFullYear()} Iglesia CJC. Todos los derechos reservados.
+
+        {/* Bottom bar */}
+        <div className="border-t border-white/5 pt-5 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <p className="text-white/20 text-xs">© {new Date().getFullYear()} Iglesia CJC. Todos los derechos reservados.</p>
+          <div className="h-px w-16 hidden sm:block" style={{ background: "linear-gradient(90deg, transparent, #BF1E2E)" }} />
         </div>
       </div>
     </footer>

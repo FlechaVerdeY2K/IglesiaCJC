@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const supabase = createBrowserClient(
@@ -36,9 +37,7 @@ export default function LoginPage() {
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-4">
-            CJC
-          </div>
+          <Image src="/logo-cjc.png" alt="Logo CJC" width={64} height={64} className="object-contain mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-white">Bienvenido</h1>
           <p className="text-muted mt-2">Inicia sesión para acceder a todos los servicios</p>
         </div>
