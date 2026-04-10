@@ -33,6 +33,7 @@ const MEMBER_LINKS = [
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [memberOpen, setMemberOpen] = useState(false);
@@ -48,8 +49,9 @@ export default function Navbar() {
   };
 
   const fetchAvatar = async (userId: string, fallback: string | null) => {
-    const { data } = await supabase.from("usuarios").select("foto_url").eq("id", userId).single();
+    const { data } = await supabase.from("usuarios").select("foto_url, rol").eq("id", userId).single();
     setAvatarUrl(data?.foto_url ?? fallback ?? null);
+    setIsAdmin(data?.rol === "admin");
   };
 
   useEffect(() => {
@@ -60,7 +62,7 @@ export default function Navbar() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
       if (session?.user) fetchAvatar(session.user.id, session.user.user_metadata?.avatar_url ?? null);
-      else setAvatarUrl(null);
+      else { setAvatarUrl(null); setIsAdmin(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -139,21 +141,30 @@ export default function Navbar() {
           {/* Auth desktop */}
           <div className="hidden lg:flex items-center gap-3 shrink-0 ml-auto">
             {user ? (
-              <Link
-                href="/perfil"
-                className="group flex items-center py-1.5 px-1.5 hover:px-3 rounded-xl border border-white/10 hover:border-accent/40 transition-all duration-300 overflow-hidden"
-                style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
-              >
-                <div className="w-7 h-7 rounded-full border border-accent/40 flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
-                  {avatarUrl
-                    ? <img src={avatarUrl} className="w-7 h-7 rounded-full object-cover" alt="avatar" />
-                    : <UserIcon size={14} className="text-accent" />
-                  }
-                </div>
-                <span className="text-xs text-white/60 group-hover:text-white max-w-0 group-hover:max-w-[8rem] overflow-hidden whitespace-nowrap pl-0 group-hover:pl-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  {user.user_metadata?.full_name ?? user.email}
-                </span>
-              </Link>
+              <>
+                {isAdmin && (
+                  <Link href="/admin"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                    style={{ background: "rgba(191,30,46,0.12)", color: "#BF1E2E", border: "1px solid rgba(191,30,46,0.25)" }}>
+                    Admin
+                  </Link>
+                )}
+                <Link
+                  href="/perfil"
+                  className="group flex items-center py-1.5 px-1.5 hover:px-3 rounded-xl border border-white/10 hover:border-accent/40 transition-all duration-300 overflow-hidden"
+                  style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+                >
+                  <div className="w-7 h-7 rounded-full border border-accent/40 flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
+                    {avatarUrl
+                      ? <img src={avatarUrl} className="w-7 h-7 rounded-full object-cover" alt="avatar" />
+                      : <UserIcon size={14} className="text-accent" />
+                    }
+                  </div>
+                  <span className="text-xs text-white/60 group-hover:text-white max-w-0 group-hover:max-w-[8rem] overflow-hidden whitespace-nowrap pl-0 group-hover:pl-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    {user.user_metadata?.full_name ?? user.email}
+                  </span>
+                </Link>
+              </>
             ) : (
               <>
                 <Link href="/login" className="text-muted hover:text-white text-sm transition-colors">
@@ -218,6 +229,12 @@ export default function Navbar() {
                 </Link>
               ))}
               <div className="mt-5 pt-4 border-t border-white/5">
+                {isAdmin && (
+                  <Link href="/admin" className="flex items-center justify-center gap-2 mb-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider"
+                    style={{ background: "rgba(191,30,46,0.12)", color: "#BF1E2E", border: "1px solid rgba(191,30,46,0.25)" }}>
+                    Panel Admin
+                  </Link>
+                )}
                 <p className="text-white/30 text-xs mb-3 truncate">{user.email}</p>
                 <button onClick={handleSignOut} className="btn-secondary text-sm w-full text-center">Cerrar sesión</button>
               </div>
