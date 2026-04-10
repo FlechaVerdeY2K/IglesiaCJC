@@ -194,7 +194,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
           Scaffold(
             key: scaffoldKey,
             backgroundColor: _pageBackground,
-        appBar: AppBar(
+        appBar: MediaQuery.of(context).size.width >= 900 ? null : AppBar(
           backgroundColor: const Color(0xFF0D1628),
           automaticallyImplyLeading: false,
           elevation: 0.0,
@@ -211,15 +211,17 @@ class _HomePageWidgetState extends State<HomePageWidget>
               Expanded(
                 child: _buildAppBarTitle(context),
               ),
-              _smallIconBtn(
-                icon: Icons.share_rounded,
-                tooltip: 'Compartir app',
-                onPressed: () {
-                  Share.share(
-                      '¡Descarga la app de Iglesia CJC! https://iglesiacjc.app');
-                },
-              ),
-              _buildNotificationBell(context),
+              if (AuthService.instance.currentUser != null) ...[
+                _smallIconBtn(
+                  icon: Icons.share_rounded,
+                  tooltip: 'Compartir app',
+                  onPressed: () {
+                    Share.share(
+                        '¡Descarga la app de Iglesia CJC! https://iglesiacjc.app');
+                  },
+                ),
+                _buildNotificationBell(context),
+              ],
             ],
           ),
         ),
@@ -227,7 +229,13 @@ class _HomePageWidgetState extends State<HomePageWidget>
           top: false,
           child: SingleChildScrollView(
             padding: EdgeInsets.zero,
-            child: Column(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth >= 900;
+                final hPad = isDesktop ? constraints.maxWidth * 0.125 : 0.0;
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
+                  child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Live Banner
@@ -323,6 +331,9 @@ class _HomePageWidgetState extends State<HomePageWidget>
                 ),
                 const SizedBox(height: 32),
               ],
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -1824,9 +1835,9 @@ class _HomePageWidgetState extends State<HomePageWidget>
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.red.withOpacity(0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
+                    color: Colors.red.withOpacity(0.15),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),

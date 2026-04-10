@@ -109,8 +109,14 @@ class _UserLoginPageWidgetState extends State<UserLoginPageWidget> {
       backgroundColor: _bg,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
-          child: Column(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final hPad = constraints.maxWidth >= 900
+                  ? constraints.maxWidth * 0.125
+                  : 28.0;
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 40),
+                child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
@@ -229,6 +235,9 @@ class _UserLoginPageWidgetState extends State<UserLoginPageWidget> {
                 ),
               ),
             ],
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -290,25 +299,31 @@ class _UserLoginPageWidgetState extends State<UserLoginPageWidget> {
 
   Widget _buildPrimaryButton(
       {required String label, required VoidCallback? onPressed}) {
-    return SizedBox(
-      height: 50,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _accent,
-          foregroundColor: Colors.black,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10)),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _accent,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: _model.isLoading
+                ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.black54))
+                : Text(label,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w700)),
+          ),
         ),
-        child: _model.isLoading
-            ? const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.black54))
-            : Text(label,
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w700)),
       ),
     );
   }

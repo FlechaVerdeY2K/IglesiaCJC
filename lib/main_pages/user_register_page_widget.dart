@@ -92,14 +92,20 @@ class _UserRegisterPageWidgetState extends State<UserRegisterPageWidget> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          child: Column(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final hPad = constraints.maxWidth >= 900
+                  ? constraints.maxWidth * 0.125
+                  : 28.0;
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 16),
+                child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Center(
                 child: Image.asset(
                   'assets/images/LOGO_CJC_BLANCO_(1).png',
-                  height: 70,
+                  height: 90,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -167,7 +173,11 @@ class _UserRegisterPageWidgetState extends State<UserRegisterPageWidget> {
                 ),
               ),
               const SizedBox(height: 28),
-              SizedBox(
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: SizedBox(
+                width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _model.isLoading ? null : _register,
@@ -187,6 +197,8 @@ class _UserRegisterPageWidgetState extends State<UserRegisterPageWidget> {
                           style: TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w700)),
                 ),
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -202,6 +214,9 @@ class _UserRegisterPageWidgetState extends State<UserRegisterPageWidget> {
                 ),
               ]),
             ],
+                ),
+              );
+            },
           ),
         ),
       ),
