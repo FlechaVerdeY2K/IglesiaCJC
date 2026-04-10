@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, User } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 const supabase = createBrowserClient(
@@ -32,6 +32,7 @@ const MEMBER_LINKS = [
 
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [memberOpen, setMemberOpen] = useState(false);
@@ -46,10 +47,20 @@ export default function Navbar() {
     }
   };
 
+  const fetchAvatar = async (userId: string, fallback: string | null) => {
+    const { data } = await supabase.from("usuarios").select("foto_url").eq("id", userId).single();
+    setAvatarUrl(data?.foto_url ?? fallback ?? null);
+  };
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) fetchAvatar(data.user.id, data.user.user_metadata?.avatar_url ?? null);
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) fetchAvatar(session.user.id, session.user.user_metadata?.avatar_url ?? null);
+      else setAvatarUrl(null);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -128,14 +139,21 @@ export default function Navbar() {
           {/* Auth desktop */}
           <div className="hidden lg:flex items-center gap-3 shrink-0 ml-auto">
             {user ? (
-              <>
-                <Link href="/perfil" className="text-muted hover:text-white text-sm transition-colors truncate max-w-45">
-                  {user.email}
-                </Link>
-                <button onClick={handleSignOut} className="btn-secondary text-sm py-2 px-4">
-                  Salir
-                </button>
-              </>
+              <Link
+                href="/perfil"
+                className="group flex items-center py-1.5 px-1.5 hover:px-3 rounded-xl border border-white/10 hover:border-accent/40 transition-all duration-300 overflow-hidden"
+                style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+              >
+                <div className="w-7 h-7 rounded-full border border-accent/40 flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
+                  {avatarUrl
+                    ? <img src={avatarUrl} className="w-7 h-7 rounded-full object-cover" alt="avatar" />
+                    : <User size={14} className="text-accent" />
+                  }
+                </div>
+                <span className="text-xs text-white/60 group-hover:text-white max-w-0 group-hover:max-w-[8rem] overflow-hidden whitespace-nowrap pl-0 group-hover:pl-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  {user.user_metadata?.full_name ?? user.email}
+                </span>
+              </Link>
             ) : (
               <>
                 <Link href="/login" className="text-muted hover:text-white text-sm transition-colors">
@@ -163,32 +181,49 @@ export default function Navbar() {
       {/* Mobile menu */}
       {(open || closing) && (
         <div
-          className="lg:hidden bg-surface border-t border-border px-6 py-4 flex flex-col gap-1 max-h-[80vh] overflow-y-auto"
-          style={{ animation: closing ? "menu-slide-up 0.4s ease forwards" : "menu-slide-down 0.4s ease forwards", transformOrigin: "top" }}
+          className="lg:hidden border-t border-white/5 px-5 py-5 flex flex-col max-h-[80vh] overflow-y-auto"
+          style={{
+            background: "linear-gradient(180deg, #0D1628 0%, #080E1E 100%)",
+            animation: closing ? "menu-slide-up 0.4s ease forwards" : "menu-slide-down 0.4s ease forwards",
+            transformOrigin: "top"
+          }}
         >
-          <p className="text-muted text-xs uppercase font-bold tracking-wider mb-2 mt-1">General</p>
+          {/* Label General */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-3 rounded-full bg-accent" />
+            <span className="text-white/30 text-[9px] font-black tracking-[3px] uppercase">General</span>
+          </div>
+
           {PUBLIC_LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="text-muted hover:text-white py-2 text-sm">
+            <Link
+              key={l.href} href={l.href}
+              className={`py-2.5 text-sm border-b border-white/5 transition-colors ${pathname === l.href ? "text-white font-semibold" : "text-white/50 hover:text-white"}`}
+            >
               {l.label}
             </Link>
           ))}
 
           {user ? (
             <>
-              <p className="text-muted text-xs uppercase font-bold tracking-wider mb-2 mt-4">Comunidad</p>
+              <div className="flex items-center gap-2 mt-5 mb-3">
+                <div className="w-1 h-3 rounded-full bg-accent" />
+                <span className="text-white/30 text-[9px] font-black tracking-[3px] uppercase">Comunidad</span>
+              </div>
               {MEMBER_LINKS.map((l) => (
-                <Link key={l.href} href={l.href} className="text-muted hover:text-white py-2 text-sm">
+                <Link
+                  key={l.href} href={l.href}
+                  className={`py-2.5 text-sm border-b border-white/5 transition-colors ${pathname === l.href ? "text-white font-semibold" : "text-white/50 hover:text-white"}`}
+                >
                   {l.label}
                 </Link>
               ))}
-              <div className="border-t border-border mt-4 pt-4 space-y-2">
-                <Link href="/perfil" className="block text-muted hover:text-white text-sm py-1">{user.email}</Link>
+              <div className="mt-5 pt-4 border-t border-white/5">
+                <p className="text-white/30 text-xs mb-3 truncate">{user.email}</p>
                 <button onClick={handleSignOut} className="btn-secondary text-sm w-full text-center">Cerrar sesión</button>
               </div>
             </>
           ) : (
-            <div className="border-t border-border mt-4 pt-4 space-y-2">
-              <p className="text-muted text-xs mb-3">Inicia sesión para acceder a Devocional, Galería, Pastores, GPS y más.</p>
+            <div className="mt-5 pt-4 border-t border-white/5 space-y-2">
               <Link href="/login" className="btn-secondary text-sm text-center block">Iniciar sesión</Link>
               <Link href="/register" className="btn-primary text-sm text-center block">Registrarse</Link>
             </div>
