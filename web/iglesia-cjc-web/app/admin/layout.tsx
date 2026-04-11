@@ -7,7 +7,7 @@ import Image from "next/image";
 import {
   LayoutDashboard, Users, CalendarDays, HandHeart,
   UsersRound, ShieldAlert, LogOut, Menu, X,
-  Video, BookOpen, Newspaper, Radio, Church, Settings, FileText
+  Video, BookOpen, Newspaper, Radio, Church, ExternalLink, FileText
 } from "lucide-react";
 
 const supabase = createBrowserClient(
@@ -47,7 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-bg">
-      <Image src="/logo-cjc.png" alt="CJC" width={56} height={56}
+      <Image src="/logo-cjc.png" alt="CJC" width={120} height={120}
         className="animate-pulse" style={{ filter: "drop-shadow(0 0 16px rgba(191,30,46,0.5))" }} />
     </div>
   );
@@ -104,10 +104,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* Sign out */}
-        <div className="p-4 border-t border-border">
+        {/* Bottom actions */}
+        <div className="p-4 border-t border-border space-y-1">
+          <Link href="/"
+            className="flex items-center gap-2 text-white/40 hover:text-white text-sm transition-colors w-full py-1">
+            <ExternalLink size={15} /> Ver sitio
+          </Link>
           <button onClick={handleSignOut}
-            className="flex items-center gap-2 text-white/40 hover:text-white text-sm transition-colors w-full">
+            className="flex items-center gap-2 text-white/40 hover:text-white text-sm transition-colors w-full py-1">
             <LogOut size={15} /> Cerrar sesión
           </button>
         </div>

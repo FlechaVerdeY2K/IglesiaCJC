@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ParticlesBackground from "@/components/ParticlesBackground";
 import NavigationLoader from "@/components/NavigationLoader";
+import MainWrapper from "@/components/MainWrapper";
 
 export const metadata: Metadata = {
   title: "Iglesia CJC",
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NavigationLoader />
         <ParticlesBackground />
         <Navbar />
-        <main className="flex-1 pt-16">{children}</main>
+        <MainWrapper>{children}</MainWrapper>
         <Footer />
       </body>
     </html>

@@ -12,6 +12,8 @@ export interface ConfigHome {
   servicios_texto: string;
   telefono: string;
   waze_url: string;
+  google_maps_url: string;
+  apple_maps_url: string;
   youtube_url: string;
   instagram_url: string;
   facebook_url: string;

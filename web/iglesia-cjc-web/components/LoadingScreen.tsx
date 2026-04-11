@@ -5,8 +5,8 @@ export default function LoadingScreen() {
         src="/logo-cjc.png"
         alt="Cargando"
         style={{
-          width: 72,
-          height: 72,
+          width: 120,
+          height: 120,
           objectFit: "contain",
           animation: "blur-pulse 1.8s ease-in-out infinite",
         }}

@@ -4,11 +4,9 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const token_hash = searchParams.get("token_hash");
+  const type = searchParams.get("type") as "email" | "recovery" | null;
   const next = searchParams.get("next") ?? "/";
-
-  if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=auth`);
-  }
 
   const response = NextResponse.redirect(`${origin}${next}`);
 
@@ -27,12 +25,21 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-  if (error) {
-    console.error("AUTH CALLBACK ERROR:", error.message, error);
+  // Email confirmation (token_hash flow)
+  if (token_hash && type) {
+    const { error } = await supabase.auth.verifyOtp({ token_hash, type });
+    if (!error) return response;
+    console.error("OTP verify error:", error.message);
     return NextResponse.redirect(`${origin}/login?error=auth`);
   }
 
-  return response;
+  // OAuth / magic link (code flow)
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) return response;
+    console.error("AUTH CALLBACK ERROR:", error.message);
+    return NextResponse.redirect(`${origin}/login?error=auth`);
+  }
+
+  return NextResponse.redirect(`${origin}/login?error=auth`);
 }

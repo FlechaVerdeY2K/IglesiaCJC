@@ -1,7 +1,50 @@
+"use client";
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
+import { createBrowserClient } from "@supabase/ssr";
+import { usePathname } from "next/navigation";
+
+const supabase = createBrowserClient(
+  "https://fvffsnenebscigtywgwn.supabase.co",
+  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
+);
+
+const NAV_PUBLIC = [
+  { href: "/sermones", label: "Prédicas" },
+  { href: "/eventos", label: "Eventos" },
+];
+
+const NAV_MEMBER = [
+  { href: "/devocionales", label: "Devocionales" },
+  { href: "/galeria", label: "Galería" },
+  { href: "/pastores", label: "Pastores" },
+];
+
+const COMMUNITY_PUBLIC = [
+  { href: "/live", label: "En Vivo" },
+  { href: "/contacto", label: "Contacto" },
+];
+
+const COMMUNITY_MEMBER = [
+  { href: "/equipos", label: "GPS – Grupos" },
+  { href: "/oraciones", label: "Oraciones" },
+];
 
 export default function Footer() {
+  const pathname = usePathname();
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setLoggedIn(!!session?.user);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (pathname.startsWith("/admin")) return null;
+
   return (
     <footer className="relative mt-6 border-t border-white/5 overflow-hidden">
       {/* glow rojo fondo */}
@@ -34,13 +77,7 @@ export default function Footer() {
               <h4 className="text-white/60 text-[10px] font-bold tracking-[3px] uppercase">Navegación</h4>
             </div>
             <div className="flex flex-col gap-2.5">
-              {[
-                { href: "/sermones", label: "Prédicas" },
-                { href: "/eventos", label: "Eventos" },
-                { href: "/devocionales", label: "Devocionales" },
-                { href: "/galeria", label: "Galería" },
-                { href: "/pastores", label: "Pastores" },
-              ].map((l) => (
+              {[...NAV_PUBLIC, ...(loggedIn ? NAV_MEMBER : [])].map((l) => (
                 <Link key={l.href} href={l.href} className="text-white/40 hover:text-white text-sm transition-colors">
                   {l.label}
                 </Link>
@@ -55,12 +92,7 @@ export default function Footer() {
               <h4 className="text-white/60 text-[10px] font-bold tracking-[3px] uppercase">Comunidad</h4>
             </div>
             <div className="flex flex-col gap-2.5">
-              {[
-                { href: "/equipos", label: "GPS – Grupos" },
-                { href: "/live", label: "En Vivo" },
-                { href: "/oraciones", label: "Oraciones" },
-                { href: "/contacto", label: "Contacto" },
-              ].map((l) => (
+              {[...COMMUNITY_PUBLIC, ...(loggedIn ? COMMUNITY_MEMBER : [])].map((l) => (
                 <Link key={l.href} href={l.href} className="text-white/40 hover:text-white text-sm transition-colors">
                   {l.label}
                 </Link>

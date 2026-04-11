@@ -29,7 +29,7 @@ export default function AdminPastores() {
   useEffect(() => { load(); }, []);
 
   const openNew = () => { setForm(EMPTY); setEditing(null); setModal(true); };
-  const openEdit = (p: Pastor) => { const { id, ...rest } = p; setForm(rest); setEditing(id); setModal(true); };
+  const openEdit = (p: Pastor) => { const { id, ...rest } = p; setForm({ ...rest, foto_url: rest.foto_url ?? "" }); setEditing(id); setModal(true); };
 
   const save = async () => {
     setSaving(true);
