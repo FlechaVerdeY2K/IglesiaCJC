@@ -1,7 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { getSupabaseConfig } from "@/lib/supabase-config";
 
-const SUPABASE_URL = "https://fvffsnenebscigtywgwn.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN";
+const { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY } = getSupabaseConfig();
 
 // Singleton — one instance shared across all client components
 let client: ReturnType<typeof createBrowserClient> | null = null;

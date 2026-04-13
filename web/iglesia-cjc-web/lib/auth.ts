@@ -1,11 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getSupabaseConfig } from "@/lib/supabase-config";
+import { PROTECTED_ROUTES } from "@/lib/access-control";
+
+const { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY } = getSupabaseConfig();
 
 export async function getUser() {
   const cookieStore = await cookies();
   const supabase = createServerClient(
-    "https://fvffsnenebscigtywgwn.supabase.co",
-    "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN",
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
@@ -17,13 +21,4 @@ export async function getUser() {
   return data.user;
 }
 
-// Rutas que requieren login
-export const PROTECTED_ROUTES = [
-  "/devocionales",
-  "/galeria",
-  "/equipos",
-  "/oraciones",
-  "/recursos",
-  "/perfil",
-  "/anuncios",
-];
+export { PROTECTED_ROUTES };

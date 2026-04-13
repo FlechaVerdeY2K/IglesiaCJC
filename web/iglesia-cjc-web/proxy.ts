@@ -1,13 +1,32 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { PROTECTED_ROUTES } from "@/lib/auth";
+import {
+  getRequiredRole,
+  isAuthProtectedPath,
+  normalizeRoles,
+  roleAllowsPath,
+} from "@/lib/access-control";
+import { getSupabaseConfig } from "@/lib/supabase-config";
+
+const { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY } = getSupabaseConfig();
+
+function redirectToLogin(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  const redirectTarget = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  url.searchParams.set("redirect", redirectTarget);
+  return NextResponse.redirect(url);
+}
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request });
+  const pathname = request.nextUrl.pathname;
+  const requiredRole = getRequiredRole(pathname);
+  const isProtected = isAuthProtectedPath(pathname) || requiredRole !== null;
 
   const supabase = createServerClient(
-    "https://fvffsnenebscigtywgwn.supabase.co",
-    "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN",
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
@@ -21,7 +40,6 @@ export async function proxy(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const pathname = request.nextUrl.pathname;
   const shouldNoIndex = ["/admin", "/login", "/register", "/auth"].some((r) =>
     pathname.startsWith(r)
   );
@@ -30,13 +48,23 @@ export async function proxy(request: NextRequest) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
 
-  const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r));
-
   if (isProtected && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
+    return redirectToLogin(request);
+  }
+
+  if (requiredRole && user) {
+    const { data: userData } = await supabase
+      .from("usuarios")
+      .select("rol, roles")
+      .eq("id", user.id)
+      .single();
+
+    const roles = normalizeRoles(userData);
+    if (!roleAllowsPath(requiredRole, roles)) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;

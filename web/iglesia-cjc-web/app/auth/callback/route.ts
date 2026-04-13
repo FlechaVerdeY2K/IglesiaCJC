@@ -1,5 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getSupabaseConfig } from "@/lib/supabase-config";
+
+const { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY } = getSupabaseConfig();
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -11,8 +14,8 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(`${origin}${next}`);
 
   const supabase = createServerClient(
-    "https://fvffsnenebscigtywgwn.supabase.co",
-    "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN",
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
