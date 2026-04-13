@@ -2,8 +2,7 @@ import { supabase, type ConfigHome } from "@/lib/supabase";
 import { FaWhatsapp, FaInstagram, FaYoutube, FaFacebook, FaWaze } from "react-icons/fa6";
 import Image from "next/image";
 import type { Metadata } from "next";
-
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+import { SITE_URL } from "@/lib/site-url";
 
 export const metadata: Metadata = {
   title: "Contacto",
@@ -91,7 +90,7 @@ export default async function ContactoPage() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Iglesia CJC",
-    url: siteUrl,
+    url: SITE_URL,
     telephone: config?.telefono || undefined,
     contactPoint: config?.telefono
       ? [

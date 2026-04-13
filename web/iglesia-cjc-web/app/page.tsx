@@ -9,8 +9,7 @@ import { Play, Users, Heart, Phone, Lock, Radio } from "lucide-react";
 import EventosGrid from "@/components/EventosGrid";
 import { getLibro, LIBROS } from "@/lib/bible-books";
 import BibleBanner from "@/components/BibleBanner";
-
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+import { SITE_URL } from "@/lib/site-url";
 
 export const metadata: Metadata = {
   title: "Inicio",
@@ -108,9 +107,9 @@ export default async function HomePage() {
     "@type": "Church",
     name: "Iglesia CJC",
     alternateName: "Comunidad Jesucristo es el Camino",
-    url: siteUrl,
-    logo: `${siteUrl}/logo-cjc.png`,
-    image: heroImage ? [heroImage] : [`${siteUrl}/logo-cjc.png`],
+    url: SITE_URL,
+    logo: `${SITE_URL}/logo-cjc.png`,
+    image: heroImage ? [heroImage] : [`${SITE_URL}/logo-cjc.png`],
     telephone: config?.telefono || undefined,
     sameAs: sameAs.length > 0 ? sameAs : undefined,
   };

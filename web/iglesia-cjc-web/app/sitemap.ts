@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+import { SITE_URL } from "@/lib/site-url";
 
 const routes = [
   "",
@@ -20,7 +19,7 @@ const routes = [
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
   return routes.map((route) => ({
-    url: `${siteUrl}${route}`,
+    url: `${SITE_URL}${route}`,
     lastModified: now,
     changeFrequency: route === "" ? "daily" : "weekly",
     priority: route === "" ? 1 : 0.7,

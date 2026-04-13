@@ -5,11 +5,10 @@ import Footer from "@/components/Footer";
 import ParticlesBackground from "@/components/ParticlesBackground";
 import NavigationLoader from "@/components/NavigationLoader";
 import MainWrapper from "@/components/MainWrapper";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+import { SITE_URL } from "@/lib/site-url";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Iglesia CJC | Comunidad Jesucristo es el Camino",
     template: "%s | Iglesia CJC",
@@ -26,7 +25,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: "website",
-    locale: "es_GT",
+    locale: "es_CR",
     url: "/",
     siteName: "Iglesia CJC",
     title: "Iglesia CJC | Comunidad Jesucristo es el Camino",
