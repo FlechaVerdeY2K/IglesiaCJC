@@ -2,6 +2,7 @@
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import { Check, X, Plus, Users, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 
@@ -43,7 +44,12 @@ export default function AdminEquipos() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const updateEstado = async (id: string, estado: string, solicitud: Solicitud) => {
     await supabase.from("gps_registros").update({ estado }).eq("id", id);
@@ -61,7 +67,9 @@ export default function AdminEquipos() {
       .select("usuario:usuarios(id, nombre, foto_url, email)")
       .eq("equipo_id", equipoId)
       .eq("estado", "aprobada");
-    const list = (data ?? []).map((r: any) => r.usuario).filter(Boolean);
+    const list = (data ?? [])
+      .map((r: { usuario: Usuario | null }) => r.usuario)
+      .filter((u: Usuario | null): u is Usuario => Boolean(u));
     setMiembros(prev => ({ ...prev, [equipoId]: list }));
   };
 
@@ -146,7 +154,7 @@ export default function AdminEquipos() {
           {solicitudes.map(s => (
             <div key={s.id} className="flex items-center gap-4 p-4 rounded-2xl border border-border" style={{ background: "#0D1628" }}>
               {s.usuario?.foto_url
-                ? <img src={s.usuario.foto_url} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" />
+                ? <Image src={s.usuario.foto_url} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" width={36} height={36} />
                 : <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center text-sm font-bold text-white shrink-0">{s.usuario?.nombre?.[0] ?? "?"}</div>
               }
               <div className="flex-1 min-w-0">
@@ -278,7 +286,7 @@ export default function AdminEquipos() {
                             <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl border border-amber-500/15"
                               style={{ background: "rgba(245,158,11,0.05)" }}>
                               {s.usuario?.foto_url
-                                ? <img src={s.usuario.foto_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" />
+                                ? <Image src={s.usuario.foto_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" width={28} height={28} />
                                 : <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-xs font-bold text-white shrink-0">{s.usuario?.nombre?.[0] ?? "?"}</div>
                               }
                               <p className="text-white/70 text-sm flex-1">{s.usuario?.nombre ?? s.usuario_id}</p>
@@ -309,11 +317,11 @@ export default function AdminEquipos() {
                         <p className="text-white/20 text-sm">Aún no hay miembros aprobados</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {miembrosEquipo.map((m: any) => (
+                          {miembrosEquipo.map((m) => (
                             <div key={m.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-white/5"
                               style={{ background: "#080E1E" }}>
                               {m.foto_url
-                                ? <img src={m.foto_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" />
+                                ? <Image src={m.foto_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" width={28} height={28} />
                                 : <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-xs font-bold text-white shrink-0">{m.nombre?.[0] ?? "?"}</div>
                               }
                               <div className="min-w-0">

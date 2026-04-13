@@ -1,5 +1,5 @@
 import { supabase, type ConfigHome } from "@/lib/supabase";
-import { FaWhatsapp, FaInstagram, FaYoutube, FaFacebook, FaWaze } from "react-icons/fa";
+import { FaWhatsapp, FaInstagram, FaYoutube, FaFacebook, FaWaze } from "react-icons/fa6";
 import Image from "next/image";
 import type { Metadata } from "next";
 

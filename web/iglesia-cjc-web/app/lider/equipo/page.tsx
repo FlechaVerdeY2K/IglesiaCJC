@@ -2,6 +2,7 @@
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import { Check, X, Users } from "lucide-react";
 
@@ -47,11 +48,20 @@ export default function LiderEquipoPage() {
     ]);
 
     setSolicitudes(sols ?? []);
-    setMiembros((membs ?? []).map((r: any) => r.usuario).filter(Boolean));
+    setMiembros(
+      (membs ?? [])
+        .map((r: { usuario: Miembro | null }) => r.usuario)
+        .filter((m: Miembro | null): m is Miembro => Boolean(m))
+    );
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const updateEstado = async (id: string, estado: string) => {
     await supabase.from("gps_registros").update({ estado }).eq("id", id);
@@ -92,7 +102,7 @@ export default function LiderEquipoPage() {
             {pendientes.map(s => (
               <div key={s.id} className="flex items-center gap-3 px-5 py-3.5">
                 {s.usuario?.foto_url
-                  ? <img src={s.usuario.foto_url} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" />
+                  ? <Image src={s.usuario.foto_url} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" width={36} height={36} />
                   : <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center text-sm font-bold text-white shrink-0">{s.usuario?.nombre?.[0] ?? "?"}</div>
                 }
                 <div className="flex-1 min-w-0">
@@ -133,7 +143,7 @@ export default function LiderEquipoPage() {
             {miembros.map(m => (
               <div key={m.id} className="flex items-center gap-3 px-5 py-3">
                 {m.foto_url
-                  ? <img src={m.foto_url} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+                  ? <Image src={m.foto_url} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" width={32} height={32} />
                   : <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-bold text-white shrink-0">{m.nombre?.[0] ?? "?"}</div>
                 }
                 <div className="min-w-0">
