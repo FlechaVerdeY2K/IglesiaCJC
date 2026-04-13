@@ -70,8 +70,20 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (open) { setClosing(true); setTimeout(() => { setOpen(false); setClosing(false); }, 400); }
-  }, [pathname]);
+    if (!open) return;
+    let closeTimer: ReturnType<typeof setTimeout> | null = null;
+    const timer = setTimeout(() => {
+      setClosing(true);
+      closeTimer = setTimeout(() => {
+        setOpen(false);
+        setClosing(false);
+      }, 400);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      if (closeTimer) clearTimeout(closeTimer);
+    };
+  }, [pathname, open]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -176,7 +188,7 @@ export default function Navbar() {
                 >
                   <div className="w-7 h-7 rounded-full border border-accent/40 flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
                     {avatarUrl
-                      ? <img src={avatarUrl} className="w-7 h-7 rounded-full object-cover" alt="avatar" />
+                      ? <Image src={avatarUrl} className="w-7 h-7 rounded-full object-cover" alt="avatar" width={28} height={28} />
                       : <UserIcon size={14} className="text-accent" />
                     }
                   </div>
@@ -276,7 +288,7 @@ export default function Navbar() {
                 >
                   <div className="w-9 h-9 rounded-full border border-accent/40 flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
                     {avatarUrl
-                      ? <img src={avatarUrl} className="w-9 h-9 rounded-full object-cover" alt="avatar" />
+                      ? <Image src={avatarUrl} className="w-9 h-9 rounded-full object-cover" alt="avatar" width={36} height={36} />
                       : <UserIcon size={16} className="text-accent" />
                     }
                   </div>

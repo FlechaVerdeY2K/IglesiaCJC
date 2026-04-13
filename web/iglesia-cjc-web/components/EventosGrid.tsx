@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { MapPin, X } from "lucide-react";
 import type { Evento } from "@/lib/supabase";
 
@@ -65,7 +66,7 @@ export default function EventosGrid({ eventos }: { eventos: Evento[] }) {
               {/* Thumbnail image */}
               {e.image_url ? (
                 <div className="relative h-32 overflow-hidden">
-                  <img src={e.image_url} alt={e.titulo} className={`w-full h-full object-cover transition-transform duration-500 ${concluded ? "" : "group-hover:scale-105"}`} />
+                  <Image src={e.image_url} alt={e.titulo} className={`w-full h-full object-cover transition-transform duration-500 ${concluded ? "" : "group-hover:scale-105"}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw" />
                   <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(8,14,30,0.85) 100%)" }} />
                 </div>
               ) : (
@@ -109,7 +110,7 @@ export default function EventosGrid({ eventos }: { eventos: Evento[] }) {
 
             {/* imagen */}
             {selected.image_url && (
-              <img src={selected.image_url} alt={selected.titulo} className="w-full h-72 object-cover" />
+              <Image src={selected.image_url} alt={selected.titulo} className="w-full h-72 object-cover" width={1200} height={288} />
             )}
 
             <div className="p-8">

@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 
-import { Plus, Pencil, Trash2, X, Check, Upload, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, Upload } from "lucide-react";
 
 
 const CLOUDINARY_CLOUD = "djfnlzs0g";
@@ -39,7 +40,12 @@ export default function AdminAnuncios() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const openNew = () => { setForm(EMPTY); setEditing(null); setModal(true); };
   const openEdit = (a: Anuncio) => {
@@ -85,7 +91,7 @@ export default function AdminAnuncios() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("¿Eliminar?")) return;
+    if (!confirm("Â¿Eliminar?")) return;
     await supabase.from("anuncios").delete().eq("id", id);
     load();
   };
@@ -115,7 +121,7 @@ export default function AdminAnuncios() {
         ) : items.map(a => (
           <div key={a.id} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${a.activo ? "border-border" : "border-white/5 opacity-50"}`} style={{ background: "#0D1628" }}>
             {a.imagen_url ? (
-              <img src={a.imagen_url} className="w-16 h-16 rounded-xl object-cover shrink-0" alt="" />
+              <Image src={a.imagen_url} className="w-16 h-16 rounded-xl object-cover shrink-0" alt="" width={64} height={64} />
             ) : (
               <div className="w-16 h-16 rounded-xl bg-accent/10 shrink-0 flex items-center justify-center">
                 <span className="text-accent/50 text-xs font-bold">CJC</span>
@@ -132,7 +138,7 @@ export default function AdminAnuncios() {
                 title={a.activo ? "Ocultar" : "Activar"}
                 className={`p-2 rounded-lg text-xs transition-colors ${a.activo ? "text-green-400 hover:bg-green-500/10" : "text-white/25 hover:bg-white/5 hover:text-white/60"}`}
               >
-                {a.activo ? "●" : "○"}
+                {a.activo ? "â—" : "â—‹"}
               </button>
               <button onClick={() => openEdit(a)} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white"><Pencil size={14} /></button>
               <button onClick={() => remove(a.id)} className="p-2 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400"><Trash2 size={14} /></button>
@@ -155,7 +161,7 @@ export default function AdminAnuncios() {
               <div className="flex gap-3 items-start">
                 <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-border flex items-center justify-center" style={{ background: "#080E1E" }}>
                   {form.imagen_url ? (
-                    <img src={form.imagen_url} className="w-full h-full object-cover" alt="" />
+                    <Image src={form.imagen_url} className="w-full h-full object-cover" alt="" width={80} height={80} />
                   ) : (
                     <span className="text-white/20 text-xs font-bold text-center px-2">Logo CJC por defecto</span>
                   )}
@@ -185,15 +191,15 @@ export default function AdminAnuncios() {
               </div>
             </div>
 
-            {/* Título */}
+            {/* TÃ­tulo */}
             <div>
-              <label className="text-white/50 text-xs uppercase tracking-wider mb-1 block">Título *</label>
+              <label className="text-white/50 text-xs uppercase tracking-wider mb-1 block">TÃ­tulo *</label>
               <input className="input w-full" value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))} />
             </div>
 
-            {/* Descripción */}
+            {/* DescripciÃ³n */}
             <div>
-              <label className="text-white/50 text-xs uppercase tracking-wider mb-1 block">Descripción</label>
+              <label className="text-white/50 text-xs uppercase tracking-wider mb-1 block">DescripciÃ³n</label>
               <textarea className="input w-full h-24 resize-none" value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} />
             </div>
 
@@ -227,3 +233,4 @@ export default function AdminAnuncios() {
     </div>
   );
 }
+

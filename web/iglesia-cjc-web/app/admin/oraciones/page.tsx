@@ -20,7 +20,12 @@ export default function AdminOraciones() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const updateEstado = async (id: string, estado: string) => {
     await supabase.from("oraciones").update({ estado }).eq("id", id);

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { Calendar, MapPin } from "lucide-react";
 import type { Evento } from "@/lib/supabase";
 
@@ -50,7 +51,7 @@ function EventoCard({ e, past }: { e: Evento; past?: boolean }) {
 
       <div className="flex-1 min-w-0">
         {e.image_url && (
-          <img src={e.image_url} alt={e.titulo} className={`w-full h-32 object-cover rounded-lg mb-3 ${past ? "grayscale opacity-60" : ""}`} />
+          <Image src={e.image_url} alt={e.titulo} className={`w-full h-32 object-cover rounded-lg mb-3 ${past ? "grayscale opacity-60" : ""}`} width={800} height={128} />
         )}
         <div className="flex items-start justify-between gap-3">
           <h3 className={`font-bold text-lg mb-2 ${past ? "text-white/50" : "text-white"}`}>{e.titulo}</h3>

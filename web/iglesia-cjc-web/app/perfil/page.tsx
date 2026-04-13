@@ -2,6 +2,7 @@
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
@@ -47,6 +48,7 @@ const COVERS = [
 ];
 
 const COVER_KEY = "perfil_cover";
+const COVER_IMG_KEY = "perfil_cover_img";
 
 export default function PerfilPage() {
   const router = useRouter();
@@ -64,19 +66,18 @@ export default function PerfilPage() {
   const [guardando, setGuardando]   = useState(false);
   const [uploading, setUploading]   = useState(false);
   const [mensaje, setMensaje]       = useState("");
-  const [coverId, setCoverId]       = useState("red");
-  const [coverImg, setCoverImg]     = useState<string | null>(null);
+  const [coverId, setCoverId]       = useState(() => {
+    if (typeof window === "undefined") return "red";
+    return localStorage.getItem(COVER_KEY) ?? "red";
+  });
+  const [coverImg, setCoverImg]     = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(COVER_IMG_KEY);
+  });
   const [banners, setBanners]       = useState<{ id: string; url: string; label: string }[]>([]);
   const [showCovers, setShowCovers] = useState(false);
 
-  const COVER_IMG_KEY = "perfil_cover_img";
-
   useEffect(() => {
-    const saved = localStorage.getItem(COVER_KEY);
-    if (saved) setCoverId(saved);
-    const savedImg = localStorage.getItem(COVER_IMG_KEY);
-    if (savedImg) setCoverImg(savedImg);
-
     supabase
       .from("config_banners")
       .select("id, url, label")
@@ -180,10 +181,12 @@ export default function PerfilPage() {
         <div className="h-32 rounded-t-2xl overflow-hidden relative" style={{ background: cover.bg }}>
           {/* Imagen de fondo si está seleccionada */}
           {coverImg && (
-            <img
+            <Image
               src={coverImg}
               alt=""
               className="absolute inset-0 w-full h-full object-cover object-center"
+              fill
+              sizes="100vw"
               style={{ opacity: 0.62 }}
             />
           )}
@@ -232,7 +235,7 @@ export default function PerfilPage() {
                   {banners.map(b => (
                     <button key={b.id} onClick={() => selectCoverImg(b.url)} title={b.label}
                       className={`h-14 rounded-lg border-2 overflow-hidden transition-all ${coverImg === b.url ? "border-white scale-105" : "border-white/10 hover:border-white/40"}`}>
-                      <img src={b.url} className="w-full h-full object-cover" alt={b.label} />
+                      <Image src={b.url} className="w-full h-full object-cover" alt={b.label} width={56} height={56} />
                     </button>
                   ))}
                 </div>
@@ -249,7 +252,7 @@ export default function PerfilPage() {
               <div className="w-20 h-20 rounded-full border-4 overflow-hidden flex items-center justify-center"
                 style={{ backgroundColor: "rgba(191,30,46,0.12)", borderColor: "#080E1E" }}>
                 {showAvatar
-                  ? <img src={fotoUrl!} alt="avatar" className="w-full h-full object-cover" onError={() => setImgError(true)} />
+                  ? <Image src={fotoUrl!} alt="avatar" className="w-full h-full object-cover" width={80} height={80} onError={() => setImgError(true)} />
                   : <UserIcon className="text-accent" size={32} />
                 }
               </div>

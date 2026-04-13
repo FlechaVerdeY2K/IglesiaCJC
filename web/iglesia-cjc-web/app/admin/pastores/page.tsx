@@ -2,6 +2,7 @@
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 
 import { Plus, Pencil, Trash2, X, Check, Upload, ExternalLink } from "lucide-react";
 
@@ -26,7 +27,12 @@ export default function AdminPastores() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const openNew = () => { setForm(EMPTY); setEditing(null); setModal(true); };
   const openEdit = (p: Pastor) => {
@@ -94,7 +100,7 @@ export default function AdminPastores() {
           <div key={p.id} className="p-5 rounded-2xl border border-border" style={{ background: "#0D1628" }}>
             <div className="flex items-center gap-3 mb-3">
               {p.foto_url
-                ? <img src={p.foto_url} className="w-14 h-14 rounded-full object-cover border border-accent/30" alt="" />
+                ? <Image src={p.foto_url} className="w-14 h-14 rounded-full object-cover border border-accent/30" alt="" width={56} height={56} />
                 : <div className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold text-white bg-accent/20">{p.nombre?.[0]}</div>
               }
               <div>
@@ -103,7 +109,7 @@ export default function AdminPastores() {
               </div>
             </div>
             <p className="text-white/40 text-sm line-clamp-2">{p.bio}</p>
-            {p.versiculo && <p className="text-white/25 text-xs italic mt-2 line-clamp-1">"{p.versiculo}"</p>}
+            {p.versiculo && <p className="text-white/25 text-xs italic mt-2 line-clamp-1">&quot;{p.versiculo}&quot;</p>}
             <div className="flex gap-2 mt-3 justify-end">
               <button onClick={() => openEdit(p)} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white"><Pencil size={14} /></button>
               <button onClick={() => remove(p.id)} className="p-2 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400"><Trash2 size={14} /></button>
@@ -125,7 +131,7 @@ export default function AdminPastores() {
               <label className="text-white/50 text-xs uppercase tracking-wider mb-2 block">Foto</label>
               <div className="flex items-center gap-3">
                 {form.foto_url
-                  ? <img src={form.foto_url} className="w-16 h-16 rounded-full object-cover border border-accent/30" alt="" />
+                  ? <Image src={form.foto_url} className="w-16 h-16 rounded-full object-cover border border-accent/30" alt="" width={64} height={64} />
                   : <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center text-white/20 text-2xl font-bold">{form.nombre?.[0] ?? "?"}</div>
                 }
                 <div className="flex-1 space-y-2">

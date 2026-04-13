@@ -24,7 +24,12 @@ export default function AdminRecursos() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const openNew = () => { setForm(EMPTY); setEditing(null); setModal(true); };
   const openEdit = (r: Recurso) => { const { id, ...rest } = r; setForm(rest); setEditing(id); setModal(true); };

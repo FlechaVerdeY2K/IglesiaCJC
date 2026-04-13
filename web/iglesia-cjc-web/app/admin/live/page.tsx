@@ -2,6 +2,7 @@
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import { Radio, ToggleLeft, ToggleRight, Archive, Trash2, Plus, Check, X } from "lucide-react";
 
@@ -30,18 +31,17 @@ export default function AdminLive() {
     setAutoLive(ytRes);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const saveConfig = async () => {
     setSaving(true);
     await supabase.from("config_live").upsert({ id: 1, ...config });
     setSaving(false);
-  };
-
-  const toggleOverride = async () => {
-    const updated = { ...config, manual_override: !config.manual_override };
-    setConfig(updated);
-    await supabase.from("config_live").upsert({ id: 1, ...updated });
   };
 
   const archiveCurrent = async () => {
@@ -161,7 +161,7 @@ export default function AdminLive() {
         {history.length === 0 && <p className="text-white/30 text-sm">Sin historial aún.</p>}
         {history.map(l => (
           <div key={l.id} className="flex items-center gap-3 p-3 rounded-xl border border-border" style={{ background: "#0D1628" }}>
-            <img src={`https://img.youtube.com/vi/${l.video_id}/default.jpg`} className="w-16 h-10 rounded-lg object-cover" alt="" />
+            <Image src={`https://img.youtube.com/vi/${l.video_id}/default.jpg`} className="w-16 h-10 rounded-lg object-cover" alt="" width={64} height={40} />
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-medium truncate">{l.titulo ?? "Sin título"}</p>
               <p className="text-white/30 text-xs">{new Date(l.fecha).toLocaleDateString("es-CR", { timeZone: "America/Costa_Rica" })}</p>

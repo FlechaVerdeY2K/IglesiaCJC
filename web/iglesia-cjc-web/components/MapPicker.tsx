@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Search, Loader } from "lucide-react";
+import type { LeafletMouseEvent, Map as LeafletMap, Marker } from "leaflet";
 
 const CHURCH_LAT = 9.95239;
 const CHURCH_LNG = -84.05036;
@@ -13,37 +14,49 @@ type Props = {
 
 export default function MapPicker({ lat, lng, onChange }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
+  const markerRef = useRef<Marker | null>(null);
+  const onChangeRef = useRef(onChange);
+  const initialCenterRef = useRef({
+    lat: lat || CHURCH_LAT,
+    lng: lng || CHURCH_LNG,
+  });
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<{ display_name: string; lat: string; lon: string }[]>([]);
 
   useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
     let cancelled = false;
+    const mapElement = mapRef.current;
 
     import("leaflet").then(L => {
-      if (cancelled || !mapRef.current || mapInstanceRef.current) return;
+      if (cancelled || !mapElement || mapInstanceRef.current) return;
 
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
+      const markerIcon = L.icon({
         iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
         iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
         shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        shadowSize: [41, 41],
       });
 
-      const initLat = lat || CHURCH_LAT;
-      const initLng = lng || CHURCH_LNG;
+      const initLat = initialCenterRef.current.lat;
+      const initLng = initialCenterRef.current.lng;
 
-      const map = L.map(mapRef.current).setView([initLat, initLng], 16);
+      const map = L.map(mapElement).setView([initLat, initLng], 16);
       mapInstanceRef.current = map;
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap",
       }).addTo(map);
 
-      const marker = L.marker([initLat, initLng], { draggable: true }).addTo(map);
+      const marker = L.marker([initLat, initLng], { draggable: true, icon: markerIcon }).addTo(map);
       markerRef.current = marker;
 
       const reverseGeocode = async (lat: number, lng: number) => {
@@ -62,13 +75,13 @@ export default function MapPicker({ lat, lng, onChange }: Props) {
       marker.on("dragend", async () => {
         const pos = marker.getLatLng();
         const address = await reverseGeocode(pos.lat, pos.lng);
-        onChange(pos.lat, pos.lng, address);
+        onChangeRef.current(pos.lat, pos.lng, address);
       });
 
-      map.on("click", async (e: any) => {
+      map.on("click", async (e: LeafletMouseEvent) => {
         marker.setLatLng(e.latlng);
         const address = await reverseGeocode(e.latlng.lat, e.latlng.lng);
-        onChange(e.latlng.lat, e.latlng.lng, address);
+        onChangeRef.current(e.latlng.lat, e.latlng.lng, address);
       });
     });
 
@@ -77,9 +90,6 @@ export default function MapPicker({ lat, lng, onChange }: Props) {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
-      }
-      if (mapRef.current) {
-        delete (mapRef.current as any)._leaflet_id;
       }
     };
   }, []);

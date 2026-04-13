@@ -1,9 +1,10 @@
 ﻿import { supabase, type ConfigHome, type Sermon, type Evento, type Anuncio } from "@/lib/supabase";
 import { getUser } from "@/lib/auth";
 import { getLiveStatus } from "@/lib/live-status";
-import { yesterdayCR, formatDateCR } from "@/lib/date";
+import { yesterdayCR } from "@/lib/date";
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { Play, Users, Heart, Phone, Lock, Radio } from "lucide-react";
 import EventosGrid from "@/components/EventosGrid";
 import { getLibro, LIBROS } from "@/lib/bible-books";
@@ -149,7 +150,7 @@ export default async function HomePage() {
       {/* ── HERO ── */}
       <section className="relative h-[400px] w-full overflow-hidden">
         {heroImage ? (
-          <img src={heroImage} alt="Hero" className="absolute inset-0 w-full h-full object-cover" />
+          <Image src={heroImage} alt="Hero" className="absolute inset-0 w-full h-full object-cover" fill sizes="100vw" />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-[#0D1628] via-[#1A0A0D] to-[#080E1E]" />
         )}
@@ -196,7 +197,7 @@ export default async function HomePage() {
       {/* ── SERVICIOS BANNER ── */}
       <section className="relative h-55 w-full overflow-hidden">
         {serviciosImage ? (
-          <img src={serviciosImage} alt="Servicios" className="absolute inset-0 w-full h-full object-cover" />
+          <Image src={serviciosImage} alt="Servicios" className="absolute inset-0 w-full h-full object-cover" fill sizes="100vw" />
         ) : (
           <div className="absolute inset-0 bg-linear-to-br from-[#0D1628] to-bg" />
         )}
@@ -269,7 +270,7 @@ export default async function HomePage() {
                 style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ background: "radial-gradient(ellipse at top, rgba(191,30,46,0.07) 0%, transparent 60%)" }} />
                 <div className="aspect-video overflow-hidden relative">
-                  <img src={`https://img.youtube.com/vi/${s.video_id}/hqdefault.jpg`} alt={s.titulo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <Image src={`https://img.youtube.com/vi/${s.video_id}/hqdefault.jpg`} alt={s.titulo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" fill sizes="(max-width: 768px) 100vw, 33vw" />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="rounded-full p-3 border border-white/20 backdrop-blur-sm" style={{ backgroundColor: "rgba(191,30,46,0.8)" }}>
                       <Play className="text-white" size={22} />
@@ -371,9 +372,9 @@ export default async function HomePage() {
               {anuncios.map((a) => (
                 <div key={a.id} className="rounded-2xl border border-white/5 overflow-hidden" style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
                   {a.imagen_url
-                    ? <img src={a.imagen_url} alt={a.titulo} className="w-full h-40 object-cover" />
+                    ? <Image src={a.imagen_url} alt={a.titulo} className="w-full h-40 object-cover" width={800} height={160} />
                     : <div className="w-full h-40 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0D1628, #1A0A0D)" }}>
-                        <img src="/logo-cjc.png" alt="CJC" className="h-16 object-contain opacity-60" />
+                        <Image src="/logo-cjc.png" alt="CJC" className="h-16 object-contain opacity-60" width={64} height={64} />
                       </div>
                   }
                   <div className="p-5">

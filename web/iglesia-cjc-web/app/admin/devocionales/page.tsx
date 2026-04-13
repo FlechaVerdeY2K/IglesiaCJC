@@ -24,7 +24,12 @@ export default function AdminDevocionales() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const openNew = () => { setForm(EMPTY); setEditing(null); setModal(true); };
   const openEdit = (d: Devocional) => { const { id, ...rest } = d; setForm(rest); setEditing(id); setModal(true); };

@@ -2,8 +2,9 @@
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 
-import { Plus, Pencil, Trash2, X, Check, Upload, MapPin, Tag, Settings, ChevronLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, Upload, MapPin, Tag } from "lucide-react";
 import { todayCR } from "@/lib/date";
 import dynamic from "next/dynamic";
 
@@ -85,7 +86,12 @@ export default function AdminEventos() {
     if (coords) setChurchDefault(coords);
   };
 
-  useEffect(() => { load(); loadTipos(); loadChurch(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void Promise.all([load(), loadTipos(), loadChurch()]);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const proximos = items.filter(e => e.activo && e.fecha >= today);
   const anteriores = items.filter(e => !e.activo || e.fecha < today);
@@ -226,7 +232,7 @@ export default function AdminEventos() {
               isPast ? "border-white/5 opacity-60" : "border-border"
             }`} style={{ background: "#0D1628" }}>
               {ev.image_url
-                ? <img src={ev.image_url} className="w-16 h-16 rounded-xl object-cover shrink-0" alt="" />
+                ? <Image src={ev.image_url} className="w-16 h-16 rounded-xl object-cover shrink-0" alt="" width={64} height={64} />
                 : <div className="w-16 h-16 rounded-xl bg-white/5 shrink-0 flex items-center justify-center">
                     <MapPin size={18} className="text-white/20" />
                   </div>
@@ -299,7 +305,7 @@ export default function AdminEventos() {
                   </button>
                 ))}
                 {tipos.length === 0 && (
-                  <p className="text-white/30 text-xs">Sin tipos — crea uno con el botón "Tipos"</p>
+                  <p className="text-white/30 text-xs">Sin tipos — crea uno con el botón &quot;Tipos&quot;</p>
                 )}
               </div>
             </div>
@@ -336,7 +342,7 @@ export default function AdminEventos() {
               <div className="flex gap-3 items-start">
                 {form.image_url && (
                   <div className="relative">
-                    <img src={form.image_url} className="w-20 h-20 rounded-xl object-cover border border-border" alt="" />
+                    <Image src={form.image_url} className="w-20 h-20 rounded-xl object-cover border border-border" alt="" width={80} height={80} />
                     <button
                       type="button"
                       onClick={() => setForm(p => ({ ...p, image_url: "" }))}

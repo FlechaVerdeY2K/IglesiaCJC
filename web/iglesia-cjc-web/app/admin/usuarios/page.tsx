@@ -2,6 +2,7 @@
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import { Search } from "lucide-react";
 
@@ -18,7 +19,7 @@ const ROLE_STYLE: Record<Rol, { bg: string; color: string; border: string }> = {
 
 type Usuario = { id: string; nombre: string; email: string; foto_url: string | null; roles: Rol[] };
 
-function normalize(u: any): Usuario {
+function normalize(u: { id: string; nombre: string; email: string; foto_url: string | null; rol?: Rol; roles?: Rol[] }): Usuario {
   let roles: Rol[] = u.roles ?? (u.rol ? [u.rol] : ["miembro"]);
   if (!Array.isArray(roles) || roles.length === 0) roles = ["miembro"];
   return { id: u.id, nombre: u.nombre, email: u.email, foto_url: u.foto_url, roles };
@@ -37,7 +38,12 @@ export default function AdminUsuarios() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const toggleRole = async (usuario: Usuario, rol: Rol) => {
     // miembro cannot be removed — it's the base role
@@ -108,10 +114,12 @@ export default function AdminUsuarios() {
                         {u.nombre?.[0] ?? "?"}
                       </div>
                       {u.foto_url && (
-                        <img
+                        <Image
                           src={u.foto_url}
                           className="w-8 h-8 rounded-full object-cover absolute inset-0"
                           alt=""
+                          width={32}
+                          height={32}
                           onError={(e) => { e.currentTarget.style.display = "none"; }}
                         />
                       )}

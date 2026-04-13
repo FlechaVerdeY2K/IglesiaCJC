@@ -2,6 +2,7 @@
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import { Radio, Clock, ChevronRight } from "lucide-react";
 
@@ -107,10 +108,12 @@ export default function LivePage() {
                 className="group rounded-2xl overflow-hidden border border-border hover:border-accent/30 transition-all"
                 style={{ background: "#0D1628" }}>
                 <div className="relative aspect-video bg-black">
-                  <img
+                  <Image
                     src={`https://img.youtube.com/vi/${live.video_id}/hqdefault.jpg`}
                     alt={live.titulo ?? ""}
                     className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-12 h-12 rounded-full bg-accent/90 flex items-center justify-center">

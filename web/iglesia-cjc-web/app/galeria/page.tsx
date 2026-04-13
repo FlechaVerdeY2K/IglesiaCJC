@@ -1,4 +1,5 @@
 import { supabase, type GaleriaItem } from "@/lib/supabase";
+import Image from "next/image";
 
 export default async function GaleriaPage() {
   const { data } = await supabase
@@ -7,8 +8,6 @@ export default async function GaleriaPage() {
     .order("fecha", { ascending: false });
 
   const items = (data ?? []) as GaleriaItem[];
-
-  const categorias = ["todos", ...Array.from(new Set(items.map((i) => i.categoria)))];
 
   return (
     <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16">
@@ -22,10 +21,12 @@ export default async function GaleriaPage() {
         <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
           {items.map((item) => (
             <div key={item.id} className="break-inside-avoid group relative overflow-hidden rounded-xl border border-border hover:border-accent transition-colors">
-              <img
+              <Image
                 src={item.image_url}
                 alt={item.titulo}
                 className="w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                width={900}
+                height={1200}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
                 <h3 className="text-white font-semibold text-sm">{item.titulo}</h3>

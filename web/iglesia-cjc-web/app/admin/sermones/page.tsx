@@ -2,6 +2,7 @@
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import { Plus, Pencil, Trash2, X, Check, Play, ExternalLink } from "lucide-react";
 
@@ -33,7 +34,12 @@ export default function AdminSermones() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const openNew = () => { setForm(EMPTY); setVideoInput(""); setEditing(null); setModal(true); };
   const openEdit = (s: Sermon) => {
@@ -87,7 +93,7 @@ export default function AdminSermones() {
           <div key={s.id} className="flex items-center gap-4 p-4 rounded-2xl border border-border" style={{ background: "#0D1628" }}>
             {s.video_id ? (
               <div className="relative shrink-0 group/thumb">
-                <img src={`https://img.youtube.com/vi/${s.video_id}/mqdefault.jpg`} className="w-24 h-14 rounded-xl object-cover" alt="" />
+                <Image src={`https://img.youtube.com/vi/${s.video_id}/mqdefault.jpg`} className="w-24 h-14 rounded-xl object-cover" alt="" width={96} height={56} />
                 <a href={`https://www.youtube.com/watch?v=${s.video_id}`} target="_blank" rel="noopener noreferrer"
                   className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity">
                   <Play size={18} className="text-white" />
@@ -130,10 +136,12 @@ export default function AdminSermones() {
               {/* Preview */}
               {preview && (
                 <div className="mt-3 relative rounded-xl overflow-hidden">
-                  <img
+                  <Image
                     src={`https://img.youtube.com/vi/${preview}/hqdefault.jpg`}
                     className="w-full h-40 object-cover"
                     alt="Preview"
+                    width={640}
+                    height={160}
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                     <div className="rounded-full p-3 border border-white/20 backdrop-blur-sm" style={{ backgroundColor: "rgba(191,30,46,0.8)" }}>

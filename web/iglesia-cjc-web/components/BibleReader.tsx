@@ -66,7 +66,7 @@ export default function BibleReader({ initialLibro = "juan", initialCapitulo = 1
   useEffect(() => {
     fetchChapter(libro, capitulo, version);
     if (!inModal) router.replace(`/biblia?libro=${libro}&capitulo=${capitulo}`, { scroll: false });
-  }, [libro, capitulo, version]);
+  }, [libro, capitulo, version, inModal, router]);
 
   useEffect(() => {
     if (highlightVersiculo && highlightRef.current) {

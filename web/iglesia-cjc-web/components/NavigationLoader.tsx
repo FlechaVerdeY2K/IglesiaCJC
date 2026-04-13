@@ -12,7 +12,8 @@ export default function NavigationLoader() {
   useEffect(() => {
     if (prevPathname.current !== pathname) {
       prevPathname.current = pathname;
-      setLoading(false);
+      const timer = setTimeout(() => setLoading(false), 0);
+      return () => clearTimeout(timer);
     }
   }, [pathname]);
 

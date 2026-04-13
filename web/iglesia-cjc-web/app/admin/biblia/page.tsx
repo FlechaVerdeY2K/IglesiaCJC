@@ -55,21 +55,24 @@ export default function AdminBiblia() {
 
   // Fetch verses when libro/capitulo changes
   useEffect(() => {
-    setLoadingVerses(true);
-    setVerses([]);
-    const libroInfo = getLibro(libro);
-    fetch(`/api/bible?t=RV1960&b=${libroInfo.num}&c=${capitulo}`)
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setVerses(data.map((d: { verse: number; text: string }) => ({
-            verse: d.verse,
-            text: d.text.replace(/<[^>]*>/g, "").trim(),
-          })));
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoadingVerses(false));
+    const timer = setTimeout(() => {
+      setLoadingVerses(true);
+      setVerses([]);
+      const libroInfo = getLibro(libro);
+      fetch(`/api/bible?t=RV1960&b=${libroInfo.num}&c=${capitulo}`)
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setVerses(data.map((d: { verse: number; text: string }) => ({
+              verse: d.verse,
+              text: d.text.replace(/<[^>]*>/g, "").trim(),
+            })));
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoadingVerses(false));
+    }, 0);
+    return () => clearTimeout(timer);
   }, [libro, capitulo]);
 
   const save = async () => {
@@ -184,7 +187,7 @@ export default function AdminBiblia() {
                 {libroData.nombre} {capitulo}:{versiculo}
               </p>
               <p className="text-white/70 text-sm leading-relaxed italic" style={{ fontFamily: "Georgia, serif" }}>
-                "{selectedVerse.text}"
+                &quot;{selectedVerse.text}&quot;
               </p>
             </div>
           )}
@@ -208,7 +211,7 @@ export default function AdminBiblia() {
             <p className="text-white font-bold">{titulo || `${libroData.nombre} ${capitulo}:${versiculo}`}</p>
             {selectedVerse && (
               <p className="text-white/50 text-xs mt-1.5 italic leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
-                "{selectedVerse.text.length > 120 ? selectedVerse.text.slice(0, 120) + "…" : selectedVerse.text}"
+                &quot;{selectedVerse.text.length > 120 ? selectedVerse.text.slice(0, 120) + "…" : selectedVerse.text}&quot;
               </p>
             )}
             <p className="text-accent text-xs mt-2">{libroData.nombre} · {capitulo}:{versiculo} · RV1960</p>

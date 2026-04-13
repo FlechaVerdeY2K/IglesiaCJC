@@ -1,6 +1,7 @@
 import { supabase, type Sermon } from "@/lib/supabase";
 import { Play } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Sermones",
@@ -38,10 +39,12 @@ export default async function SermonesPage() {
               className="card group hover:border-accent transition-colors block"
             >
               <div className="aspect-video bg-border rounded-lg mb-4 overflow-hidden relative">
-                <img
+                <Image
                   src={`https://img.youtube.com/vi/${s.video_id}/hqdefault.jpg`}
                   alt={s.titulo}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="bg-accent rounded-full p-3">

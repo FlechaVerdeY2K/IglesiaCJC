@@ -2,6 +2,7 @@
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Plus, Trash2, Loader, ImageIcon, ToggleLeft, ToggleRight } from "lucide-react";
 
 const CLOUDINARY_CLOUD  = "djfnlzs0g";
@@ -24,7 +25,12 @@ export default function AdminBanners() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const uploadCloudinary = async (file: File): Promise<string | null> => {
     const fd = new FormData();
@@ -87,7 +93,7 @@ export default function AdminBanners() {
             {uploading ? (
               <Loader size={20} className="text-accent/50 animate-spin" />
             ) : previewUrl ? (
-              <img src={previewUrl} className="absolute inset-0 w-full h-full object-cover" alt="preview" />
+              <Image src={previewUrl} className="absolute inset-0 w-full h-full object-cover" alt="preview" fill sizes="192px" />
             ) : (
               <div className="flex flex-col items-center gap-2 text-white/20">
                 <ImageIcon size={24} />
@@ -124,7 +130,7 @@ export default function AdminBanners() {
             <div key={b.id} className={`rounded-xl border overflow-hidden transition-all ${b.activo ? "border-white/10" : "border-white/5 opacity-50"}`}
               style={{ background: "#0D1628" }}>
               <div className="h-28 relative overflow-hidden">
-                <img src={b.url} className="w-full h-full object-cover" alt={b.label} />
+                <Image src={b.url} className="w-full h-full object-cover" alt={b.label} fill sizes="(max-width: 768px) 50vw, 33vw" />
                 {!b.activo && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <span className="text-white/50 text-xs font-bold uppercase tracking-wider">Oculto</span>

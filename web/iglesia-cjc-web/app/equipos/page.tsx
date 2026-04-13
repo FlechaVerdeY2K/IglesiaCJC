@@ -30,7 +30,9 @@ export default function EquiposPage() {
           .select("equipo_id, estado")
           .eq("usuario_id", user.id);
         const map: Record<string, string> = {};
-        (regs ?? []).forEach((r: any) => { if (r.equipo_id) map[r.equipo_id] = r.estado; });
+        (regs ?? []).forEach((r: { equipo_id: string | null; estado: string }) => {
+          if (r.equipo_id) map[r.equipo_id] = r.estado;
+        });
         setMisEquipos(map);
       }
     })();
