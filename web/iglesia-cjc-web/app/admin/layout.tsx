@@ -39,11 +39,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/login"); return; }
-      const { data } = await supabase.from("usuarios").select("rol").eq("id", user.id).single();
-      if (data?.rol !== "admin") { router.replace("/"); return; }
       setLoading(false);
     })();
-  }, []);
+  }, [router]);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-bg">

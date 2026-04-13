@@ -18,8 +18,6 @@ const NAV = [
   { href: "/cocina/notas",    label: "Notas",    icon: ClipboardList },
 ];
 
-const ALLOWED = ["cocina", "admin"];
-
 export default function CocinaLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -31,12 +29,11 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/login"); return; }
-      const { data } = await supabase.from("usuarios").select("rol, nombre").eq("id", user.id).single();
-      if (!ALLOWED.includes(data?.rol)) { router.replace("/"); return; }
+      const { data } = await supabase.from("usuarios").select("nombre").eq("id", user.id).single();
       setNombre(data?.nombre ?? user.user_metadata?.full_name ?? "Cocina");
       setLoading(false);
     })();
-  }, []);
+  }, [router]);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-bg">

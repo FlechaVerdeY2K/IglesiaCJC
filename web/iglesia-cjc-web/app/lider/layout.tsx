@@ -21,7 +21,6 @@ const NAV = [
   { href: "/lider/recursos", label: "Recursos",   icon: FileText },
 ];
 
-const ALLOWED = ["lider", "admin"];
 
 export default function LiderLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -34,12 +33,11 @@ export default function LiderLayout({ children }: { children: React.ReactNode })
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/login"); return; }
-      const { data } = await supabase.from("usuarios").select("rol, nombre").eq("id", user.id).single();
-      if (!ALLOWED.includes(data?.rol)) { router.replace("/"); return; }
+      const { data } = await supabase.from("usuarios").select("nombre").eq("id", user.id).single();
       setNombre(data?.nombre ?? user.user_metadata?.full_name ?? "Líder");
       setLoading(false);
     })();
-  }, []);
+  }, [router]);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-bg">
