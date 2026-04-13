@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.dart$\")",
+      "Bash(unzip -l fwdinfoparalaappcjc.zip)",
+      "Bash(unzip -o fwdinfoparalaappcjc.zip -d fwdinfoparalaappcjc/)",
+      "Bash(unzip -l fwdinfoparalaappcjc/logos...zip)",
+      "Bash(unzip -o \"logos...zip\" -d logos/)",
+      "Bash(cp \"/c/Users/Gerardo/Downloads/fwdinfoparalaappcjc/logos/LOGO CJC AZUL \\(3\\).png\" /c/Users/Gerardo/Desktop/proyects/IglesiaCJC/.claude/worktrees/elastic-wescoff/assets/images/LOGO_CJC_AZUL.png)",
+      "Bash(cp \"/c/Users/Gerardo/Downloads/fwdinfoparalaappcjc/logos/LOGO CJC NEGRO \\(3\\).png\" /c/Users/Gerardo/Desktop/proyects/IglesiaCJC/.claude/worktrees/elastic-wescoff/assets/images/LOGO_CJC_NEGRO.png)",
+      "Bash(cp \"/c/Users/Gerardo/Downloads/fwdinfoparalaappcjc/logos/LOGO CJC ROJO \\(2\\).png\" /c/Users/Gerardo/Desktop/proyects/IglesiaCJC/.claude/worktrees/elastic-wescoff/assets/images/LOGO_CJC_ROJO.png)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
