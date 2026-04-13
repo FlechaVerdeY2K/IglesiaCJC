@@ -25,7 +25,7 @@ export default function ParticlesBackground() {
           number: { value: 200, density: { enable: true } },
           color: { value: ["#ffffff", "#BF1E2E"] },
           opacity: {
-            value: { min: 0.03, max: 0.18 },
+            value: { min: 0.04, max: 0.22 },
             animation: { enable: true, speed: 0.4, sync: false },
           },
           size: {

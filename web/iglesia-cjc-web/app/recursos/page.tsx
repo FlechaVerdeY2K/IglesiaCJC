@@ -1,5 +1,14 @@
 import { supabase, type Recurso } from "@/lib/supabase";
 import { FileText, Headphones, Video, ExternalLink } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Recursos",
+  description: "Recursos cristianos de Iglesia CJC: PDFs, audios y videos para tu formación.",
+  alternates: {
+    canonical: "/recursos",
+  },
+};
 
 const iconoTipo = { pdf: FileText, audio: Headphones, video: Video } as const;
 const colorTipo = { pdf: "text-red-400", audio: "text-purple-400", video: "text-blue-400" } as const;

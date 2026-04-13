@@ -1,38 +1,151 @@
-import { supabase, type ConfigHome, type Sermon, type Evento, type Anuncio } from "@/lib/supabase";
+﻿import { supabase, type ConfigHome, type Sermon, type Evento, type Anuncio } from "@/lib/supabase";
 import { getUser } from "@/lib/auth";
+import { getLiveStatus } from "@/lib/live-status";
+import { yesterdayCR, formatDateCR } from "@/lib/date";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Play, Users, Heart, Phone, Lock } from "lucide-react";
+import { Play, Users, Heart, Phone, Lock, Radio } from "lucide-react";
 import EventosGrid from "@/components/EventosGrid";
+import { getLibro, LIBROS } from "@/lib/bible-books";
+import BibleBanner from "@/components/BibleBanner";
+
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+
+export const metadata: Metadata = {
+  title: "Inicio",
+  description: "Bienvenido a Iglesia CJC. Conoce predicas, eventos, transmisiones en vivo y contacto.",
+  alternates: {
+    canonical: "/",
+  },
+};
+
+function computeCurrentChapter(
+  libro: string,
+  capitulo: number,
+  autoAvance: boolean,
+  fechaInicio: string | null,
+): number {
+  if (!autoAvance || !fechaInicio) return capitulo;
+  const libroData = LIBROS.find(l => l.id === libro);
+  if (!libroData) return capitulo;
+
+  // Costa Rica is UTC-6 (no DST). Midnight CR = 06:00 UTC.
+  // We represent each "CR day" as its midnight in CR time (= 06:00 UTC that day).
+  const nowCR = new Date(Date.now() - 6 * 60 * 60 * 1000);
+  const todayMs = Date.UTC(nowCR.getUTCFullYear(), nowCR.getUTCMonth(), nowCR.getUTCDate()) + 6 * 60 * 60 * 1000;
+
+  const [y, m, d] = fechaInicio.split("-").map(Number);
+  const startMs = Date.UTC(y, m - 1, d) + 6 * 60 * 60 * 1000;
+
+  if (todayMs < startMs) return capitulo;
+
+  const weeksPassed = Math.floor((todayMs - startMs) / (7 * 24 * 60 * 60 * 1000));
+  const effective = capitulo + weeksPassed;
+  return ((effective - 1) % libroData.caps) + 1;
+}
 
 async function getHomeData(isLoggedIn: boolean) {
-  const [configRes, sermonesRes, eventosRes, anunciosRes] = await Promise.all([
+  const [configRes, sermonesRes, eventosRes, anunciosRes, bibliaRes] = await Promise.all([
     supabase.from("config_home").select("*").eq("id", 1).single(),
     supabase.from("sermones").select("*").eq("activo", true).order("fecha", { ascending: false }).limit(3),
     isLoggedIn
-      ? supabase.from("eventos").select("*").eq("activo", true).order("fecha", { ascending: true }).limit(4)
-      : supabase.from("eventos").select("*").eq("activo", true).eq("visibilidad", "todos").order("fecha", { ascending: true }).limit(4),
+      ? supabase.from("eventos").select("*").eq("activo", true).gte("fecha", yesterdayCR()).order("fecha", { ascending: true }).limit(6)
+      : supabase.from("eventos").select("*").eq("activo", true).eq("visibilidad", "todos").gte("fecha", yesterdayCR()).order("fecha", { ascending: true }).limit(6),
     isLoggedIn
       ? supabase.from("anuncios").select("*").eq("activo", true).order("fecha", { ascending: false }).limit(3)
       : Promise.resolve({ data: [] }),
+    supabase.from("config_biblia").select("*").eq("id", 1).single(),
   ]);
   return {
     config: configRes.data as ConfigHome | null,
     sermones: (sermonesRes.data ?? []) as Sermon[],
     eventos: (eventosRes.data ?? []) as Evento[],
     anuncios: (anunciosRes.data ?? []) as Anuncio[],
+    biblia: bibliaRes.data as { libro: string; capitulo: number; versiculo: number; titulo: string; activo: boolean; auto_avance: boolean; fecha_inicio: string | null } | null,
   };
+}
+
+async function getBibleVerse(libro: string, capitulo: number, versiculo: number): Promise<string> {
+  try {
+    const { LIBROS } = await import("@/lib/bible-books");
+    const libroData = LIBROS.find(l => l.id === libro);
+    if (!libroData) return "";
+    const res = await fetch(
+      `https://bolls.life/get-text/RV1960/${libroData.num}/${capitulo}/`,
+      { next: { revalidate: 3600 } }
+    );
+    if (!res.ok) return "";
+    const data = await res.json();
+    const verse = data.find((v: { verse: number; text: string }) => v.verse === versiculo);
+    return verse ? verse.text.replace(/<[^>]*>/g, "").trim() : "";
+  } catch {
+    return "";
+  }
 }
 
 export default async function HomePage() {
   const user = await getUser();
   const isLoggedIn = !!user;
-  const { config, sermones, eventos, anuncios } = await getHomeData(isLoggedIn);
+  const [{ config, sermones, eventos, anuncios, biblia }, liveStatus] = await Promise.all([
+    getHomeData(isLoggedIn),
+    getLiveStatus(),
+  ]);
+
+  const efectiveCapitulo = biblia
+    ? computeCurrentChapter(biblia.libro, biblia.capitulo, biblia.auto_avance ?? false, biblia.fecha_inicio ?? null)
+    : 1;
+
+  const verseText = biblia?.activo && biblia.versiculo
+    ? await getBibleVerse(biblia.libro, efectiveCapitulo, biblia.versiculo)
+    : "";
 
   const heroImage = config?.hero_image_url;
   const serviciosImage = config?.servicios_image_url;
+  const sameAs = [config?.instagram_url, config?.youtube_url, config?.facebook_url].filter(Boolean) as string[];
+  const churchJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Church",
+    name: "Iglesia CJC",
+    alternateName: "Comunidad Jesucristo es el Camino",
+    url: siteUrl,
+    logo: `${siteUrl}/logo-cjc.png`,
+    image: heroImage ? [heroImage] : [`${siteUrl}/logo-cjc.png`],
+    telephone: config?.telefono || undefined,
+    sameAs: sameAs.length > 0 ? sameAs : undefined,
+  };
 
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(churchJsonLd) }}
+      />
+      {/* ── BANNER EN VIVO ── */}
+      {liveStatus.isLive && liveStatus.videoId && (
+        <Link href="/live" className="block group">
+          <div className="relative overflow-hidden flex items-center justify-center gap-3 px-4 py-3 text-center"
+            style={{ background: "linear-gradient(90deg, #7a0d1a 0%, #BF1E2E 50%, #7a0d1a 100%)" }}>
+            {/* glow animado */}
+            <div className="absolute inset-0 pointer-events-none opacity-40"
+              style={{ background: "radial-gradient(ellipse at center, rgba(255,80,80,0.5) 0%, transparent 65%)", animation: "pulse 2s ease-in-out infinite" }} />
+            {/* dot pulsante */}
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
+            </span>
+            <Radio size={14} className="text-white/90 shrink-0" />
+            <span className="text-white font-bold text-sm tracking-wide">EN VIVO</span>
+            {liveStatus.title && (
+              <>
+                <span className="text-white/50 hidden sm:inline">—</span>
+                <span className="text-white/90 text-sm hidden sm:inline truncate max-w-xs">{liveStatus.title}</span>
+              </>
+            )}
+            <span className="text-white/70 text-xs font-semibold group-hover:text-white transition-colors ml-1">Ver ahora →</span>
+          </div>
+        </Link>
+      )}
+
       {/* ── HERO ── */}
       <section className="relative h-[400px] w-full overflow-hidden">
         {heroImage ? (
@@ -167,12 +280,26 @@ export default async function HomePage() {
                   <h3 className="font-semibold text-white mb-1 line-clamp-2 group-hover:text-accent transition-colors text-sm">{s.titulo}</h3>
                   <p className="text-white/40 text-xs">{s.predicador}</p>
                   <p className="text-white/25 text-xs mt-1">
-                    {new Date(s.fecha).toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" })}
+                    {new Date(s.fecha).toLocaleDateString("es", { timeZone: "America/Costa_Rica", day: "numeric", month: "long", year: "numeric" })}
                   </p>
                 </div>
               </a>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* ── LECTURA DEL DOMINGO ── */}
+      {biblia?.activo && (
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 py-10">
+          <BibleBanner
+            libro={biblia.libro}
+            capitulo={efectiveCapitulo}
+            versiculo={biblia.versiculo}
+            titulo={biblia.titulo}
+            verseText={verseText}
+            libroNombre={getLibro(biblia.libro).nombre}
+          />
         </section>
       )}
 
@@ -220,7 +347,7 @@ export default async function HomePage() {
               <Lock className="text-accent shrink-0 opacity-80" size={20} />
               <div>
                 <p className="text-white font-bold text-sm">Accede a más contenido</p>
-                <p className="text-white/40 text-xs">Devocionales, Galería, Pastores, GPS, Oraciones y más.</p>
+                <p className="text-white/40 text-xs">Devocionales, Galería, GPS, Oraciones y más.</p>
               </div>
             </div>
             <div className="flex gap-3 shrink-0">
@@ -243,7 +370,12 @@ export default async function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {anuncios.map((a) => (
                 <div key={a.id} className="rounded-2xl border border-white/5 overflow-hidden" style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
-                  {a.imagen_url && <img src={a.imagen_url} alt={a.titulo} className="w-full h-40 object-cover" />}
+                  {a.imagen_url
+                    ? <img src={a.imagen_url} alt={a.titulo} className="w-full h-40 object-cover" />
+                    : <div className="w-full h-40 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0D1628, #1A0A0D)" }}>
+                        <img src="/logo-cjc.png" alt="CJC" className="h-16 object-contain opacity-60" />
+                      </div>
+                  }
                   <div className="p-5">
                     <h3 className="font-semibold text-white mb-2 text-sm">{a.titulo}</h3>
                     <p className="text-white/45 text-sm leading-relaxed">{a.descripcion}</p>
@@ -282,3 +414,5 @@ export default async function HomePage() {
     </div>
   );
 }
+
+

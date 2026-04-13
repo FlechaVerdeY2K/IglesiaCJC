@@ -35,9 +35,16 @@ export async function GET(request: NextRequest) {
 
   // OAuth / magic link (code flow)
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return response;
-    console.error("AUTH CALLBACK ERROR:", error.message);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data.user) {
+      const meta = data.user.user_metadata;
+      const avatarUrl: string | null = meta?.avatar_url ?? meta?.picture ?? null;
+      if (avatarUrl) {
+        await supabase.from("usuarios").update({ foto_url: avatarUrl }).eq("id", data.user.id);
+      }
+      return response;
+    }
+    console.error("AUTH CALLBACK ERROR:", error?.message);
     return NextResponse.redirect(`${origin}/login?error=auth`);
   }
 

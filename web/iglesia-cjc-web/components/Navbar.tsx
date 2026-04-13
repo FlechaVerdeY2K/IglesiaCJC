@@ -1,21 +1,21 @@
-"use client";
+﻿"use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+
 import type { User } from "@supabase/supabase-js";
 import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 
-const supabase = createBrowserClient(
-  "https://fvffsnenebscigtywgwn.supabase.co",
-  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
-);
 
 // Links públicos (sin login)
 const PUBLIC_LINKS = [
   { href: "/sermones", label: "Prédicas" },
   { href: "/eventos", label: "Eventos" },
+  { href: "/pastores", label: "Pastores" },
+  { href: "/biblia", label: "Biblia" },
   { href: "/live", label: "En Vivo" },
   { href: "/contacto", label: "Contacto" },
 ];
@@ -24,7 +24,6 @@ const PUBLIC_LINKS = [
 const MEMBER_LINKS = [
   { href: "/devocionales", label: "Devocional" },
   { href: "/galeria", label: "Galería" },
-  { href: "/pastores", label: "Pastores" },
   { href: "/equipos", label: "GPS" },
   { href: "/oraciones", label: "Oraciones" },
   { href: "/recursos", label: "Recursos" },
@@ -33,7 +32,7 @@ const MEMBER_LINKS = [
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [roles, setRoles] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [memberOpen, setMemberOpen] = useState(false);
@@ -51,18 +50,21 @@ export default function Navbar() {
   const fetchAvatar = async (userId: string, fallback: string | null) => {
     const { data } = await supabase.from("usuarios").select("foto_url, rol").eq("id", userId).single();
     setAvatarUrl(data?.foto_url ?? fallback ?? null);
-    setIsAdmin(data?.rol === "admin");
+    const r: string[] = Array.isArray(data?.roles) && data.roles.length > 0
+      ? data.roles
+      : (data?.rol ? [data.rol] : ["miembro"]);
+    setRoles(r);
   };
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
       setUser(data.user);
       if (data.user) fetchAvatar(data.user.id, data.user.user_metadata?.avatar_url ?? null);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_: string, session: { user: User } | null) => {
       setUser(session?.user ?? null);
       if (session?.user) fetchAvatar(session.user.id, session.user.user_metadata?.avatar_url ?? null);
-      else { setAvatarUrl(null); setIsAdmin(false); }
+      else { setAvatarUrl(null); setRoles([]); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -76,7 +78,7 @@ export default function Navbar() {
     setUser(null);
   };
 
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/lider") || pathname.startsWith("/cocina")) return null;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-surface border-b border-border">
@@ -144,13 +146,29 @@ export default function Navbar() {
           <div className="hidden lg:flex items-center gap-3 shrink-0 ml-auto">
             {user ? (
               <>
-                {isAdmin && (
-                  <Link href="/admin"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
-                    style={{ background: "rgba(191,30,46,0.12)", color: "#BF1E2E", border: "1px solid rgba(191,30,46,0.25)" }}>
-                    Admin
-                  </Link>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {roles.includes("admin") && (
+                    <Link href="/admin"
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all hover:opacity-80"
+                      style={{ background: "rgba(191,30,46,0.12)", color: "#BF1E2E", border: "1px solid rgba(191,30,46,0.25)" }}>
+                      Admin
+                    </Link>
+                  )}
+                  {roles.includes("lider") && (
+                    <Link href="/lider"
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all hover:opacity-80"
+                      style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.25)" }}>
+                      Líder
+                    </Link>
+                  )}
+                  {roles.includes("cocina") && (
+                    <Link href="/cocina"
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all hover:opacity-80"
+                      style={{ background: "rgba(251,146,60,0.12)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.25)" }}>
+                      Cocina
+                    </Link>
+                  )}
+                </div>
                 <Link
                   href="/perfil"
                   className="group flex items-center py-1.5 px-1.5 hover:px-3 rounded-xl border border-white/10 hover:border-accent/40 transition-all duration-300 overflow-hidden"
@@ -231,13 +249,42 @@ export default function Navbar() {
                 </Link>
               ))}
               <div className="mt-5 pt-4 border-t border-white/5">
-                {isAdmin && (
-                  <Link href="/admin" className="flex items-center justify-center gap-2 mb-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider"
-                    style={{ background: "rgba(191,30,46,0.12)", color: "#BF1E2E", border: "1px solid rgba(191,30,46,0.25)" }}>
-                    Panel Admin
-                  </Link>
-                )}
-                <p className="text-white/30 text-xs mb-3 truncate">{user.email}</p>
+                <div className="flex flex-col gap-1.5 mb-1">
+                  {roles.includes("admin") && (
+                    <Link href="/admin" className="flex items-center justify-center py-2 rounded-lg text-xs font-bold uppercase tracking-wider"
+                      style={{ background: "rgba(191,30,46,0.12)", color: "#BF1E2E", border: "1px solid rgba(191,30,46,0.25)" }}>
+                      Panel Admin
+                    </Link>
+                  )}
+                  {roles.includes("lider") && (
+                    <Link href="/lider" className="flex items-center justify-center py-2 rounded-lg text-xs font-bold uppercase tracking-wider"
+                      style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.25)" }}>
+                      Panel Líder
+                    </Link>
+                  )}
+                  {roles.includes("cocina") && (
+                    <Link href="/cocina" className="flex items-center justify-center py-2 rounded-lg text-xs font-bold uppercase tracking-wider"
+                      style={{ background: "rgba(251,146,60,0.12)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.25)" }}>
+                      Panel Cocina
+                    </Link>
+                  )}
+                </div>
+                <Link
+                  href="/perfil"
+                  className="flex items-center gap-3 mb-4 p-3 rounded-xl border border-white/8 hover:border-accent/30 transition-all"
+                  style={{ backgroundColor: "rgba(255,255,255,0.03)" }}
+                >
+                  <div className="w-9 h-9 rounded-full border border-accent/40 flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
+                    {avatarUrl
+                      ? <img src={avatarUrl} className="w-9 h-9 rounded-full object-cover" alt="avatar" />
+                      : <UserIcon size={16} className="text-accent" />
+                    }
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-white text-sm font-semibold truncate">{user.user_metadata?.full_name ?? "Mi perfil"}</p>
+                    <p className="text-white/30 text-xs truncate">{user.email}</p>
+                  </div>
+                </Link>
                 <button onClick={handleSignOut} className="btn-secondary text-sm w-full text-center">Cerrar sesión</button>
               </div>
             </>
@@ -252,3 +299,5 @@ export default function Navbar() {
     </nav>
   );
 }
+
+

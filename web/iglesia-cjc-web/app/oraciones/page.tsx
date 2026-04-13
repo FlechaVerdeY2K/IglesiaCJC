@@ -1,6 +1,8 @@
 "use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
-import { supabase, type Oracion } from "@/lib/supabase";
+import type { Oracion } from "@/lib/supabase";
 import { Heart } from "lucide-react";
 
 export default function OracionesPage() {
@@ -11,15 +13,19 @@ export default function OracionesPage() {
   const [anonima, setAnonima] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
+      if (data.user) setUserId(data.user.id);
+    });
     supabase
       .from("oraciones")
       .select("*")
       .eq("estado", "aprobada")
       .order("fecha", { ascending: false })
-      .then(({ data }) => {
-        setOraciones((data ?? []) as Oracion[]);
+      .then(({ data }: { data: Oracion[] | null }) => {
+        setOraciones(data ?? []);
         setLoading(false);
       });
   }, []);
@@ -32,6 +38,7 @@ export default function OracionesPage() {
       peticion,
       anonima,
       estado: "pendiente",
+      ...(userId ? { autor_uid: userId } : {}),
     });
     setEnviando(false);
     if (!error) {
@@ -102,7 +109,7 @@ export default function OracionesPage() {
                     </p>
                     <p className="text-white text-sm leading-relaxed">{o.peticion}</p>
                     <p className="text-muted text-xs mt-2">
-                      {new Date(o.fecha).toLocaleDateString("es", { day: "numeric", month: "long" })}
+                      {new Date(o.fecha).toLocaleDateString("es", { timeZone: "America/Costa_Rica", day: "numeric", month: "long" })}
                     </p>
                   </div>
                   <div className="flex items-center gap-1 text-muted text-xs shrink-0">

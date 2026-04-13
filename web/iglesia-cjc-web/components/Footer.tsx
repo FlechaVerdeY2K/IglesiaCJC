@@ -1,14 +1,12 @@
 "use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+
 import { usePathname } from "next/navigation";
 
-const supabase = createBrowserClient(
-  "https://fvffsnenebscigtywgwn.supabase.co",
-  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
-);
 
 const NAV_PUBLIC = [
   { href: "/sermones", label: "Prédicas" },
@@ -36,8 +34,8 @@ export default function Footer() {
   const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => setLoggedIn(!!data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_: string, session: { user: { id: string } } | null) => {
       setLoggedIn(!!session?.user);
     });
     return () => subscription.unsubscribe();

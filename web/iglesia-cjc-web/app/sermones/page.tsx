@@ -1,5 +1,14 @@
 import { supabase, type Sermon } from "@/lib/supabase";
 import { Play } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Sermones",
+  description: "Sermones y prédicas de Iglesia CJC para fortalecer tu fe.",
+  alternates: {
+    canonical: "/sermones",
+  },
+};
 
 export default async function SermonesPage() {
   const { data } = await supabase
@@ -46,7 +55,7 @@ export default async function SermonesPage() {
               <p className="text-muted text-sm mb-1">{s.predicador}</p>
               {s.descripcion && <p className="text-muted text-xs line-clamp-2 mt-2">{s.descripcion}</p>}
               <p className="text-muted text-xs mt-3">
-                {new Date(s.fecha).toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" })}
+                {new Date(s.fecha).toLocaleDateString("es", { timeZone: "America/Costa_Rica", day: "numeric", month: "long", year: "numeric" })}
               </p>
             </a>
           ))}

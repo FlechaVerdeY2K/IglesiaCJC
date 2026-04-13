@@ -1,12 +1,10 @@
 "use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+
 import { Radio, ToggleLeft, ToggleRight, Archive, Trash2, Plus, Check, X } from "lucide-react";
 
-const supabase = createBrowserClient(
-  "https://fvffsnenebscigtywgwn.supabase.co",
-  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
-);
 
 type ConfigLive = { activo: boolean; video_id: string | null; titulo: string | null; descripcion: string | null; manual_override: boolean };
 type LiveHistory = { id: string; video_id: string; titulo: string | null; fecha: string };
@@ -97,20 +95,27 @@ export default function AdminLive() {
       </div>
 
       {/* Manual override */}
-      <div className="p-5 rounded-2xl border border-border mb-6" style={{ background: "#0D1628" }}>
+      <div className="p-5 rounded-2xl border mb-6" style={{ background: "#0D1628", borderColor: config.activo ? "rgba(191,30,46,0.4)" : "rgba(255,255,255,0.08)" }}>
         <div className="flex items-center gap-3 mb-4">
-          <Radio size={16} className="text-accent" />
-          <p className="text-white font-semibold">Override manual</p>
-          <button onClick={toggleOverride} className="ml-auto">
-            {config.manual_override
-              ? <ToggleRight size={28} className="text-accent" />
-              : <ToggleLeft size={28} className="text-white/30" />
+          <Radio size={16} className={config.activo ? "text-accent" : "text-white/30"} />
+          <div>
+            <p className="text-white font-semibold">Live manual</p>
+            <p className="text-white/30 text-xs">Activa para mostrar un video específico</p>
+          </div>
+          <button onClick={async () => {
+            const updated = { ...config, activo: !config.activo };
+            setConfig(updated);
+            await supabase.from("config_live").upsert({ id: 1, ...updated });
+          }} className="ml-auto">
+            {config.activo
+              ? <ToggleRight size={32} className="text-accent" />
+              : <ToggleLeft size={32} className="text-white/30" />
             }
           </button>
         </div>
-        {config.manual_override && (
+        {config.activo && (
           <p className="text-xs text-accent/80 mb-4 bg-accent/10 px-3 py-2 rounded-lg border border-accent/20">
-            Override activo — se mostrará este video en vez del auto-detectado
+            Live activo — se mostrará el video configurado en la página pública
           </p>
         )}
         <div className="space-y-3">
@@ -159,7 +164,7 @@ export default function AdminLive() {
             <img src={`https://img.youtube.com/vi/${l.video_id}/default.jpg`} className="w-16 h-10 rounded-lg object-cover" alt="" />
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-medium truncate">{l.titulo ?? "Sin título"}</p>
-              <p className="text-white/30 text-xs">{new Date(l.fecha).toLocaleDateString("es-CR")}</p>
+              <p className="text-white/30 text-xs">{new Date(l.fecha).toLocaleDateString("es-CR", { timeZone: "America/Costa_Rica" })}</p>
             </div>
             <button onClick={() => removeHistory(l.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400">
               <Trash2 size={13} />

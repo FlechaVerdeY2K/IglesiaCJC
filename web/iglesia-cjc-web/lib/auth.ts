@@ -21,7 +21,6 @@ export async function getUser() {
 export const PROTECTED_ROUTES = [
   "/devocionales",
   "/galeria",
-  "/pastores",
   "/equipos",
   "/oraciones",
   "/recursos",

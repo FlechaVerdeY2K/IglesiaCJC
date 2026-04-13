@@ -1,12 +1,10 @@
 "use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+
 import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
 
-const supabase = createBrowserClient(
-  "https://fvffsnenebscigtywgwn.supabase.co",
-  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
-);
 
 type Recurso = { id: string; titulo: string; descripcion: string; url: string; tipo: string; audiencia: string };
 const EMPTY: Omit<Recurso, "id"> = { titulo: "", descripcion: "", url: "", tipo: "link", audiencia: "general" };

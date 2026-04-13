@@ -1,5 +1,14 @@
 import { supabase, type Devocional } from "@/lib/supabase";
 import { BookOpen } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Devocionales",
+  description: "Devocionales de Iglesia CJC para tu crecimiento espiritual diario.",
+  alternates: {
+    canonical: "/devocionales",
+  },
+};
 
 export default async function DevoccionalesPage() {
   const { data } = await supabase
@@ -27,7 +36,7 @@ export default async function DevoccionalesPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-muted text-xs mb-2">
-                    {new Date(d.fecha).toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" })}
+                    {new Date(d.fecha).toLocaleDateString("es", { timeZone: "America/Costa_Rica", weekday: "long", day: "numeric", month: "long" })}
                   </p>
                   <h2 className="font-bold text-white text-xl mb-3">{d.titulo}</h2>
                   <div className="bg-border rounded-lg px-4 py-3 mb-4 border-l-4 border-accent">

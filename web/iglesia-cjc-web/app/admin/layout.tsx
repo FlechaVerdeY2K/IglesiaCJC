@@ -1,19 +1,17 @@
 "use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
   LayoutDashboard, Users, CalendarDays, HandHeart,
   UsersRound, ShieldAlert, LogOut, Menu, X,
-  Video, BookOpen, Newspaper, Radio, Church, ExternalLink, FileText
+  Video, BookOpen, Newspaper, Radio, Church, ExternalLink, FileText, BookMarked, Image as ImageIcon
 } from "lucide-react";
 
-const supabase = createBrowserClient(
-  "https://fvffsnenebscigtywgwn.supabase.co",
-  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
-);
 
 const NAV = [
   { href: "/admin",                label: "Dashboard",    icon: LayoutDashboard },
@@ -27,6 +25,8 @@ const NAV = [
   { href: "/admin/oraciones",      label: "Oraciones",    icon: HandHeart },
   { href: "/admin/equipos",        label: "GPS Equipos",  icon: UsersRound },
   { href: "/admin/recursos",       label: "Recursos",     icon: FileText },
+  { href: "/admin/biblia",         label: "Biblia",       icon: BookMarked },
+  { href: "/admin/banners",        label: "Banners",      icon: ImageIcon },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-full z-50 w-64 flex flex-col border-r border-border transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+      <aside className={`fixed top-0 left-0 h-full z-50 w-64 flex flex-col overflow-y-auto border-r border-border transition-transform duration-300 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.22)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 hover:[&::-webkit-scrollbar-thumb]:bg-white/30 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
         style={{ background: "#08111f" }}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-border">
@@ -105,7 +105,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* Bottom actions */}
-        <div className="p-4 border-t border-border space-y-1">
+        <div className="p-4 border-t border-border space-y-2">
+          {/* Panel quick links */}
+          <div className="grid grid-cols-2 gap-1.5 mb-2">
+            <Link href="/lider"
+              className="flex items-center justify-center py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all hover:opacity-80"
+              style={{ background: "rgba(59,130,246,0.10)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.2)" }}>
+              Líder
+            </Link>
+            <Link href="/cocina"
+              className="flex items-center justify-center py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all hover:opacity-80"
+              style={{ background: "rgba(251,146,60,0.10)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.2)" }}>
+              Cocina
+            </Link>
+          </div>
           <Link href="/"
             className="flex items-center gap-2 text-white/40 hover:text-white text-sm transition-colors w-full py-1">
             <ExternalLink size={15} /> Ver sitio

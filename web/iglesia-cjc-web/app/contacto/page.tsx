@@ -1,6 +1,17 @@
 import { supabase, type ConfigHome } from "@/lib/supabase";
 import { FaWhatsapp, FaInstagram, FaYoutube, FaFacebook, FaWaze } from "react-icons/fa";
 import Image from "next/image";
+import type { Metadata } from "next";
+
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+
+export const metadata: Metadata = {
+  title: "Contacto",
+  description: "Contacta a Iglesia CJC por WhatsApp, redes sociales o mapas para llegar a la iglesia.",
+  alternates: {
+    canonical: "/contacto",
+  },
+};
 
 /* ─── Page ───────────────────────────────────────────── */
 export default async function ContactoPage() {
@@ -75,8 +86,32 @@ export default async function ContactoPage() {
     },
   ].filter(Boolean) as { href: string; icon: React.ReactNode; label: string; bg: string; border: string }[];
 
+  const sameAs = [config?.instagram_url, config?.youtube_url, config?.facebook_url].filter(Boolean) as string[];
+  const contactJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Iglesia CJC",
+    url: siteUrl,
+    telephone: config?.telefono || undefined,
+    contactPoint: config?.telefono
+      ? [
+          {
+            "@type": "ContactPoint",
+            telephone: config.telefono,
+            contactType: "customer support",
+            availableLanguage: ["es"],
+          },
+        ]
+      : undefined,
+    sameAs: sameAs.length > 0 ? sameAs : undefined,
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}
+      />
       {/* Header */}
       <div className="mb-14">
         <span className="section-label">Hablemos</span>

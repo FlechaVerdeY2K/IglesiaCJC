@@ -1,12 +1,10 @@
 "use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+
 import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
 
-const supabase = createBrowserClient(
-  "https://fvffsnenebscigtywgwn.supabase.co",
-  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
-);
 
 type Devocional = { id: string; versiculo: string; referencia: string; reflexion: string; fecha: string };
 const EMPTY: Omit<Devocional, "id"> = { versiculo: "", referencia: "", reflexion: "", fecha: "" };

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(claude plugin:*)",
+      "Bash(curl -s \"https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=9WqjpA30JBE&key=AIzaSyD_F54iopqmsiTBQX6l0zNInOH_YoCsRek\")",
+      "Bash(node -e \"const j=require\\('C:/Users/Gerardo/AppData/Local/Temp/yt_test.json'\\); const i=j.items?.[0]; console.log\\('liveBroadcastContent:', i?.snippet?.liveBroadcastContent\\); console.log\\('title:', i?.snippet?.title?.substring\\(0,60\\)\\); console.log\\('error:', j.error?.message\\);\")",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

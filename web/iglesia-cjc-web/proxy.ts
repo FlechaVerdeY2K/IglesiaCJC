@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { PROTECTED_ROUTES } from "@/lib/auth";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -22,6 +22,13 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
+  const shouldNoIndex = ["/admin", "/login", "/register", "/auth"].some((r) =>
+    pathname.startsWith(r)
+  );
+
+  if (shouldNoIndex) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
 
   const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r));
 
@@ -37,6 +44,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

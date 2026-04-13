@@ -1,14 +1,12 @@
 "use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import { useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-const supabase = createBrowserClient(
-  "https://fvffsnenebscigtywgwn.supabase.co",
-  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
-);
 
 export default function RegisterPage() {
   const router = useRouter();

@@ -1,12 +1,10 @@
 "use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+
 import { Check, X } from "lucide-react";
 
-const supabase = createBrowserClient(
-  "https://fvffsnenebscigtywgwn.supabase.co",
-  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
-);
 
 type Oracion = { id: string; contenido: string; anonimo: boolean; estado: string; created_at: string; usuario_id: string; orantes: number };
 

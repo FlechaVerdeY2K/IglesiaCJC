@@ -1,12 +1,10 @@
 "use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+
 import { Radio, Clock, ChevronRight } from "lucide-react";
 
-const supabase = createBrowserClient(
-  "https://fvffsnenebscigtywgwn.supabase.co",
-  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
-);
 
 type LiveStatus = { isLive: boolean; videoId: string | null; title: string | null };
 type ConfigLive = { activo: boolean; video_id: string | null; titulo: string | null; descripcion: string | null; manual_override: boolean };
@@ -39,8 +37,8 @@ export default function LivePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Determine what to show: manual override takes priority
-  const showManual = config?.manual_override && config?.video_id;
+  // Determine what to show: activo/manual_override takes priority over auto
+  const showManual = (config?.activo || config?.manual_override) && config?.video_id;
   const showAuto = !showManual && autoLive.isLive && autoLive.videoId;
   const activeVideoId = showManual ? config!.video_id : showAuto ? autoLive.videoId : null;
   const activeTitle = showManual ? config?.titulo : autoLive.title;
@@ -124,7 +122,7 @@ export default function LivePage() {
                   <p className="text-white font-semibold text-sm line-clamp-2">{live.titulo ?? "Sin título"}</p>
                   <div className="flex items-center gap-1.5 mt-2 text-white/30 text-xs">
                     <Clock size={10} />
-                    {new Date(live.fecha).toLocaleDateString("es-CR", { day: "numeric", month: "short", year: "numeric" })}
+                    {new Date(live.fecha).toLocaleDateString("es-CR", { timeZone: "America/Costa_Rica", day: "numeric", month: "short", year: "numeric" })}
                   </div>
                 </div>
               </a>

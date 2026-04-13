@@ -1,13 +1,11 @@
 "use client";
+import { getBrowserClient } from "@/lib/supabase-browser";
+const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+
 import Link from "next/link";
 import { Users, CalendarDays, Video, Newspaper, BookOpen, HandHeart, UsersRound, Radio, Church, FileText } from "lucide-react";
 
-const supabase = createBrowserClient(
-  "https://fvffsnenebscigtywgwn.supabase.co",
-  "sb_publishable_w2f84f3_RoJOmoHbKAeLsw_6s4_J5qN"
-);
 
 const CARDS = [
   { label: "Usuarios",     href: "/admin/usuarios",     icon: Users,       table: "usuarios" },

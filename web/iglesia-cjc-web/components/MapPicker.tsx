@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Search, Loader } from "lucide-react";
 
-const CHURCH_LAT = 9.9478;
-const CHURCH_LNG = -83.9986;
+const CHURCH_LAT = 9.95239;
+const CHURCH_LNG = -84.05036;
 
 type Props = {
   lat: number;
@@ -14,13 +15,17 @@ export default function MapPicker({ lat, lng, onChange }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<{ display_name: string; lat: string; lon: string }[]>([]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
+    let cancelled = false;
 
-    // Dynamically import leaflet (requires window)
     import("leaflet").then(L => {
-      // Fix default icon paths
+      if (cancelled || !mapRef.current || mapInstanceRef.current) return;
+
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -31,7 +36,7 @@ export default function MapPicker({ lat, lng, onChange }: Props) {
       const initLat = lat || CHURCH_LAT;
       const initLng = lng || CHURCH_LNG;
 
-      const map = L.map(mapRef.current!).setView([initLat, initLng], 16);
+      const map = L.map(mapRef.current).setView([initLat, initLng], 16);
       mapInstanceRef.current = map;
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -68,23 +73,96 @@ export default function MapPicker({ lat, lng, onChange }: Props) {
     });
 
     return () => {
-      mapInstanceRef.current?.remove();
-      mapInstanceRef.current = null;
+      cancelled = true;
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+      if (mapRef.current) {
+        delete (mapRef.current as any)._leaflet_id;
+      }
     };
   }, []);
 
-  // Update marker when lat/lng props change externally
   useEffect(() => {
     if (!markerRef.current || !lat || !lng) return;
     markerRef.current.setLatLng([lat, lng]);
     mapInstanceRef.current?.setView([lat, lng], 16);
   }, [lat, lng]);
 
+  const search = async () => {
+    if (!query.trim()) return;
+    setSearching(true);
+    setResults([]);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=cr`,
+        { headers: { "Accept-Language": "es" } }
+      );
+      const data = await res.json();
+      setResults(data);
+    } catch {
+      setResults([]);
+    }
+    setSearching(false);
+  };
+
+  const selectResult = (r: { display_name: string; lat: string; lon: string }) => {
+    const rlat = parseFloat(r.lat);
+    const rlng = parseFloat(r.lon);
+    markerRef.current?.setLatLng([rlat, rlng]);
+    mapInstanceRef.current?.setView([rlat, rlng], 17);
+    onChange(rlat, rlng, r.display_name);
+    setResults([]);
+    setQuery(r.display_name.split(",")[0]);
+  };
+
   return (
     <>
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+      {/* Search bar */}
+      <div className="relative mb-2">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <input
+              className="input w-full pl-8 text-sm"
+              placeholder="Buscar dirección..."
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); search(); } }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={search}
+            disabled={searching}
+            className="px-3 py-2 rounded-xl border border-border text-white/60 hover:text-white hover:border-white/30 transition-all text-sm flex items-center gap-1.5"
+          >
+            {searching ? <Loader size={14} className="animate-spin" /> : <Search size={14} />}
+          </button>
+        </div>
+
+        {/* Results dropdown */}
+        {results.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border overflow-hidden z-[1000]" style={{ background: "#0D1628" }}>
+            {results.map((r, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => selectResult(r)}
+                className="w-full text-left px-4 py-2.5 text-sm text-white/70 hover:bg-white/5 hover:text-white border-b border-white/5 last:border-0 transition-colors"
+              >
+                {r.display_name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div ref={mapRef} style={{ height: "240px", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }} />
-      <p className="text-white/25 text-xs mt-1">Haz clic en el mapa o arrastra el marcador para seleccionar la ubicación</p>
+      <p className="text-white/25 text-xs mt-1">Busca una dirección o haz clic en el mapa para ubicar el evento</p>
     </>
   );
 }

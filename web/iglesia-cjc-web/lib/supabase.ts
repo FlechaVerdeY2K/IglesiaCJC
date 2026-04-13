@@ -36,9 +36,13 @@ export interface Evento {
   titulo: string;
   descripcion: string;
   fecha: string;
+  hora: string | null;
   lugar: string | null;
   image_url: string | null;
+  lat: number | null;
+  lng: number | null;
   activo: boolean;
+  tipo: string | null;
 }
 
 export interface Devocional {
@@ -68,6 +72,7 @@ export interface Pastor {
   bio: string;
   foto_url: string | null;
   orden: number;
+  versiculo: string | null;
 }
 
 export interface Equipo {
