@@ -14,10 +14,21 @@ export default function OracionesPage() {
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [prayed, setPrayed] = useState<Set<string>>(new Set());
+  const [praying, setPraying] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
-      if (data.user) setUserId(data.user.id);
+      if (data.user) {
+        setUserId(data.user.id);
+        supabase
+          .from("oracion_orantes")
+          .select("oracion_id")
+          .eq("user_id", data.user.id)
+          .then(({ data: rows }) => {
+            setPrayed(new Set((rows ?? []).map((r: { oracion_id: string }) => r.oracion_id)));
+          });
+      }
     });
     supabase
       .from("oraciones")
@@ -47,6 +58,23 @@ export default function OracionesPage() {
     } else {
       setMensaje("Ocurrió un error. Intenta de nuevo.");
     }
+  };
+
+  const handlePray = async (oracion: Oracion) => {
+    if (!userId || praying || prayed.has(oracion.id)) return;
+    setPraying(oracion.id);
+
+    const { error } = await supabase
+      .from("oracion_orantes")
+      .insert({ oracion_id: oracion.id, user_id: userId });
+
+    if (!error) {
+      setPrayed(prev => new Set(prev).add(oracion.id));
+      setOraciones(prev =>
+        prev.map(o => o.id === oracion.id ? { ...o, orantes: o.orantes + 1 } : o)
+      );
+    }
+    setPraying(null);
   };
 
   return (
@@ -100,25 +128,50 @@ export default function OracionesPage() {
           ) : oraciones.length === 0 ? (
             <p className="text-muted">No hay peticiones aún.</p>
           ) : (
-            oraciones.map((o) => (
-              <div key={o.id} className="card">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-accent font-semibold text-sm mb-1">
-                      {o.anonima ? "Anónimo" : o.nombre}
-                    </p>
-                    <p className="text-white text-sm leading-relaxed">{o.peticion}</p>
-                    <p className="text-muted text-xs mt-2">
-                      {new Date(o.fecha).toLocaleDateString("es", { timeZone: "America/Costa_Rica", day: "numeric", month: "long" })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 text-muted text-xs shrink-0">
-                    <Heart size={14} className="text-accent" />
-                    <span>{o.orantes}</span>
+            oraciones.map((o) => {
+              const alreadyPrayed = prayed.has(o.id);
+              const isPraying = praying === o.id;
+              return (
+                <div key={o.id} className="card">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-accent font-semibold text-sm mb-1">
+                        {o.anonima ? "Anónimo" : o.nombre}
+                      </p>
+                      <p className="text-white text-sm leading-relaxed">{o.peticion}</p>
+                      <p className="text-muted text-xs mt-2">
+                        {new Date(o.fecha).toLocaleDateString("es", { timeZone: "America/Costa_Rica", day: "numeric", month: "long" })}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center gap-1 shrink-0">
+                      {userId ? (
+                        <button
+                          onClick={() => handlePray(o)}
+                          disabled={alreadyPrayed || isPraying}
+                          title={alreadyPrayed ? "Ya oraste por esta petición" : "Orar por esta petición"}
+                          className={`flex flex-col items-center gap-0.5 transition-all ${
+                            alreadyPrayed
+                              ? "text-accent cursor-default"
+                              : "text-white/30 hover:text-accent cursor-pointer"
+                          }`}
+                        >
+                          <Heart
+                            size={18}
+                            className={alreadyPrayed ? "fill-accent text-accent" : ""}
+                          />
+                          <span className="text-[10px] font-semibold">{o.orantes}</span>
+                        </button>
+                      ) : (
+                        <div className="flex flex-col items-center gap-0.5 text-muted">
+                          <Heart size={14} className="text-accent" />
+                          <span className="text-xs">{o.orantes}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

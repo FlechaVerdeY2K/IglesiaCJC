@@ -63,22 +63,27 @@ export default function AdminUsuarios() {
     setUpdating(usuario.id + rol);
     setUsuarios(prev => prev.map(u => u.id === usuario.id ? { ...u, roles: newRoles } : u));
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("usuarios")
       .update({ roles: newRoles, rol: primaryRol })
-      .eq("id", usuario.id);
+      .eq("id", usuario.id)
+      .select("id, roles, rol");
+
+    console.log("[toggleRole] update result:", { updated, error, newRoles, primaryRol });
 
     if (error) {
-      // Revert optimistic update
       setUsuarios(prev => prev.map(u => u.id === usuario.id ? { ...u, roles: previous } : u));
-      console.error("toggleRole failed:", error.message);
+      console.error("[toggleRole] error:", error.message);
+    } else if (!updated || updated.length === 0) {
+      setUsuarios(prev => prev.map(u => u.id === usuario.id ? { ...u, roles: previous } : u));
+      console.error("[toggleRole] 0 rows updated — RLS likely blocking update");
     } else {
-      // Confirm from DB to ensure arrays saved correctly
       const { data: fresh } = await supabase
         .from("usuarios")
         .select("id, nombre, email, foto_url, rol, roles, telefono, created_at")
         .eq("id", usuario.id)
         .single();
+      console.log("[toggleRole] fresh fetch:", fresh);
       if (fresh) {
         setUsuarios(prev => prev.map(u => u.id === usuario.id ? normalize(fresh) : u));
       }
