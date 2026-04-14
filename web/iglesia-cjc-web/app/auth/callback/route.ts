@@ -43,7 +43,16 @@ export async function GET(request: NextRequest) {
       const meta = data.user.user_metadata;
       const avatarUrl: string | null = meta?.avatar_url ?? meta?.picture ?? null;
       if (avatarUrl) {
-        await supabase.from("usuarios").update({ foto_url: avatarUrl }).eq("id", data.user.id);
+        const { data: profile } = await supabase
+          .from("usuarios")
+          .select("foto_url")
+          .eq("id", data.user.id)
+          .single();
+
+        // Only initialize provider avatar when user has no custom photo yet.
+        if (!profile?.foto_url) {
+          await supabase.from("usuarios").update({ foto_url: avatarUrl }).eq("id", data.user.id);
+        }
       }
       return response;
     }

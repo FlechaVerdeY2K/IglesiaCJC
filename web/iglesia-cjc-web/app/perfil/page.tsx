@@ -3,6 +3,7 @@ import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
@@ -37,6 +38,13 @@ type BibliaConfig = {
   libro: string; capitulo: number; versiculo: number;
   titulo: string; activo: boolean; auto_avance: boolean; fecha_inicio: string | null;
 };
+type GpsRegistro = {
+  equipo_id: string | null;
+  equipo_nombre: string | null;
+  estado: string | null;
+  created_at?: string | null;
+};
+type GpsState = { nombre: string; estado: "aprobada" | "pendiente" | "rechazada" | "desconocido" };
 
 const COVERS = [
   { id: "red",    label: "Rojo",    bg: "linear-gradient(135deg, #1A0A0D 0%, #2a0810 60%, #0D1020 100%)", glow: "rgba(191,30,46,0.35)",   line: "#BF1E2E" },
@@ -49,6 +57,9 @@ const COVERS = [
 
 const COVER_KEY = "perfil_cover";
 const COVER_IMG_KEY = "perfil_cover_img";
+const CLOUDINARY_CLOUD = "djfnlzs0g";
+const CLOUDINARY_PRESET = "cjc_uploads";
+const ORACIONES_PAGE_SIZE = 3;
 
 export default function PerfilPage() {
   const router = useRouter();
@@ -58,7 +69,7 @@ export default function PerfilPage() {
   const [rol, setRol]               = useState("");
   const [fotoUrl, setFotoUrl]       = useState<string | null>(null);
   const [imgError, setImgError]     = useState(false);
-  const [gps, setGps]               = useState<{ nombre: string } | null>(null);
+  const [gps, setGps]               = useState<GpsState | null>(null);
   const [oraciones, setOraciones]   = useState<Oracion[]>([]);
   const [orCount, setOrCount]       = useState(0);
   const [biblia, setBiblia]         = useState<BibliaConfig | null>(null);
@@ -66,6 +77,7 @@ export default function PerfilPage() {
   const [guardando, setGuardando]   = useState(false);
   const [uploading, setUploading]   = useState(false);
   const [mensaje, setMensaje]       = useState("");
+  const [errorUpload, setErrorUpload] = useState("");
   const [coverId, setCoverId]       = useState(() => {
     if (typeof window === "undefined") return "red";
     return localStorage.getItem(COVER_KEY) ?? "red";
@@ -76,6 +88,8 @@ export default function PerfilPage() {
   });
   const [banners, setBanners]       = useState<{ id: string; url: string; label: string }[]>([]);
   const [showCovers, setShowCovers] = useState(false);
+  const [activeTab, setActiveTab]   = useState<"resumen" | "oraciones" | "cuenta">("resumen");
+  const [orPage, setOrPage]         = useState(1);
 
   useEffect(() => {
     supabase
@@ -91,23 +105,92 @@ export default function PerfilPage() {
       if (!data.user) { router.push("/login"); return; }
       setUser(data.user);
 
-      const [perfilRes, gpsRes, orRes, bibliaRes] = await Promise.all([
+      const [perfilRes, bibliaRes] = await Promise.all([
         supabase.from("usuarios").select("nombre, rol, foto_url").eq("id", data.user.id).single(),
-        supabase.from("gps_registros").select("equipo_nombre").eq("usuario_id", data.user.id).limit(1).maybeSingle(),
-        supabase.from("oraciones").select("*").eq("autor_uid", data.user.id).order("fecha", { ascending: false }).limit(3),
         supabase.from("config_biblia").select("*").eq("id", 1).single(),
       ]);
+
+      const { data: gpsRegs, error: gpsError } = await supabase
+        .from("gps_registros")
+        .select("equipo_id, equipo_nombre, estado, created_at")
+        .eq("usuario_id", data.user.id);
+
+      let gpsNombre: string | null = null;
+      let gpsEstado: GpsState["estado"] = "desconocido";
+      if (gpsError) {
+        console.warn("gps_registros query skipped:", gpsError.message);
+      } else {
+        const registros = (gpsRegs ?? []) as GpsRegistro[];
+        const preferred = registros.find(r => r.estado === "aprobada")
+          ?? registros.find(r => r.estado === "pendiente")
+          ?? registros[0];
+
+        if (preferred?.equipo_id) {
+          const { data: equipoData } = await supabase
+            .from("equipos")
+            .select("nombre")
+            .eq("id", preferred.equipo_id)
+            .maybeSingle();
+          gpsNombre = equipoData?.nombre ?? preferred.equipo_nombre ?? null;
+        } else {
+          gpsNombre = preferred?.equipo_nombre ?? null;
+        }
+        if (preferred?.estado === "aprobada" || preferred?.estado === "pendiente" || preferred?.estado === "rechazada") {
+          gpsEstado = preferred.estado;
+        }
+      }
+
+      const { data: ownOraciones, error: ownOrError } = await supabase
+        .from("oraciones")
+        .select("*")
+        .eq("autor_uid", data.user.id)
+        .order("fecha", { ascending: false })
+        .limit(50);
+
+      let myOraciones = (ownOraciones ?? []) as Oracion[];
+      if (ownOrError) {
+        console.warn("oraciones by autor_uid failed:", ownOrError.message);
+      }
+
+      if (myOraciones.length === 0 && perfilRes.data?.nombre) {
+        const { data: byName, error: byNameError } = await supabase
+          .from("oraciones")
+          .select("*")
+          .eq("nombre", perfilRes.data.nombre)
+          .eq("anonima", false)
+          .order("fecha", { ascending: false })
+          .limit(50);
+        if (byNameError) {
+          console.warn("oraciones by nombre fallback failed:", byNameError.message);
+        } else {
+          myOraciones = (byName ?? []) as Oracion[];
+        }
+      }
+
+      const { count: ownCount } = await supabase
+        .from("oraciones")
+        .select("id", { count: "exact", head: true })
+        .eq("autor_uid", data.user.id);
+
+      let finalCount = ownCount ?? 0;
+      if (finalCount === 0 && perfilRes.data?.nombre) {
+        const { count: byNameCount } = await supabase
+          .from("oraciones")
+          .select("id", { count: "exact", head: true })
+          .eq("nombre", perfilRes.data.nombre)
+          .eq("anonima", false);
+        finalCount = byNameCount ?? 0;
+      }
 
       setNombre(perfilRes.data?.nombre ?? data.user.user_metadata?.full_name ?? "");
       setRol(perfilRes.data?.rol ?? "miembro");
       setFotoUrl(perfilRes.data?.foto_url ?? data.user.user_metadata?.avatar_url ?? null);
-      if (gpsRes.data) setGps({ nombre: gpsRes.data.equipo_nombre });
-      setOraciones(orRes.data ?? []);
+      if (gpsNombre) setGps({ nombre: gpsNombre, estado: gpsEstado });
+      else setGps(null);
+      setOraciones(myOraciones);
+      setOrPage(1);
       if (bibliaRes.data) setBiblia(bibliaRes.data as BibliaConfig);
-
-      const { count } = await supabase
-        .from("oraciones").select("id", { count: "exact", head: true }).eq("autor_uid", data.user.id);
-      setOrCount(count ?? 0);
+      setOrCount(finalCount);
 
       setLoading(false);
     });
@@ -134,22 +217,64 @@ export default function PerfilPage() {
     setTimeout(() => setMensaje(""), 3000);
   };
 
+  const uploadCloudinary = async (file: File): Promise<string | null> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", CLOUDINARY_PRESET);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+      method: "POST",
+      body: fd,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.secure_url ?? null;
+  };
+
   const handleFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `${user.id}.${ext}`;
-    const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-    if (!error) {
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-      const url = urlData.publicUrl;
-      await supabase.from("usuarios").update({ foto_url: url }).eq("id", user.id);
-      await supabase.auth.updateUser({ data: { avatar_url: url } });
-      setFotoUrl(url);
-      setImgError(false);
+    setMensaje("");
+    setErrorUpload("");
+
+    if (!file.type.startsWith("image/")) {
+      setErrorUpload("Solo se permiten imágenes.");
+      e.target.value = "";
+      return;
     }
-    setUploading(false);
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorUpload("La imagen debe pesar menos de 5MB.");
+      e.target.value = "";
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const cloudinaryUrl = await uploadCloudinary(file);
+      if (!cloudinaryUrl) {
+        setErrorUpload("No se pudo subir la imagen a Cloudinary.");
+        return;
+      }
+
+      const versionedUrl = `${cloudinaryUrl}?v=${Date.now()}`;
+
+      const { error: dbError } = await supabase.from("usuarios").update({ foto_url: versionedUrl }).eq("id", user.id);
+      if (dbError) {
+        setErrorUpload(`Se subió la imagen, pero no se guardó en perfil: ${dbError.message}`);
+        return;
+      }
+
+      await supabase.auth.updateUser({ data: { avatar_url: versionedUrl } });
+      setFotoUrl(versionedUrl);
+      setImgError(false);
+      setMensaje("Foto actualizada.");
+    } catch {
+      setErrorUpload("No se pudo actualizar la foto. Intenta de nuevo.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const handleSignOut = async () => {
@@ -164,11 +289,35 @@ export default function PerfilPage() {
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString("es", { month: "short", year: "numeric", timeZone: "America/Costa_Rica" })
     : "—";
+  const lastSignIn = user?.last_sign_in_at
+    ? new Date(user.last_sign_in_at).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Costa_Rica" })
+    : "—";
+  const provider = typeof user?.app_metadata?.provider === "string" ? user.app_metadata.provider : "email";
 
   const currentCap     = biblia ? computeCurrentChapter(biblia.libro, biblia.capitulo, biblia.auto_avance, biblia.fecha_inicio) : null;
   const libroData      = biblia ? getLibro(biblia.libro) : null;
   const bibliaProgress = libroData && currentCap ? Math.round((currentCap / libroData.caps) * 100) : 0;
   const showAvatar     = fotoUrl && !imgError;
+  const gpsStatusLabel = gps?.estado === "aprobada"
+    ? "Aprobado"
+    : gps?.estado === "pendiente"
+      ? "Pendiente"
+      : gps?.estado === "rechazada"
+        ? "Rechazado"
+        : "Sin estado";
+  const gpsStatusClass = gps?.estado === "aprobada"
+    ? "text-green-400 bg-green-400/10 border-green-400/20"
+    : gps?.estado === "pendiente"
+      ? "text-amber-400 bg-amber-400/10 border-amber-400/20"
+      : gps?.estado === "rechazada"
+        ? "text-red-400 bg-red-400/10 border-red-400/20"
+        : "text-white/40 bg-white/5 border-white/10";
+  const totalOrPages = Math.max(1, Math.ceil(oraciones.length / ORACIONES_PAGE_SIZE));
+  const safeOrPage = Math.min(orPage, totalOrPages);
+  const paginatedOraciones = oraciones.slice(
+    (safeOrPage - 1) * ORACIONES_PAGE_SIZE,
+    safeOrPage * ORACIONES_PAGE_SIZE
+  );
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12 space-y-4">
@@ -288,6 +437,11 @@ export default function PerfilPage() {
                 <Users size={9} /> {gps.nombre}
               </span>
             )}
+            {gps && (
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border ${gpsStatusClass}`}>
+                {gpsStatusLabel}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -310,8 +464,26 @@ export default function PerfilPage() {
         ))}
       </div>
 
+      {/* ── TABS ── */}
+      <div className="flex gap-2 p-1 rounded-xl border border-white/10 w-fit" style={{ background: "#080E1E" }}>
+        {([
+          { id: "resumen", label: "Resumen" },
+          { id: "oraciones", label: "Oraciones" },
+          { id: "cuenta", label: "Cuenta" },
+        ] as const).map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === tab.id ? "bg-accent text-white" : "text-white/45 hover:text-white"
+            }`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* ── LECTURA DOMINICAL ── */}
-      {biblia?.activo && libroData && currentCap && (
+      {activeTab === "resumen" && biblia?.activo && libroData && currentCap && (
         <div className="rounded-2xl border border-accent/20 p-5 relative overflow-hidden"
           style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
           <div className="absolute top-0 left-1/4 right-1/4 h-px"
@@ -337,15 +509,21 @@ export default function PerfilPage() {
       )}
 
       {/* ── MIS ORACIONES ── */}
-      {oraciones.length > 0 && (
-        <div className="rounded-2xl border border-white/5 p-5"
-          style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
-          <div className="flex items-center gap-2 mb-4">
+      {activeTab === "oraciones" && (
+      <div className="rounded-2xl border border-white/5 p-5"
+        style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2">
             <div className="w-1 h-3 rounded-full bg-accent" />
             <h2 className="text-white/60 text-[10px] font-black tracking-[3px] uppercase">Mis Oraciones</h2>
           </div>
+          <Link href="/oraciones" className="text-xs text-accent hover:underline">Nueva</Link>
+        </div>
+        {oraciones.length === 0 ? (
+          <p className="text-white/35 text-sm">Aún no encontramos oraciones ligadas a tu cuenta.</p>
+        ) : (
           <div className="space-y-2.5">
-            {oraciones.map(o => (
+            {paginatedOraciones.map(o => (
               <div key={o.id} className="rounded-xl border border-white/5 p-3.5" style={{ background: "#080E1E" }}>
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-white/70 text-sm leading-relaxed line-clamp-2 flex-1">{o.peticion}</p>
@@ -360,11 +538,30 @@ export default function PerfilPage() {
                 </p>
               </div>
             ))}
+            {totalOrPages > 1 && (
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  onClick={() => setOrPage(p => Math.max(1, p - 1))}
+                  disabled={safeOrPage === 1}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/70 disabled:opacity-40">
+                  Anterior
+                </button>
+                <span className="text-white/35 text-xs">Página {safeOrPage} de {totalOrPages}</span>
+                <button
+                  onClick={() => setOrPage(p => Math.min(totalOrPages, p + 1))}
+                  disabled={safeOrPage === totalOrPages}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/70 disabled:opacity-40">
+                  Siguiente
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+        )}
+      </div>
       )}
 
       {/* ── INFORMACIÓN PERSONAL ── */}
+      {activeTab === "cuenta" && (
       <div className="rounded-2xl border border-white/5 p-6"
         style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
         <div className="flex items-center gap-2 mb-5">
@@ -380,12 +577,33 @@ export default function PerfilPage() {
             <label className="text-white/40 text-xs block mb-1.5">Email</label>
             <input className="input opacity-40 cursor-not-allowed" value={user?.email ?? ""} disabled />
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
+              <p className="text-white/30 text-[10px] uppercase tracking-wider">Proveedor</p>
+              <p className="text-white/80 text-sm mt-1">{provider}</p>
+            </div>
+            <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
+              <p className="text-white/30 text-[10px] uppercase tracking-wider">Último acceso</p>
+              <p className="text-white/80 text-sm mt-1">{lastSignIn}</p>
+            </div>
+            <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
+              <p className="text-white/30 text-[10px] uppercase tracking-wider">Rol actual</p>
+              <p className="text-white/80 text-sm mt-1">{rolInfo.label}</p>
+            </div>
+            <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
+              <p className="text-white/30 text-[10px] uppercase tracking-wider">Mi GPS</p>
+              <p className="text-white/80 text-sm mt-1">{gps?.nombre ?? "Sin GPS"}</p>
+              {gps && <p className="text-white/35 text-xs mt-1">Estado: {gpsStatusLabel}</p>}
+            </div>
+          </div>
           {mensaje && <p className="text-green-400 text-xs">{mensaje}</p>}
+          {errorUpload && <p className="text-red-400 text-xs">{errorUpload}</p>}
           <button onClick={handleGuardar} disabled={guardando} className="btn-primary">
             {guardando ? "Guardando..." : "Guardar cambios"}
           </button>
         </div>
       </div>
+      )}
 
       {/* ── CERRAR SESIÓN ── */}
       <button onClick={handleSignOut}

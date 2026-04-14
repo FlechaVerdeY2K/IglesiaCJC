@@ -7,6 +7,15 @@ import NavigationLoader from "@/components/NavigationLoader";
 import MainWrapper from "@/components/MainWrapper";
 import { SITE_URL } from "@/lib/site-url";
 
+const navLinks = [
+  { name: "Inicio", url: `${SITE_URL}/` },
+  { name: "Eventos", url: `${SITE_URL}/eventos` },
+  { name: "Sermones", url: `${SITE_URL}/sermones` },
+  { name: "Devocionales", url: `${SITE_URL}/devocionales` },
+  { name: "En Vivo", url: `${SITE_URL}/live` },
+  { name: "Contacto", url: `${SITE_URL}/contacto` },
+];
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -57,14 +66,59 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/icon.png",
+    icon: [
+      { url: "/icon.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/icon.png",
+    apple: [{ url: "/logo-cjc.png", sizes: "180x180", type: "image/png" }],
   },
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Iglesia CJC",
+    alternateName: "Comunidad Jesucristo es el Camino",
+    url: SITE_URL,
+    inLanguage: "es",
+  };
+
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Iglesia CJC",
+    alternateName: "Comunidad Jesucristo es el Camino",
+    url: SITE_URL,
+    logo: `${SITE_URL}/logo-cjc.png`,
+    image: `${SITE_URL}/logo-cjc.png`,
+  };
+
+  const navJsonLd = navLinks.map((item) => ({
+    "@context": "https://schema.org",
+    "@type": "SiteNavigationElement",
+    name: item.name,
+    url: item.url,
+  }));
+
   return (
     <html lang="es">
       <body className="min-h-screen flex flex-col bg-bg text-white">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(navJsonLd) }}
+        />
         <NavigationLoader />
         <ParticlesBackground />
         <Navbar />
