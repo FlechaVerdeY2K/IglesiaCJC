@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 
 
-type Oracion = { id: string; contenido: string; anonimo: boolean; estado: string; created_at: string; usuario_id: string; orantes: number };
+type Oracion = { id: string; peticion: string; nombre: string; anonima: boolean; estado: string; fecha: string; autor_uid: string | null; orantes: number };
 
 export default function AdminOraciones() {
   const [items, setItems] = useState<Oracion[]>([]);
@@ -15,7 +15,7 @@ export default function AdminOraciones() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from("oraciones").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("oraciones").select("*").order("fecha", { ascending: false });
     setItems(data ?? []);
     setLoading(false);
   };
@@ -57,7 +57,10 @@ export default function AdminOraciones() {
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  {o.anonimo && <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40">Anónimo</span>}
+                  {o.anonima
+                    ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40">Anónimo</span>
+                    : <span className="text-white/60 text-xs font-semibold">{o.nombre}</span>
+                  }
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                     o.estado === "aprobada" ? "bg-green-500/15 text-green-400" :
                     o.estado === "rechazada" ? "bg-red-500/15 text-red-400" :
@@ -65,7 +68,8 @@ export default function AdminOraciones() {
                   }`}>{o.estado}</span>
                   <span className="text-white/30 text-xs ml-auto">{o.orantes ?? 0} orantes</span>
                 </div>
-                <p className="text-white/80 text-sm">{o.contenido}</p>
+                <p className="text-white/80 text-sm">{o.peticion}</p>
+                <p className="text-white/25 text-xs mt-1">{new Date(o.fecha).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Costa_Rica" })}</p>
               </div>
               {o.estado === "pendiente" && (
                 <div className="flex gap-2 shrink-0">
