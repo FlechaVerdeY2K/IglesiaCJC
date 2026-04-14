@@ -17,12 +17,12 @@ const ROLE_STYLE: Record<Rol, { bg: string; color: string; border: string }> = {
   admin:   { bg: "rgba(191,30,46,0.15)",   color: "#BF1E2E",                border: "rgba(191,30,46,0.3)" },
 };
 
-type Usuario = { id: string; nombre: string; email: string; foto_url: string | null; roles: Rol[] };
+type Usuario = { id: string; nombre: string; email: string; foto_url: string | null; roles: Rol[]; telefono: string | null; created_at: string | null };
 
-function normalize(u: { id: string; nombre: string; email: string; foto_url: string | null; rol?: Rol; roles?: Rol[] }): Usuario {
+function normalize(u: { id: string; nombre: string; email: string; foto_url: string | null; rol?: Rol; roles?: Rol[]; telefono?: string | null; created_at?: string | null }): Usuario {
   let roles: Rol[] = u.roles ?? (u.rol ? [u.rol] : ["miembro"]);
   if (!Array.isArray(roles) || roles.length === 0) roles = ["miembro"];
-  return { id: u.id, nombre: u.nombre, email: u.email, foto_url: u.foto_url, roles };
+  return { id: u.id, nombre: u.nombre, email: u.email, foto_url: u.foto_url, roles, telefono: u.telefono ?? null, created_at: u.created_at ?? null };
 }
 
 export default function AdminUsuarios() {
@@ -33,7 +33,7 @@ export default function AdminUsuarios() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from("usuarios").select("id, nombre, email, foto_url, rol, roles").order("nombre");
+    const { data } = await supabase.from("usuarios").select("id, nombre, email, foto_url, rol, roles, telefono, created_at").order("nombre");
     setUsuarios((data ?? []).map(normalize));
     setLoading(false);
   };
@@ -46,28 +46,44 @@ export default function AdminUsuarios() {
   }, []);
 
   const toggleRole = async (usuario: Usuario, rol: Rol) => {
-    // miembro cannot be removed — it's the base role
     if (rol === "miembro") return;
 
-    const current = usuario.roles;
-    const hasRole = current.includes(rol);
+    const previous = usuario.roles;
+    const hasRole = previous.includes(rol);
     const newRoles: Rol[] = hasRole
-      ? current.filter(r => r !== rol)
-      : [...current, rol];
+      ? previous.filter(r => r !== rol)
+      : [...previous, rol];
 
-    // Always keep miembro
     if (!newRoles.includes("miembro")) newRoles.unshift("miembro");
 
-    setUpdating(usuario.id + rol);
-    // Derive primary rol for backward compat (highest privilege)
     const priority: Rol[] = ["admin", "cocina", "lider", "miembro"];
     const primaryRol = priority.find(r => newRoles.includes(r)) ?? "miembro";
 
-    await supabase.from("usuarios")
+    // Optimistic
+    setUpdating(usuario.id + rol);
+    setUsuarios(prev => prev.map(u => u.id === usuario.id ? { ...u, roles: newRoles } : u));
+
+    const { error } = await supabase
+      .from("usuarios")
       .update({ roles: newRoles, rol: primaryRol })
       .eq("id", usuario.id);
 
-    setUsuarios(prev => prev.map(u => u.id === usuario.id ? { ...u, roles: newRoles } : u));
+    if (error) {
+      // Revert optimistic update
+      setUsuarios(prev => prev.map(u => u.id === usuario.id ? { ...u, roles: previous } : u));
+      console.error("toggleRole failed:", error.message);
+    } else {
+      // Confirm from DB to ensure arrays saved correctly
+      const { data: fresh } = await supabase
+        .from("usuarios")
+        .select("id, nombre, email, foto_url, rol, roles, telefono, created_at")
+        .eq("id", usuario.id)
+        .single();
+      if (fresh) {
+        setUsuarios(prev => prev.map(u => u.id === usuario.id ? normalize(fresh) : u));
+      }
+    }
+
     setUpdating(null);
   };
 
@@ -98,13 +114,15 @@ export default function AdminUsuarios() {
           <thead>
             <tr className="border-b border-border">
               <th className="text-left px-5 py-3 text-white/40 font-semibold text-xs uppercase tracking-wider">Usuario</th>
-              <th className="text-left px-5 py-3 text-white/40 font-semibold text-xs uppercase tracking-wider hidden md:table-cell">Email</th>
+              <th className="text-left px-5 py-3 text-white/40 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell">Email</th>
+              <th className="text-left px-5 py-3 text-white/40 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell">Teléfono</th>
+              <th className="text-left px-5 py-3 text-white/40 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell">Desde</th>
               <th className="text-left px-5 py-3 text-white/40 font-semibold text-xs uppercase tracking-wider">Roles</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={3} className="text-center py-12 text-white/30">Cargando...</td></tr>
+              <tr><td colSpan={5} className="text-center py-12 text-white/30">Cargando...</td></tr>
             ) : filtered.map(u => (
               <tr key={u.id} className="border-b border-border/50 last:border-0 hover:bg-white/[0.02] transition-colors">
                 <td className="px-5 py-3">
@@ -127,7 +145,11 @@ export default function AdminUsuarios() {
                     <span className="text-white font-medium">{u.nombre || "Sin nombre"}</span>
                   </div>
                 </td>
-                <td className="px-5 py-3 text-white/50 hidden md:table-cell">{u.email}</td>
+                <td className="px-5 py-3 text-white/50 text-xs hidden sm:table-cell">{u.email}</td>
+                <td className="px-5 py-3 text-white/40 text-xs hidden lg:table-cell">{u.telefono ?? "—"}</td>
+                <td className="px-5 py-3 text-white/40 text-xs hidden lg:table-cell">
+                  {u.created_at ? new Date(u.created_at).toLocaleDateString("es", { month: "short", year: "numeric", timeZone: "America/Costa_Rica" }) : "—"}
+                </td>
                 <td className="px-5 py-3">
                   <div className="flex flex-wrap gap-1.5">
                     {ALL_ROLES.map(rol => {
