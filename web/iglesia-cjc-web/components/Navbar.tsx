@@ -36,6 +36,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [memberOpen, setMemberOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
   const pathname = usePathname();
 
   const toggleMenu = () => {
@@ -54,6 +55,12 @@ export default function Navbar() {
       ? data.roles
       : (data?.rol ? [data.rol] : ["miembro"]);
     setRoles(r);
+    const { count } = await supabase
+      .from("notificaciones")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("leida", false);
+    setUnread(count ?? 0);
   };
 
   useEffect(() => {
@@ -186,11 +193,18 @@ export default function Navbar() {
                   className="group flex items-center py-1.5 px-1.5 hover:px-3 rounded-xl border border-white/10 hover:border-accent/40 transition-all duration-300 overflow-hidden"
                   style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
                 >
-                  <div className="w-7 h-7 rounded-full border border-accent/40 flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
-                    {avatarUrl
-                      ? <Image src={avatarUrl} className="w-7 h-7 rounded-full object-cover" alt="avatar" width={28} height={28} />
-                      : <UserIcon size={14} className="text-accent" />
-                    }
+                  <div className="relative w-7 h-7 shrink-0">
+                    <div className="w-7 h-7 rounded-full border border-accent/40 flex items-center justify-center overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
+                      {avatarUrl
+                        ? <Image src={avatarUrl} className="w-7 h-7 rounded-full object-cover" alt="avatar" width={28} height={28} />
+                        : <UserIcon size={14} className="text-accent" />
+                      }
+                    </div>
+                    {unread > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-accent text-white text-[9px] font-black flex items-center justify-center px-0.5 leading-none">
+                        {unread > 9 ? "9+" : unread}
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs text-white/60 group-hover:text-white max-w-0 group-hover:max-w-[8rem] overflow-hidden whitespace-nowrap pl-0 group-hover:pl-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
                     {user.user_metadata?.full_name ?? user.email}
@@ -286,11 +300,18 @@ export default function Navbar() {
                   className="flex items-center gap-3 mb-4 p-3 rounded-xl border border-white/8 hover:border-accent/30 transition-all"
                   style={{ backgroundColor: "rgba(255,255,255,0.03)" }}
                 >
-                  <div className="w-9 h-9 rounded-full border border-accent/40 flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
-                    {avatarUrl
-                      ? <Image src={avatarUrl} className="w-9 h-9 rounded-full object-cover" alt="avatar" width={36} height={36} />
-                      : <UserIcon size={16} className="text-accent" />
-                    }
+                  <div className="relative w-9 h-9 shrink-0">
+                    <div className="w-9 h-9 rounded-full border border-accent/40 flex items-center justify-center overflow-hidden" style={{ backgroundColor: "rgba(191,30,46,0.15)" }}>
+                      {avatarUrl
+                        ? <Image src={avatarUrl} className="w-9 h-9 rounded-full object-cover" alt="avatar" width={36} height={36} />
+                        : <UserIcon size={16} className="text-accent" />
+                      }
+                    </div>
+                    {unread > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-accent text-white text-[9px] font-black flex items-center justify-center px-0.5 leading-none">
+                        {unread > 9 ? "9+" : unread}
+                      </span>
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="text-white text-sm font-semibold truncate">{user.user_metadata?.full_name ?? "Mi perfil"}</p>
