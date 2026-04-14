@@ -7,7 +7,7 @@ import Link from "next/link";
 
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
-import { LogOut, User as UserIcon, Camera, Shield, Users, BookOpen, Heart, CalendarDays, Palette, X } from "lucide-react";
+import { LogOut, User as UserIcon, Camera, Shield, Users, BookOpen, Heart, CalendarDays, Palette, X, Bell, Radio, BookMarked } from "lucide-react";
 import LoadingScreen from "@/components/LoadingScreen";
 import { getLibro, LIBROS } from "@/lib/bible-books";
 import type { Oracion } from "@/lib/supabase";
@@ -45,6 +45,7 @@ type GpsRegistro = {
   created_at?: string | null;
 };
 type GpsState = { nombre: string; estado: "aprobada" | "pendiente" | "rechazada" | "desconocido" };
+type Notificacion = { id: string; tipo: string; titulo: string; cuerpo: string | null; leida: boolean; created_at: string; meta: Record<string, unknown> | null };
 
 const COVERS = [
   { id: "red",    label: "Rojo",    bg: "linear-gradient(135deg, #1A0A0D 0%, #2a0810 60%, #0D1020 100%)", glow: "rgba(191,30,46,0.35)",   line: "#BF1E2E" },
@@ -88,9 +89,11 @@ export default function PerfilPage() {
   });
   const [banners, setBanners]       = useState<{ id: string; url: string; label: string }[]>([]);
   const [showCovers, setShowCovers] = useState(false);
-  const [activeTab, setActiveTab]   = useState<"resumen" | "oraciones" | "cuenta">("cuenta");
+  const [activeTab, setActiveTab]   = useState<"resumen" | "oraciones" | "cuenta" | "notificaciones">("cuenta");
   const [telefono, setTelefono]     = useState("");
   const [orPage, setOrPage]         = useState(1);
+  const [notifs, setNotifs]         = useState<Notificacion[]>([]);
+  const [unread, setUnread]         = useState(0);
 
   useEffect(() => {
     supabase
@@ -195,6 +198,17 @@ export default function PerfilPage() {
       setOrCount(finalCount);
 
       setLoading(false);
+
+      // Notificaciones
+      const { data: notifData } = await supabase
+        .from("notificaciones")
+        .select("*")
+        .eq("user_id", data.user.id)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      const notifList = (notifData ?? []) as Notificacion[];
+      setNotifs(notifList);
+      setUnread(notifList.filter(n => !n.leida).length);
     });
   }, [router]);
 
@@ -282,6 +296,13 @@ export default function PerfilPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
+  };
+
+  const markAllRead = async () => {
+    if (!user || unread === 0) return;
+    await supabase.from("notificaciones").update({ leida: true }).eq("user_id", user.id).eq("leida", false);
+    setNotifs(prev => prev.map(n => ({ ...n, leida: true })));
+    setUnread(0);
   };
 
   if (loading) return <LoadingScreen />;
@@ -472,14 +493,20 @@ export default function PerfilPage() {
           { id: "cuenta", label: "Cuenta" },
           { id: "oraciones", label: "Oraciones" },
           { id: "resumen", label: "Resumen" },
+          { id: "notificaciones", label: "Notificaciones" },
         ] as const).map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            onClick={() => { setActiveTab(tab.id); if (tab.id === "notificaciones") markAllRead(); }}
+            className={`relative px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === tab.id ? "bg-accent text-white" : "text-white/45 hover:text-white"
             }`}>
             {tab.label}
+            {tab.id === "notificaciones" && unread > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent text-white text-[9px] font-black flex items-center justify-center">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -607,6 +634,62 @@ export default function PerfilPage() {
           </button>
         </div>
       </div>
+      )}
+
+      {/* ── NOTIFICACIONES ── */}
+      {activeTab === "notificaciones" && (
+        <div className="rounded-2xl border border-white/5 p-5"
+          style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-3 rounded-full bg-accent" />
+              <h2 className="text-white/60 text-[10px] font-black tracking-[3px] uppercase">Notificaciones</h2>
+            </div>
+            {unread > 0 && (
+              <button onClick={markAllRead} className="text-xs text-accent hover:underline">
+                Marcar todas leídas
+              </button>
+            )}
+          </div>
+          {notifs.length === 0 ? (
+            <p className="text-white/35 text-sm">Sin notificaciones aún.</p>
+          ) : (
+            <div className="space-y-2">
+              {notifs.map(n => {
+                const Icon =
+                  n.tipo === "oracion_orada"  ? Heart :
+                  n.tipo === "evento_nuevo"   ? CalendarDays :
+                  n.tipo === "live_inicio"    ? Radio :
+                  n.tipo === "biblia_avance"  ? BookMarked : Bell;
+                const iconColor =
+                  n.tipo === "oracion_orada"  ? "#BF1E2E" :
+                  n.tipo === "evento_nuevo"   ? "#3b82f6" :
+                  n.tipo === "live_inicio"    ? "#10b981" :
+                  n.tipo === "biblia_avance"  ? "#f59e0b" : "#6b7280";
+                return (
+                  <div key={n.id}
+                    className={`flex items-start gap-3 rounded-xl p-3 border transition-all ${
+                      n.leida ? "border-white/5 opacity-60" : "border-white/10"
+                    }`}
+                    style={{ background: n.leida ? "transparent" : "#0D1628" }}>
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                      style={{ backgroundColor: `${iconColor}15` }}>
+                      <Icon size={13} style={{ color: iconColor }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white/90 text-xs font-semibold leading-snug">{n.titulo}</p>
+                      {n.cuerpo && <p className="text-white/45 text-xs mt-0.5 line-clamp-2">{n.cuerpo}</p>}
+                      <p className="text-white/25 text-[10px] mt-1">
+                        {new Date(n.created_at).toLocaleDateString("es", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "America/Costa_Rica" })}
+                      </p>
+                    </div>
+                    {!n.leida && <div className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 mt-1.5" />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ── CERRAR SESIÓN ── */}
