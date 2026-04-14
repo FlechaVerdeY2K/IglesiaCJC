@@ -25,8 +25,8 @@ export default function OracionesPage() {
           .from("oracion_orantes")
           .select("oracion_id")
           .eq("user_id", data.user.id)
-          .then(({ data: rows }) => {
-            setPrayed(new Set((rows ?? []).map((r: { oracion_id: string }) => r.oracion_id)));
+          .then(({ data: rows }: { data: { oracion_id: string }[] | null }) => {
+            setPrayed(new Set((rows ?? []).map((r) => r.oracion_id)));
           });
       }
     });
