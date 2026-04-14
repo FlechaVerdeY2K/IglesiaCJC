@@ -88,7 +88,8 @@ export default function PerfilPage() {
   });
   const [banners, setBanners]       = useState<{ id: string; url: string; label: string }[]>([]);
   const [showCovers, setShowCovers] = useState(false);
-  const [activeTab, setActiveTab]   = useState<"resumen" | "oraciones" | "cuenta">("resumen");
+  const [activeTab, setActiveTab]   = useState<"resumen" | "oraciones" | "cuenta">("cuenta");
+  const [telefono, setTelefono]     = useState("");
   const [orPage, setOrPage]         = useState(1);
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export default function PerfilPage() {
       setUser(data.user);
 
       const [perfilRes, bibliaRes] = await Promise.all([
-        supabase.from("usuarios").select("nombre, rol, foto_url").eq("id", data.user.id).single(),
+        supabase.from("usuarios").select("nombre, rol, foto_url, telefono").eq("id", data.user.id).single(),
         supabase.from("config_biblia").select("*").eq("id", 1).single(),
       ]);
 
@@ -184,6 +185,7 @@ export default function PerfilPage() {
 
       setNombre(perfilRes.data?.nombre ?? data.user.user_metadata?.full_name ?? "");
       setRol(perfilRes.data?.rol ?? "miembro");
+      setTelefono(perfilRes.data?.telefono ?? "");
       setFotoUrl(perfilRes.data?.foto_url ?? data.user.user_metadata?.avatar_url ?? null);
       if (gpsNombre) setGps({ nombre: gpsNombre, estado: gpsEstado });
       else setGps(null);
@@ -210,7 +212,7 @@ export default function PerfilPage() {
   const handleGuardar = async () => {
     if (!user) return;
     setGuardando(true);
-    await supabase.from("usuarios").update({ nombre }).eq("id", user.id);
+    await supabase.from("usuarios").update({ nombre, telefono: telefono || null }).eq("id", user.id);
     await supabase.auth.updateUser({ data: { full_name: nombre } });
     setGuardando(false);
     setMensaje("¡Perfil actualizado!");
@@ -292,7 +294,7 @@ export default function PerfilPage() {
   const lastSignIn = user?.last_sign_in_at
     ? new Date(user.last_sign_in_at).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Costa_Rica" })
     : "—";
-  const provider = typeof user?.app_metadata?.provider === "string" ? user.app_metadata.provider : "email";
+
 
   const currentCap     = biblia ? computeCurrentChapter(biblia.libro, biblia.capitulo, biblia.auto_avance, biblia.fecha_inicio) : null;
   const libroData      = biblia ? getLibro(biblia.libro) : null;
@@ -467,9 +469,9 @@ export default function PerfilPage() {
       {/* ── TABS ── */}
       <div className="flex gap-2 p-1 rounded-xl border border-white/10 w-fit" style={{ background: "#080E1E" }}>
         {([
-          { id: "resumen", label: "Resumen" },
-          { id: "oraciones", label: "Oraciones" },
           { id: "cuenta", label: "Cuenta" },
+          { id: "oraciones", label: "Oraciones" },
+          { id: "resumen", label: "Resumen" },
         ] as const).map(tab => (
           <button
             key={tab.id}
@@ -577,18 +579,20 @@ export default function PerfilPage() {
             <label className="text-white/40 text-xs block mb-1.5">Email</label>
             <input className="input opacity-40 cursor-not-allowed" value={user?.email ?? ""} disabled />
           </div>
+          <div>
+            <label className="text-white/40 text-xs block mb-1.5">Número (opcional)</label>
+            <input
+              className="input"
+              value={telefono}
+              onChange={e => setTelefono(e.target.value)}
+              placeholder="+506 8888-8888"
+              type="tel"
+            />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
-              <p className="text-white/30 text-[10px] uppercase tracking-wider">Proveedor</p>
-              <p className="text-white/80 text-sm mt-1">{provider}</p>
-            </div>
             <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
               <p className="text-white/30 text-[10px] uppercase tracking-wider">Último acceso</p>
               <p className="text-white/80 text-sm mt-1">{lastSignIn}</p>
-            </div>
-            <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
-              <p className="text-white/30 text-[10px] uppercase tracking-wider">Rol actual</p>
-              <p className="text-white/80 text-sm mt-1">{rolInfo.label}</p>
             </div>
             <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
               <p className="text-white/30 text-[10px] uppercase tracking-wider">Mi GPS</p>
@@ -598,7 +602,7 @@ export default function PerfilPage() {
           </div>
           {mensaje && <p className="text-green-400 text-xs">{mensaje}</p>}
           {errorUpload && <p className="text-red-400 text-xs">{errorUpload}</p>}
-          <button onClick={handleGuardar} disabled={guardando} className="btn-primary">
+          <button onClick={handleGuardar} disabled={guardando} className="btn-primary w-fit text-sm px-5 py-2">
             {guardando ? "Guardando..." : "Guardar cambios"}
           </button>
         </div>
