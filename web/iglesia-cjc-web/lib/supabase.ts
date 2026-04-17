@@ -19,6 +19,7 @@ export interface ConfigHome {
   facebook_url: string;
   hero_image_url: string | null;
   servicios_image_url: string | null;
+  ofrenda_video_url: string | null;
 }
 
 export interface Sermon {
@@ -84,13 +85,18 @@ export interface Equipo {
   orden: number;
 }
 
+export interface GaleriaAlbum {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  fecha: string;
+}
+
 export interface GaleriaItem {
   id: string;
   image_url: string;
-  titulo: string;
-  descripcion: string;
+  album_id: string;
   fecha: string;
-  categoria: string;
 }
 
 export interface Recurso {
@@ -107,6 +113,15 @@ export interface ConfigLive {
   titulo: string;
   descripcion: string;
   activo: boolean;
+}
+
+export interface ConfigOfrenda {
+  sinpe_numero: string | null;
+  sinpe_nombre: string | null;
+  bcr_nombre: string | null;
+  bcr_cedula: string | null;
+  bcr_iban_colones: string | null;
+  bcr_iban_dolares: string | null;
 }
 
 export interface Anuncio {

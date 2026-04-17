@@ -10,12 +10,13 @@ import {
   LayoutDashboard,
   CalendarDays, HandHeart,
   UsersRound, ShieldAlert, LogOut, Menu, X,
-  Video, BookOpen, Newspaper, Radio, Church, ExternalLink, FileText, BookMarked, Image as ImageIcon
+  Video, BookOpen, Newspaper, Radio, Church, ExternalLink, FileText, BookMarked, Image as ImageIcon, Images, HandCoins, Home
 } from "lucide-react";
 
 
 const NAV = [
   { href: "/admin",                label: "Dashboard",    icon: LayoutDashboard },
+  { href: "/admin/inicio",        label: "Inicio",       icon: Home },
   { href: "/admin/eventos",        label: "Eventos",      icon: CalendarDays },
   { href: "/admin/sermones",       label: "Prédicas",     icon: Video },
   { href: "/admin/anuncios",       label: "Anuncios",     icon: Newspaper },
@@ -27,6 +28,8 @@ const NAV = [
   { href: "/admin/recursos",       label: "Recursos",     icon: FileText },
   { href: "/admin/biblia",         label: "Biblia",       icon: BookMarked },
   { href: "/admin/banners",        label: "Banners",      icon: ImageIcon },
+  { href: "/admin/galeria",        label: "Galería",      icon: Images },
+  { href: "/admin/ofrenda",        label: "Ofrenda",      icon: HandCoins },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

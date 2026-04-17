@@ -24,7 +24,7 @@ function splitEventos(eventos: Evento[]) {
 
     if (dt < new Date()) {
       pasados.push(e);
-    } else {
+    } else if (e.activo) {
       proximos.push(e);
     }
   }

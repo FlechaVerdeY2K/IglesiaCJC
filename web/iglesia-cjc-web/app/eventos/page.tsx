@@ -14,7 +14,6 @@ export default async function EventosPage() {
   const { data } = await supabase
     .from("eventos")
     .select("*")
-    .eq("activo", true)
     .order("fecha", { ascending: true });
 
   const eventos = (data ?? []) as Evento[];

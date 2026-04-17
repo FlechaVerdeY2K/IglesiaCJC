@@ -1,4 +1,4 @@
-﻿import { supabase, type ConfigHome, type Sermon, type Evento, type Anuncio } from "@/lib/supabase";
+﻿import { supabase, type ConfigHome, type Sermon, type Evento, type Anuncio, type ConfigOfrenda } from "@/lib/supabase";
 import { getUser } from "@/lib/auth";
 import { getLiveStatus } from "@/lib/live-status";
 import { yesterdayCR } from "@/lib/date";
@@ -8,6 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Play, Users, Heart, Phone, Lock, Radio } from "lucide-react";
 import EventosGrid from "@/components/EventosGrid";
+import OfrendaCards from "@/components/OfrendaCards";
 import { getLibro, LIBROS } from "@/lib/bible-books";
 import BibleBanner from "@/components/BibleBanner";
 import { SITE_URL } from "@/lib/site-url";
@@ -45,7 +46,7 @@ function computeCurrentChapter(
 }
 
 async function getHomeData(isLoggedIn: boolean) {
-  const [configRes, sermonesRes, eventosRes, anunciosRes, bibliaRes] = await Promise.all([
+  const [configRes, sermonesRes, eventosRes, anunciosRes, bibliaRes, ofrendaRes] = await Promise.all([
     supabase.from("config_home").select("*").eq("id", 1).single(),
     supabase.from("sermones").select("*").eq("activo", true).order("fecha", { ascending: false }).limit(3),
     isLoggedIn
@@ -55,6 +56,7 @@ async function getHomeData(isLoggedIn: boolean) {
       ? supabase.from("anuncios").select("*").eq("activo", true).order("fecha", { ascending: false }).limit(3)
       : Promise.resolve({ data: [] }),
     supabase.from("config_biblia").select("*").eq("id", 1).single(),
+    supabase.from("config_ofrenda").select("*").eq("id", 1).single(),
   ]);
   return {
     config: configRes.data as ConfigHome | null,
@@ -62,6 +64,7 @@ async function getHomeData(isLoggedIn: boolean) {
     eventos: (eventosRes.data ?? []) as Evento[],
     anuncios: (anunciosRes.data ?? []) as Anuncio[],
     biblia: bibliaRes.data as { libro: string; capitulo: number; versiculo: number; titulo: string; activo: boolean; auto_avance: boolean; fecha_inicio: string | null } | null,
+    ofrenda: ofrendaRes.data as ConfigOfrenda | null,
   };
 }
 
@@ -87,7 +90,7 @@ const getBibleVerse = unstable_cache(
 export default async function HomePage() {
   const user = await getUser();
   const isLoggedIn = !!user;
-  const [{ config, sermones, eventos, anuncios, biblia }, liveStatus] = await Promise.all([
+  const [{ config, sermones, eventos, anuncios, biblia, ofrenda }, liveStatus] = await Promise.all([
     getHomeData(isLoggedIn),
     getLiveStatus(),
   ]);
@@ -100,6 +103,7 @@ export default async function HomePage() {
     ? await getBibleVerse(biblia.libro, efectiveCapitulo, biblia.versiculo)
     : "";
 
+  const ofrendaVideoUrl = config?.ofrenda_video_url ?? null;
   const heroImage = config?.hero_image_url;
   const serviciosImage = config?.servicios_image_url;
   const sameAs = [config?.instagram_url, config?.youtube_url, config?.facebook_url].filter(Boolean) as string[];
@@ -148,7 +152,8 @@ export default async function HomePage() {
       )}
 
       {/* ── HERO ── */}
-      <section className="relative h-[400px] w-full overflow-hidden">
+      <section className="w-full flex justify-center">
+      <div className="relative w-full overflow-hidden" style={{ maxWidth: "1600px", aspectRatio: "16/7", minHeight: "300px", maxHeight: "580px" }}>
         {heroImage ? (
           <Image src={heroImage} alt="Hero" className="absolute inset-0 w-full h-full object-cover" fill sizes="100vw" priority />
         ) : (
@@ -172,6 +177,7 @@ export default async function HomePage() {
           </h1>
           <p className="text-white text-sm max-w-xs">Una familia que camina en adoración y servicio a Dios</p>
         </div>
+      </div>
       </section>
 
       {/* fade bleed entre hero y contenido */}
@@ -194,59 +200,35 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── SERVICIOS BANNER ── */}
-      <section className="relative h-55 w-full overflow-hidden">
+      {/* ── SERVICIOS ── */}
+      <section className="w-full flex justify-center">
+      <div className="relative w-full overflow-hidden" style={{ maxWidth: "1600px" }}>
         {serviciosImage ? (
           <Image src={serviciosImage} alt="Servicios" className="absolute inset-0 w-full h-full object-cover" fill sizes="100vw" />
         ) : (
-          <div className="absolute inset-0 bg-linear-to-br from-[#0D1628] to-bg" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0D1628] to-bg" />
         )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(8,14,30,0.55) 0%, rgba(8,14,30,0.75) 100%)" }} />
-        {/* líneas horizontales estilo scan */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(8,14,30,0.6) 0%, rgba(8,14,30,0.85) 100%)" }} />
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 6px)" }} />
-        {/* glow rojo central */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at center, rgba(191,30,46,0.2) 0%, transparent 65%)" }} />
-        {/* línea accent top */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at center, rgba(191,30,46,0.18) 0%, transparent 65%)" }} />
         <div className="absolute top-0 left-1/4 right-1/4 h-px" style={{ background: "linear-gradient(90deg, transparent, #BF1E2E, transparent)" }} />
 
-        <div className="relative z-10 h-full flex flex-col items-center justify-center gap-3 px-6 text-center">
+        <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 gap-4" style={{ minHeight: "clamp(360px, 30vw, 500px)" }}>
           <div className="flex items-center gap-2">
-            <div className="h-px w-8" style={{ background: "linear-gradient(to right, transparent, #BF1E2E)" }} />
-            <span className="text-accent text-[9px] font-black tracking-[4px] uppercase">CADA SEMANA</span>
-            <div className="h-px w-8" style={{ background: "linear-gradient(to left, transparent, #BF1E2E)" }} />
+            <div className="h-px w-10" style={{ background: "linear-gradient(to right, transparent, #BF1E2E)" }} />
+            <span className="text-accent text-[10px] lg:text-xs font-black tracking-[4px] uppercase">Cada Semana</span>
+            <div className="h-px w-10" style={{ background: "linear-gradient(to left, transparent, #BF1E2E)" }} />
           </div>
-          <h2 className="text-white text-3xl font-black tracking-tight" style={{ textShadow: "0 0 30px rgba(191,30,46,0.4), 0 2px 16px rgba(0,0,0,0.9)" }}>
+          <h2 className="text-white font-black tracking-tight" style={{ fontSize: "clamp(2.5rem, 3.5vw, 4rem)", textShadow: "0 0 40px rgba(191,30,46,0.4), 0 2px 20px rgba(0,0,0,0.9)" }}>
             Nuestros Servicios
           </h2>
-          <p className="text-white/80 text-sm max-w-xs">
-            {config?.servicios_texto?.split("\n")[0] ?? "Te esperamos cada semana para adorar juntos."}
+          <p className="text-white/80 font-semibold tracking-wide" style={{ fontSize: "clamp(1.1rem, 1.4vw, 1.5rem)" }}>
+            Domingos · 10:00 AM
           </p>
         </div>
-        {/* fade inferior */}
+
         <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #080E1E)" }} />
-      </section>
-
-      {/* ── CARDS DE SERVICIOS ── */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-8 pb-14">
-        <div className="grid grid-cols-1 gap-4 max-w-xl mx-auto">
-          {[
-            { n: "01", dia: "Domingo", hora: "10:00 AM", tipo: "Servicio General" },
-          ].map((s) => (
-            <div key={s.dia} className="relative overflow-hidden rounded-2xl border border-white/5 p-6 group hover:border-accent/25 transition-all duration-300" style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
-              {/* número */}
-              {/* línea accent izquierda */}
-              <div className="absolute left-0 top-6 bottom-6 w-0.5 rounded-full opacity-60 group-hover:opacity-100 transition-opacity" style={{ background: "linear-gradient(to bottom, transparent, #BF1E2E, transparent)" }} />
-              {/* glow hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl" style={{ background: "radial-gradient(ellipse at top left, rgba(191,30,46,0.08) 0%, transparent 65%)" }} />
-
-              <div className="pl-4">
-                <p className="text-accent font-black text-4xl tracking-tight leading-none mb-2">{s.hora}</p>
-                <h3 className="font-bold text-white text-base mb-1">{s.dia}</h3>
-                <p className="text-white/30 text-[10px] uppercase tracking-[2px]">{s.tipo}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+      </div>
       </section>
 
       {/* ── SERMONES ── */}
@@ -286,6 +268,30 @@ export default async function HomePage() {
               </a>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* ── OFRENDA ── */}
+      {(ofrendaVideoUrl || ofrenda) && (
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 py-14 border-t border-white/5">
+          <div className="mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-accent/30 bg-accent/5 mb-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+              <span className="text-accent text-[10px] font-bold tracking-[3px] uppercase">Dar a Dios</span>
+            </div>
+            <h2 className="text-2xl font-extrabold text-white">Ofrenda</h2>
+          </div>
+
+          {/* Video */}
+          {ofrendaVideoUrl && (
+            <div className="relative rounded-2xl overflow-hidden border border-white/5 max-w-4xl mx-auto mb-8">
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video src={ofrendaVideoUrl} autoPlay loop muted playsInline className="w-full aspect-video object-cover" />
+            </div>
+          )}
+
+          {/* Tarjetas de pago */}
+          {ofrenda && <OfrendaCards ofrenda={ofrenda} />}
         </section>
       )}
 

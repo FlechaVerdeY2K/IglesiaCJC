@@ -4,8 +4,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 
 export const metadata: Metadata = {
-  title: "Sermones",
-  description: "Sermones y prédicas de Iglesia CJC para fortalecer tu fe.",
+  title: "Prédicas",
+  description: "Prédicas y sermones de Iglesia CJC para fortalecer tu fe.",
   alternates: {
     canonical: "/sermones",
   },
@@ -23,11 +23,11 @@ export default async function SermonesPage() {
   return (
     <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16">
       <span className="section-label">Palabra de Dios</span>
-      <h1 className="text-4xl font-bold mt-2 mb-2">Sermones</h1>
+      <h1 className="text-4xl font-bold mt-2 mb-2">Prédicas</h1>
       <p className="text-muted mb-12">Escucha y aprende de la Palabra de Dios.</p>
 
       {sermones.length === 0 ? (
-        <p className="text-muted text-center py-20">No hay sermones disponibles aún.</p>
+        <p className="text-muted text-center py-20">No hay prédicas disponibles aún.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sermones.map((s) => (
