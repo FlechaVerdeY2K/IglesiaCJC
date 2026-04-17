@@ -39,7 +39,8 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   const shouldNoIndex = ["/admin", "/login", "/register", "/auth"].some((r) =>
     pathname.startsWith(r)
   );
@@ -60,6 +61,11 @@ export async function proxy(request: NextRequest) {
       .single();
 
     const roles = normalizeRoles(userData);
+    const leaderCanManageMinisterios = pathname === "/admin/equipos" || pathname.startsWith("/admin/equipos/");
+    if (leaderCanManageMinisterios && (roles.includes("admin") || roles.includes("lider"))) {
+      return response;
+    }
+
     if (!roleAllowsPath(requiredRole, roles)) {
       const url = request.nextUrl.clone();
       url.pathname = "/";

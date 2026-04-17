@@ -1,33 +1,69 @@
-"use client";
+﻿"use client";
 import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import { useState } from "react";
 
 import Link from "next/link";
 import Image from "next/image";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://iglesiacjc.com").replace(/\/+$/, "");
+const AUTH_CALLBACK_URL = `${SITE_URL}/auth/callback`;
+
+type RegisterErrors = {
+  nombre?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  form?: string;
+};
 
 export default function RegisterPage() {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<RegisterErrors>({});
   const [success, setSuccess] = useState(false);
+
+  const inputClass = (hasError: boolean) =>
+    `input ${hasError ? "border-accent/90 focus:border-accent" : ""}`;
+
+  const validate = (): RegisterErrors => {
+    const next: RegisterErrors = {};
+    if (!nombre.trim()) next.nombre = "Ingresa tu nombre completo.";
+    if (!email.trim()) next.email = "Ingresa tu email.";
+    if (!password) next.password = "Ingresa una contraseña.";
+    else if (password.length < 6) next.password = "La contraseña debe tener mínimo 6 caracteres.";
+    if (!confirmPassword) next.confirmPassword = "Confirma tu contraseña.";
+    else if (password !== confirmPassword) next.confirmPassword = "Las contraseñas no coinciden.";
+    return next;
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true); setError("");
+    const nextErrors = validate();
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    setErrors({});
+    setLoading(true);
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { nombre },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: AUTH_CALLBACK_URL,
       },
     });
     setLoading(false);
-    if (error) setError(error.message);
+
+    if (error) setErrors({ form: error.message });
     else setSuccess(true);
   };
 
@@ -56,33 +92,99 @@ export default function RegisterPage() {
         </div>
 
         <div className="card">
-          <form onSubmit={handleRegister} className="space-y-4">
-            <input
-              type="text"
-              className="input"
-              placeholder="Nombre completo"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              required
-            />
-            <input
-              type="email"
-              className="input"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <input
-              type="password"
-              className="input"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-            {error && <p className="text-accent text-sm">{error}</p>}
+          <form onSubmit={handleRegister} className="space-y-4" noValidate>
+            <div>
+              <input
+                type="text"
+                className={inputClass(!!errors.nombre)}
+                placeholder="Nombre completo"
+                value={nombre}
+                onChange={(e) => {
+                  setNombre(e.target.value);
+                  if (errors.nombre) setErrors((prev) => ({ ...prev, nombre: undefined }));
+                }}
+                aria-invalid={!!errors.nombre}
+              />
+              {errors.nombre && <p className="text-accent text-xs mt-1.5">{errors.nombre}</p>}
+            </div>
+
+            <div>
+              <input
+                type="email"
+                className={inputClass(!!errors.email)}
+                placeholder="Email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+                aria-invalid={!!errors.email}
+              />
+              {errors.email && <p className="text-accent text-xs mt-1.5">{errors.email}</p>}
+            </div>
+
+            <div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className={`${inputClass(!!errors.password)} pr-11`}
+                  placeholder="Contraseña"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password || errors.confirmPassword) {
+                      setErrors((prev) => ({ ...prev, password: undefined, confirmPassword: undefined }));
+                    }
+                  }}
+                  aria-invalid={!!errors.password}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/45 hover:text-white transition-colors"
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {errors.password && <p className="text-accent text-xs mt-1.5">{errors.password}</p>}
+            </div>
+
+            <div>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  className={`${inputClass(!!errors.confirmPassword)} pr-11`}
+                  placeholder="Confirmar contraseña"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                  }}
+                  aria-invalid={!!errors.confirmPassword}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/45 hover:text-white transition-colors"
+                  aria-label={showConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña"}
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="text-accent text-xs mt-1.5">{errors.confirmPassword}</p>}
+            </div>
+
+            {errors.form && (
+              <div
+                className="rounded-lg border px-3 py-2.5 flex items-start gap-2"
+                style={{ borderColor: "rgba(229,57,53,0.45)", background: "rgba(229,57,53,0.10)" }}
+              >
+                <AlertCircle size={16} className="text-accent mt-0.5 shrink-0" />
+                <p className="text-red-100/95 text-sm leading-relaxed">{errors.form}</p>
+              </div>
+            )}
+
             <button type="submit" disabled={loading} className="btn-primary w-full">
               {loading ? "Creando cuenta..." : "Registrarse"}
             </button>

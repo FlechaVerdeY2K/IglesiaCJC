@@ -54,7 +54,7 @@ export default function BibleBanner({ libro, capitulo, versiculo, titulo, verseT
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-accent text-[10px] font-black tracking-[3px] uppercase mb-1">Lectura del Domingo</p>
+          <p className="text-accent text-[10px] font-black tracking-[3px] uppercase mb-1">Lectura de la Semana</p>
           <h3 className="text-white font-extrabold text-lg leading-tight">{displayTitle}</h3>
           {verseText && (
             <p className="text-white/55 text-sm mt-2 leading-relaxed italic line-clamp-2"

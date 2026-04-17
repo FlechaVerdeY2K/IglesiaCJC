@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 
 import { Plus, Pencil, Trash2, X, Check, Upload, ExternalLink } from "lucide-react";
+import { CLOUDINARY_CLOUD, CLOUDINARY_PRESET, cloudinaryUploadUrl } from "@/lib/cloudinary";
 
 
 type Pastor = { id: string; nombre: string; cargo: string; bio: string; foto_url: string; versiculo: string };
@@ -54,9 +55,9 @@ export default function AdminPastores() {
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "cjc_uploads");
+    formData.append("upload_preset", CLOUDINARY_PRESET);
     formData.append("folder", "pastores");
-    const res = await fetch("https://api.cloudinary.com/v1_1/djfnlzs0g/image/upload", {
+    const res = await fetch(cloudinaryUploadUrl(), {
       method: "POST",
       body: formData,
     });

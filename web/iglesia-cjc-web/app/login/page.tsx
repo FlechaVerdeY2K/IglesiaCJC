@@ -6,6 +6,10 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { recordBrowserAccess } from "@/lib/access-log";
+
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://iglesiacjc.com").replace(/\/+$/, "");
+const AUTH_CALLBACK_URL = `${SITE_URL}/auth/callback`;
 
 
 export default function LoginPage() {
@@ -18,16 +22,21 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) setError(error.message);
-    else router.push("/");
+    else {
+      if (data.user?.id) {
+        await recordBrowserAccess(data.user.id, "login_password", 0);
+      }
+      router.push("/");
+    }
   };
 
   const handleGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: AUTH_CALLBACK_URL },
     });
   };
 

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 import { Plus, Pencil, Trash2, X, Check, Play, ExternalLink } from "lucide-react";
+import { broadcastNotification } from "@/lib/notifications";
 
 
 type Sermon = { id: string; titulo: string; descripcion: string; video_id: string; fecha: string; predicador: string };
@@ -59,7 +60,10 @@ export default function AdminSermones() {
   const save = async () => {
     setSaving(true);
     if (editing) { await supabase.from("sermones").update(form).eq("id", editing); }
-    else { await supabase.from("sermones").insert(form); }
+    else {
+      await supabase.from("sermones").insert(form);
+      void broadcastNotification("predica_nueva", `Nueva prédica: ${form.titulo}`, form.descripcion || null, { predicador: form.predicador });
+    }
     setSaving(false); setModal(false); load();
   };
 

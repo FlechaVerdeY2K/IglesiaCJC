@@ -8,8 +8,9 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const token_hash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as "email" | "recovery" | null;
+  const type = searchParams.get("type") as "signup" | "email" | "recovery" | "magiclink" | null;
   const next = searchParams.get("next") ?? "/";
+  const welcomeNext = searchParams.get("next") ?? "/perfil";
 
   const response = NextResponse.redirect(`${origin}${next}`);
 
@@ -31,7 +32,13 @@ export async function GET(request: NextRequest) {
   // Email confirmation (token_hash flow)
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash, type });
-    if (!error) return response;
+    if (!error) {
+      if (type === "signup" || type === "email") {
+        const welcomeUrl = `${origin}/auth/bienvenida?next=${encodeURIComponent(welcomeNext)}`;
+        response.headers.set("location", welcomeUrl);
+      }
+      return response;
+    }
     console.error("OTP verify error:", error.message);
     return NextResponse.redirect(`${origin}/login?error=auth`);
   }
@@ -54,6 +61,20 @@ export async function GET(request: NextRequest) {
           await supabase.from("usuarios").update({ foto_url: avatarUrl }).eq("id", data.user.id);
         }
       }
+      const nowIso = new Date().toISOString();
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+      const userAgent = request.headers.get("user-agent") ?? null;
+      await supabase
+        .from("usuarios")
+        .update({ ultimo_acceso: nowIso })
+        .eq("id", data.user.id);
+      await supabase.from("access_logs").insert({
+        user_id: data.user.id,
+        source: "oauth_callback",
+        ip,
+        user_agent: userAgent,
+        created_at: nowIso,
+      });
       return response;
     }
     console.error("AUTH CALLBACK ERROR:", error?.message);

@@ -7,10 +7,11 @@ import Link from "next/link";
 
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
-import { LogOut, User as UserIcon, Camera, Shield, Users, BookOpen, Heart, CalendarDays, Palette, X, Bell, Radio, BookMarked } from "lucide-react";
+import { LogOut, User as UserIcon, Camera, Shield, Users, BookOpen, Heart, CalendarDays, Palette, X, Bell, Radio, BookMarked, FileText, Mic2, BookOpenCheck, UserCheck, UserX, UserPlus, UserMinus } from "lucide-react";
 import LoadingScreen from "@/components/LoadingScreen";
 import { getLibro, LIBROS } from "@/lib/bible-books";
 import type { Oracion } from "@/lib/supabase";
+import { CLOUDINARY_PRESET, cloudinaryUploadUrl } from "@/lib/cloudinary";
 
 function computeCurrentChapter(
   libro: string, capitulo: number, autoAvance: boolean, fechaInicio: string | null,
@@ -18,12 +19,14 @@ function computeCurrentChapter(
   if (!autoAvance || !fechaInicio) return capitulo;
   const libroData = LIBROS.find(l => l.id === libro);
   if (!libroData) return capitulo;
-  const nowCR = new Date(Date.now() - 6 * 60 * 60 * 1000);
-  const todayMs = Date.UTC(nowCR.getUTCFullYear(), nowCR.getUTCMonth(), nowCR.getUTCDate()) + 6 * 60 * 60 * 1000;
+
+  // Costa Rica is UTC-6 (no DST). Monday 12:00 PM CR = 18:00 UTC.
   const [y, m, d] = fechaInicio.split("-").map(Number);
-  const startMs = Date.UTC(y, m - 1, d) + 6 * 60 * 60 * 1000;
-  if (todayMs < startMs) return capitulo;
-  const weeksPassed = Math.floor((todayMs - startMs) / (7 * 24 * 60 * 60 * 1000));
+  const startMs = Date.UTC(y, m - 1, d, 18, 0, 0);
+  const nowMs = Date.now();
+
+  if (nowMs < startMs) return capitulo;
+  const weeksPassed = Math.floor((nowMs - startMs) / (7 * 24 * 60 * 60 * 1000));
   return ((capitulo + weeksPassed - 1) % libroData.caps) + 1;
 }
 
@@ -45,6 +48,8 @@ type GpsRegistro = {
   created_at?: string | null;
 };
 type GpsState = { nombre: string; estado: "aprobada" | "pendiente" | "rechazada" | "desconocido" };
+type MinisterioRegistro = { equipo_id: string | null; equipo_nombre: string | null };
+type MinisterioInfo = { id: string; nombre: string; icon_name?: string | null };
 type Notificacion = { id: string; tipo: string; titulo: string; cuerpo: string | null; leida: boolean; created_at: string; meta: Record<string, unknown> | null };
 
 const COVERS = [
@@ -58,8 +63,6 @@ const COVERS = [
 
 const COVER_KEY = "perfil_cover";
 const COVER_IMG_KEY = "perfil_cover_img";
-const CLOUDINARY_CLOUD = "djfnlzs0g";
-const CLOUDINARY_PRESET = "cjc_uploads";
 const ORACIONES_PAGE_SIZE = 3;
 
 export default function PerfilPage() {
@@ -68,9 +71,11 @@ export default function PerfilPage() {
   const [user, setUser]             = useState<User | null>(null);
   const [nombre, setNombre]         = useState("");
   const [rol, setRol]               = useState("");
+  const [roles, setRoles]           = useState<string[]>([]);
   const [fotoUrl, setFotoUrl]       = useState<string | null>(null);
   const [imgError, setImgError]     = useState(false);
   const [gps, setGps]               = useState<GpsState | null>(null);
+  const [ministerios, setMinisterios] = useState<MinisterioInfo[]>([]);
   const [oraciones, setOraciones]   = useState<Oracion[]>([]);
   const [orCount, setOrCount]       = useState(0);
   const [biblia, setBiblia]         = useState<BibliaConfig | null>(null);
@@ -105,12 +110,13 @@ export default function PerfilPage() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }: { data: { user: User | null } }) => {
-      if (!data.user) { router.push("/login"); return; }
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.user) { router.push("/login"); return; }
+      const data = { user: session.user as User };
       setUser(data.user);
 
       const [perfilRes, bibliaRes] = await Promise.all([
-        supabase.from("usuarios").select("nombre, rol, foto_url, telefono").eq("id", data.user.id).single(),
+        supabase.from("usuarios").select("nombre, rol, roles, foto_url, telefono").eq("id", session.user.id).single(),
         supabase.from("config_biblia").select("*").eq("id", 1).single(),
       ]);
 
@@ -121,9 +127,7 @@ export default function PerfilPage() {
 
       let gpsNombre: string | null = null;
       let gpsEstado: GpsState["estado"] = "desconocido";
-      if (gpsError) {
-        console.warn("gps_registros query skipped:", gpsError.message);
-      } else {
+      if (!gpsError) {
         const registros = (gpsRegs ?? []) as GpsRegistro[];
         const preferred = registros.find(r => r.estado === "aprobada")
           ?? registros.find(r => r.estado === "pendiente")
@@ -144,17 +148,32 @@ export default function PerfilPage() {
         }
       }
 
+      const { data: ministerioRegs } = await supabase
+        .from("equipo_solicitudes")
+        .select("equipo_id, equipo_nombre")
+        .eq("usuario_id", data.user.id)
+        .eq("estado", "aprobado");
+
+      const ministeriosBase = (ministerioRegs ?? []) as MinisterioRegistro[];
+      const ids = Array.from(new Set(ministeriosBase.map((m) => m.equipo_id).filter(Boolean))) as string[];
+      if (ids.length > 0) {
+        const { data: equiposData } = await supabase.from("equipos").select("id, nombre, icon_name").in("id", ids);
+        const list = ((equiposData ?? []) as Array<{ id: string; nombre: string | null; icon_name?: string | null }>)
+          .map((e) => ({ id: e.id, nombre: String(e.nombre ?? ""), icon_name: e.icon_name ?? null }));
+        setMinisterios(list);
+      } else {
+        setMinisterios([]);
+      }
+
       const { data: ownOraciones, error: ownOrError } = await supabase
         .from("oraciones")
         .select("*")
         .eq("autor_uid", data.user.id)
+        .neq("estado", "eliminada")
         .order("fecha", { ascending: false })
         .limit(50);
 
-      let myOraciones = (ownOraciones ?? []) as Oracion[];
-      if (ownOrError) {
-        console.warn("oraciones by autor_uid failed:", ownOrError.message);
-      }
+      let myOraciones = ownOrError ? [] : (ownOraciones ?? []) as Oracion[];
 
       if (myOraciones.length === 0 && perfilRes.data?.nombre) {
         const { data: byName, error: byNameError } = await supabase
@@ -162,10 +181,10 @@ export default function PerfilPage() {
           .select("*")
           .eq("nombre", perfilRes.data.nombre)
           .eq("anonima", false)
+          .neq("estado", "eliminada")
           .order("fecha", { ascending: false })
           .limit(50);
         if (byNameError) {
-          console.warn("oraciones by nombre fallback failed:", byNameError.message);
         } else {
           myOraciones = (byName ?? []) as Oracion[];
         }
@@ -174,7 +193,8 @@ export default function PerfilPage() {
       const { count: ownCount } = await supabase
         .from("oraciones")
         .select("id", { count: "exact", head: true })
-        .eq("autor_uid", data.user.id);
+        .eq("autor_uid", data.user.id)
+        .neq("estado", "eliminada");
 
       let finalCount = ownCount ?? 0;
       if (finalCount === 0 && perfilRes.data?.nombre) {
@@ -182,12 +202,15 @@ export default function PerfilPage() {
           .from("oraciones")
           .select("id", { count: "exact", head: true })
           .eq("nombre", perfilRes.data.nombre)
-          .eq("anonima", false);
+          .eq("anonima", false)
+          .neq("estado", "eliminada");
         finalCount = byNameCount ?? 0;
       }
 
       setNombre(perfilRes.data?.nombre ?? data.user.user_metadata?.full_name ?? "");
       setRol(perfilRes.data?.rol ?? "miembro");
+      const rawRoles = perfilRes.data?.roles;
+      setRoles(Array.isArray(rawRoles) ? rawRoles : (rawRoles ? Object.values(rawRoles) : [perfilRes.data?.rol ?? "miembro"]));
       setTelefono(perfilRes.data?.telefono ?? "");
       setFotoUrl(perfilRes.data?.foto_url ?? data.user.user_metadata?.avatar_url ?? null);
       if (gpsNombre) setGps({ nombre: gpsNombre, estado: gpsEstado });
@@ -237,7 +260,7 @@ export default function PerfilPage() {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("upload_preset", CLOUDINARY_PRESET);
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+    const res = await fetch(cloudinaryUploadUrl(), {
       method: "POST",
       body: fd,
     });
@@ -294,8 +317,22 @@ export default function PerfilPage() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
+    await supabase.auth.signOut({ scope: "global" });
+    router.replace("/login?logout=1");
+    router.refresh();
+  };
+
+  const handleDeleteOracion = async (id: string) => {
+    if (!user) return;
+    if (!confirm("¿Eliminar esta oración?")) return;
+    await supabase.from("oracion_orantes").delete().eq("oracion_id", id);
+
+    // Hide everywhere immediately even if hard delete is blocked by RLS.
+    await supabase.from("oraciones").update({ estado: "eliminada" }).eq("id", id);
+    await supabase.from("oraciones").delete().eq("id", id);
+
+    setOraciones((prev) => prev.filter((o) => o.id !== id));
+    setOrCount((prev) => Math.max(0, prev - 1));
   };
 
   const markAllRead = async () => {
@@ -450,10 +487,15 @@ export default function PerfilPage() {
 
           {/* Badges */}
           <div className="flex flex-wrap gap-2 mt-4">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border"
-              style={{ color: rolInfo.color, borderColor: `${rolInfo.color}40`, backgroundColor: `${rolInfo.color}10` }}>
-              <Shield size={9} /> {rolInfo.label}
-            </span>
+            {(roles.length > 0 ? roles : [rol]).map((r) => {
+              const info = ROL_LABEL[r] ?? ROL_LABEL.miembro;
+              return (
+                <span key={r} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border"
+                  style={{ color: info.color, borderColor: `${info.color}40`, backgroundColor: `${info.color}10` }}>
+                  <Shield size={9} /> {info.label}
+                </span>
+              );
+            })}
             {gps && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border border-white/10 text-white/50"
                 style={{ backgroundColor: "rgba(255,255,255,0.04)" }}>
@@ -470,7 +512,7 @@ export default function PerfilPage() {
       </div>
 
       {/* ── STATS ── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {([
           { icon: CalendarDays, label: "Miembro desde", value: memberSince,              color: "#3b82f6" },
           { icon: Heart,        label: "Oraciones",     value: String(orCount),          color: "#BF1E2E" },
@@ -485,10 +527,37 @@ export default function PerfilPage() {
             <p className="text-white/30 text-[10px]">{label}</p>
           </div>
         ))}
+        <div className="rounded-xl border border-white/5 p-4 flex flex-col items-center text-center gap-1.5"
+          style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
+          {ministerios.length === 0 ? (
+            <>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#10b98115" }}>
+                <Shield size={14} style={{ color: "#10b981" }} />
+              </div>
+              <p className="text-white font-bold text-sm leading-tight">Sin ministerio</p>
+            </>
+          ) : (
+            <div className="flex items-center justify-center flex-wrap gap-1">
+              {ministerios.map((m) =>
+                m.icon_name && /^https?:\/\//i.test(m.icon_name) ? (
+                  <Image key={m.id} src={m.icon_name} alt={m.nombre} width={32} height={32}
+                    className="w-8 h-8 rounded-lg object-cover border border-white/10 shrink-0" title={m.nombre} />
+                ) : (
+                  <div key={m.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                    style={{ background: "#10b98120", border: "1px solid #10b98130" }} title={m.nombre}>
+                    {m.nombre[0]}
+                  </div>
+                )
+              )}
+            </div>
+          )}
+          <p className="text-white/30 text-[10px]">Ministerio{ministerios.length !== 1 ? "s" : ""}</p>
+        </div>
       </div>
 
       {/* ── TABS ── */}
-      <div className="flex gap-2 p-1 rounded-xl border border-white/10 w-fit" style={{ background: "#080E1E" }}>
+      <div className="overflow-x-auto">
+        <div className="flex gap-2 p-1 rounded-xl border border-white/10 w-max min-w-full" style={{ background: "#080E1E" }}>
         {([
           { id: "cuenta", label: "Cuenta" },
           { id: "oraciones", label: "Oraciones" },
@@ -509,6 +578,7 @@ export default function PerfilPage() {
             )}
           </button>
         ))}
+        </div>
       </div>
 
       {/* ── LECTURA DOMINICAL ── */}
@@ -522,7 +592,7 @@ export default function PerfilPage() {
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
               <BookOpen size={15} className="text-accent" />
-              <p className="text-white/40 text-[10px] uppercase tracking-wider">Lectura del Domingo</p>
+              <p className="text-white/40 text-[10px] uppercase tracking-wider">Lectura de la Semana</p>
             </div>
             <p className="text-white font-bold text-lg">
               {libroData.nombre} <span className="text-accent">{currentCap}</span>
@@ -556,11 +626,19 @@ export default function PerfilPage() {
               <div key={o.id} className="rounded-xl border border-white/5 p-3.5" style={{ background: "#080E1E" }}>
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-white/70 text-sm leading-relaxed line-clamp-2 flex-1">{o.peticion}</p>
-                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
-                    o.estado === "aprobada"  ? "text-green-400 bg-green-400/10 border-green-400/20" :
-                    o.estado === "pendiente" ? "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" :
-                    "text-white/30 bg-white/5 border-white/10"
-                  }`}>{o.estado}</span>
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
+                      o.estado === "aprobada"  ? "text-green-400 bg-green-400/10 border-green-400/20" :
+                      o.estado === "pendiente" ? "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" :
+                      "text-white/30 bg-white/5 border-white/10"
+                    }`}>{o.estado}</span>
+                    <button
+                      onClick={() => void handleDeleteOracion(o.id)}
+                      className="text-[11px] text-red-400/80 hover:text-red-400 transition-colors"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
                 <p className="text-white/25 text-xs mt-2">
                   {new Date(o.fecha).toLocaleDateString("es", { timeZone: "America/Costa_Rica", day: "numeric", month: "long", year: "numeric" })}
@@ -616,7 +694,7 @@ export default function PerfilPage() {
               type="tel"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
               <p className="text-white/30 text-[10px] uppercase tracking-wider">Último acceso</p>
               <p className="text-white/80 text-sm mt-1">{lastSignIn}</p>
@@ -625,6 +703,13 @@ export default function PerfilPage() {
               <p className="text-white/30 text-[10px] uppercase tracking-wider">Mi GPS</p>
               <p className="text-white/80 text-sm mt-1">{gps?.nombre ?? "Sin GPS"}</p>
               {gps && <p className="text-white/35 text-xs mt-1">Estado: {gpsStatusLabel}</p>}
+            </div>
+            <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
+              <p className="text-white/30 text-[10px] uppercase tracking-wider">Ministerios</p>
+              <p className="text-white/80 text-sm mt-1">
+                {ministerios.length > 0 ? `${ministerios.length} asignado${ministerios.length > 1 ? "s" : ""}` : "Sin ministerios"}
+              </p>
+              {ministerios.length > 0 && <p className="text-white/35 text-xs mt-1 line-clamp-2">{ministerios.map((m) => m.nombre).join(", ")}</p>}
             </div>
           </div>
           {mensaje && <p className="text-green-400 text-xs">{mensaje}</p>}
@@ -657,15 +742,29 @@ export default function PerfilPage() {
             <div className="space-y-2">
               {notifs.map(n => {
                 const Icon =
-                  n.tipo === "oracion_orada"  ? Heart :
-                  n.tipo === "evento_nuevo"   ? CalendarDays :
-                  n.tipo === "live_inicio"    ? Radio :
-                  n.tipo === "biblia_avance"  ? BookMarked : Bell;
+                  n.tipo === "oracion_orada"       ? Heart :
+                  n.tipo === "evento_nuevo"        ? CalendarDays :
+                  n.tipo === "live_inicio"         ? Radio :
+                  n.tipo === "biblia_avance"       ? BookMarked :
+                  n.tipo === "predica_nueva"       ? Mic2 :
+                  n.tipo === "devocional_nuevo"    ? BookOpenCheck :
+                  n.tipo === "recurso_nuevo"       ? FileText :
+                  n.tipo === "ministerio_agregado" ? UserPlus :
+                  n.tipo === "ministerio_removido" ? UserMinus :
+                  n.tipo === "rol_asignado"        ? UserCheck :
+                  n.tipo === "rol_removido"        ? UserX : Bell;
                 const iconColor =
-                  n.tipo === "oracion_orada"  ? "#BF1E2E" :
-                  n.tipo === "evento_nuevo"   ? "#3b82f6" :
-                  n.tipo === "live_inicio"    ? "#10b981" :
-                  n.tipo === "biblia_avance"  ? "#f59e0b" : "#6b7280";
+                  n.tipo === "oracion_orada"       ? "#BF1E2E" :
+                  n.tipo === "evento_nuevo"        ? "#3b82f6" :
+                  n.tipo === "live_inicio"         ? "#10b981" :
+                  n.tipo === "biblia_avance"       ? "#f59e0b" :
+                  n.tipo === "predica_nueva"       ? "#8b5cf6" :
+                  n.tipo === "devocional_nuevo"    ? "#06b6d4" :
+                  n.tipo === "recurso_nuevo"       ? "#f97316" :
+                  n.tipo === "ministerio_agregado" ? "#10b981" :
+                  n.tipo === "ministerio_removido" ? "#ef4444" :
+                  n.tipo === "rol_asignado"        ? "#f59e0b" :
+                  n.tipo === "rol_removido"        ? "#6b7280" : "#6b7280";
                 return (
                   <div key={n.id}
                     className={`flex items-start gap-3 rounded-xl p-3 border transition-all ${

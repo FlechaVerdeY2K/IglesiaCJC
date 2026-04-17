@@ -21,26 +21,17 @@ const NAV = [
 export default function CocinaLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [nombre, setNombre] = useState("");
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace("/login"); return; }
-      const { data } = await supabase.from("usuarios").select("nombre").eq("id", user.id).single();
-      setNombre(data?.nombre ?? user.user_metadata?.full_name ?? "Cocina");
-      setLoading(false);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { router.replace("/login"); return; }
+      const { data } = await supabase.from("usuarios").select("nombre").eq("id", session.user.id).single();
+      setNombre(data?.nombre ?? session.user.user_metadata?.full_name ?? "Cocina");
     })();
   }, [router]);
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-bg">
-      <Image src="/logo-cjc.png" alt="CJC" width={100} height={100}
-        className="animate-pulse" style={{ filter: "drop-shadow(0 0 16px rgba(191,30,46,0.5))" }} />
-    </div>
-  );
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -71,7 +62,7 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
             style={{ background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)" }}>
             <ChefHat size={10} /> Cocina
           </span>
-          <p className="text-white/40 text-xs mt-2 truncate">{nombre}</p>
+          {nombre && <p className="text-white/40 text-xs mt-2 truncate">{nombre}</p>}
         </div>
 
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">

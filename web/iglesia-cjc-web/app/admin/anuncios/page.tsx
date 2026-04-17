@@ -4,11 +4,8 @@ const supabase = getBrowserClient();
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 
-import { Plus, Pencil, Trash2, X, Check, Upload } from "lucide-react";
-
-
-const CLOUDINARY_CLOUD = "djfnlzs0g";
-const CLOUDINARY_PRESET = "cjc_uploads";
+import { Plus, Pencil, Trash2, X, Check, Upload, CalendarDays } from "lucide-react";
+import { CLOUDINARY_PRESET, cloudinaryUploadUrl } from "@/lib/cloudinary";
 
 type Anuncio = {
   id: string;
@@ -20,8 +17,16 @@ type Anuncio = {
 };
 
 const EMPTY: Omit<Anuncio, "id"> = {
-  titulo: "", descripcion: "", imagen_url: null, fecha: null, activo: true,
+  titulo: "",
+  descripcion: "",
+  imagen_url: null,
+  fecha: null,
+  activo: true,
 };
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export default function AdminAnuncios() {
   const [items, setItems] = useState<Anuncio[]>([]);
@@ -47,14 +52,19 @@ export default function AdminAnuncios() {
     return () => clearTimeout(timer);
   }, []);
 
-  const openNew = () => { setForm(EMPTY); setEditing(null); setModal(true); };
+  const openNew = () => {
+    setForm({ ...EMPTY, fecha: todayISO() });
+    setEditing(null);
+    setModal(true);
+  };
+
   const openEdit = (a: Anuncio) => {
     const { id, ...rest } = a;
     setForm({
       titulo: rest.titulo ?? "",
       descripcion: rest.descripcion ?? "",
       imagen_url: rest.imagen_url ?? null,
-      fecha: rest.fecha ?? null,
+      fecha: rest.fecha ? String(rest.fecha).slice(0, 10) : null,
       activo: rest.activo ?? true,
     });
     setEditing(id);
@@ -67,38 +77,44 @@ export default function AdminAnuncios() {
     fd.append("file", file);
     fd.append("upload_preset", CLOUDINARY_PRESET);
     fd.append("folder", "anuncios");
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
-      method: "POST", body: fd,
+    const res = await fetch(cloudinaryUploadUrl(), {
+      method: "POST",
+      body: fd,
     });
     const data = await res.json();
-    if (data.secure_url) setForm(p => ({ ...p, imagen_url: data.secure_url }));
+    if (data.secure_url) setForm((p) => ({ ...p, imagen_url: data.secure_url }));
     setUploading(false);
   };
 
   const save = async () => {
-    if (!form.titulo) return;
+    if (!form.titulo.trim()) return;
     setSaving(true);
+
     const payload = {
-      titulo: form.titulo,
+      titulo: form.titulo.trim(),
       descripcion: form.descripcion,
       imagen_url: form.imagen_url || null,
       fecha: form.fecha || null,
       activo: form.activo,
     };
-    if (editing) { await supabase.from("anuncios").update(payload).eq("id", editing); }
-    else { await supabase.from("anuncios").insert(payload); }
-    setSaving(false); setModal(false); load();
+
+    if (editing) await supabase.from("anuncios").update(payload).eq("id", editing);
+    else await supabase.from("anuncios").insert(payload);
+
+    setSaving(false);
+    setModal(false);
+    void load();
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Â¿Eliminar?")) return;
+    if (!confirm("¿Eliminar anuncio?")) return;
     await supabase.from("anuncios").delete().eq("id", id);
-    load();
+    void load();
   };
 
   const toggleActivo = async (a: Anuncio) => {
     await supabase.from("anuncios").update({ activo: !a.activo }).eq("id", a.id);
-    load();
+    void load();
   };
 
   return (
@@ -118,44 +134,55 @@ export default function AdminAnuncios() {
           <p className="text-white/30 text-sm">Cargando...</p>
         ) : items.length === 0 ? (
           <p className="text-white/30 text-sm text-center py-10">No hay anuncios.</p>
-        ) : items.map(a => (
-          <div key={a.id} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${a.activo ? "border-border" : "border-white/5 opacity-50"}`} style={{ background: "#0D1628" }}>
-            {a.imagen_url ? (
-              <Image src={a.imagen_url} className="w-16 h-16 rounded-xl object-cover shrink-0" alt="" width={64} height={64} />
-            ) : (
-              <div className="w-16 h-16 rounded-xl bg-accent/10 shrink-0 flex items-center justify-center">
-                <span className="text-accent/50 text-xs font-bold">CJC</span>
+        ) : (
+          items.map((a) => (
+            <div
+              key={a.id}
+              className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${a.activo ? "border-border" : "border-white/5 opacity-50"}`}
+              style={{ background: "#0D1628" }}
+            >
+              {a.imagen_url ? (
+                <Image src={a.imagen_url} className="w-16 h-16 rounded-xl object-cover shrink-0" alt="" width={64} height={64} />
+              ) : (
+                <div className="w-16 h-16 rounded-xl bg-accent/10 shrink-0 flex items-center justify-center">
+                  <span className="text-accent/50 text-xs font-bold">CJC</span>
+                </div>
+              )}
+
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-semibold truncate">{a.titulo}</p>
+                <p className="text-white/40 text-xs mt-0.5 line-clamp-1">{a.descripcion}</p>
+                {a.fecha && <p className="text-white/25 text-xs mt-0.5">{String(a.fecha).slice(0, 10)}</p>}
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold truncate">{a.titulo}</p>
-              <p className="text-white/40 text-xs mt-0.5 line-clamp-1">{a.descripcion}</p>
-              {a.fecha && <p className="text-white/25 text-xs mt-0.5">{a.fecha}</p>}
+
+              <div className="flex gap-2 items-center shrink-0">
+                <button
+                  onClick={() => toggleActivo(a)}
+                  title={a.activo ? "Ocultar" : "Activar"}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${a.activo ? "bg-accent" : "bg-white/10"}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${a.activo ? "left-5" : "left-0.5"}`} />
+                </button>
+                <button onClick={() => openEdit(a)} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white">
+                  <Pencil size={14} />
+                </button>
+                <button onClick={() => remove(a.id)} className="p-2 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400">
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2 items-center shrink-0">
-              <button
-                onClick={() => toggleActivo(a)}
-                title={a.activo ? "Ocultar" : "Activar"}
-                className={`p-2 rounded-lg text-xs transition-colors ${a.activo ? "text-green-400 hover:bg-green-500/10" : "text-white/25 hover:bg-white/5 hover:text-white/60"}`}
-              >
-                {a.activo ? "â—" : "â—‹"}
-              </button>
-              <button onClick={() => openEdit(a)} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white"><Pencil size={14} /></button>
-              <button onClick={() => remove(a.id)} className="p-2 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400"><Trash2 size={14} /></button>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)" }}>
-          <div className="w-full max-w-lg rounded-2xl border border-border p-6 space-y-4 max-h-[90vh] overflow-y-auto" style={{ background: "#0D1628" }}>
+          <div className="w-full max-w-lg rounded-2xl border border-border p-6 space-y-4 max-h-[90vh] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.22)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 hover:[&::-webkit-scrollbar-thumb]:bg-white/30" style={{ background: "#0D1628" }}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-white">{editing ? "Editar anuncio" : "Nuevo anuncio"}</h2>
               <button onClick={() => setModal(false)} className="text-white/40 hover:text-white"><X size={18} /></button>
             </div>
 
-            {/* Imagen */}
             <div>
               <label className="text-white/50 text-xs uppercase tracking-wider mb-2 block">Imagen</label>
               <div className="flex gap-3 items-start">
@@ -179,41 +206,53 @@ export default function AdminAnuncios() {
                   {form.imagen_url && (
                     <button
                       type="button"
-                      onClick={() => setForm(p => ({ ...p, imagen_url: null }))}
+                      onClick={() => setForm((p) => ({ ...p, imagen_url: null }))}
                       className="text-xs text-white/30 hover:text-red-400 transition-colors"
                     >
                       Quitar imagen (usar logo CJC)
                     </button>
                   )}
-                  <input ref={fileRef} type="file" accept="image/*" className="hidden"
-                    onChange={e => { if (e.target.files?.[0]) handleUpload(e.target.files[0]); }} />
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) void handleUpload(e.target.files[0]);
+                    }}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* TÃ­tulo */}
             <div>
-              <label className="text-white/50 text-xs uppercase tracking-wider mb-1 block">TÃ­tulo *</label>
-              <input className="input w-full" value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))} />
+              <label className="text-white/50 text-xs uppercase tracking-wider mb-1 block">Título *</label>
+              <input className="input w-full" value={form.titulo} onChange={(e) => setForm((p) => ({ ...p, titulo: e.target.value }))} />
             </div>
 
-            {/* DescripciÃ³n */}
             <div>
-              <label className="text-white/50 text-xs uppercase tracking-wider mb-1 block">DescripciÃ³n</label>
-              <textarea className="input w-full h-24 resize-none" value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} />
+              <label className="text-white/50 text-xs uppercase tracking-wider mb-1 block">Descripción</label>
+              <textarea className="input w-full h-24 resize-none" value={form.descripcion} onChange={(e) => setForm((p) => ({ ...p, descripcion: e.target.value }))} />
             </div>
 
-            {/* Fecha (opcional) */}
             <div>
-              <label className="text-white/50 text-xs uppercase tracking-wider mb-1 block">Fecha <span className="normal-case text-white/20">(opcional)</span></label>
-              <input type="date" className="input w-full" value={form.fecha ?? ""} onChange={e => setForm(p => ({ ...p, fecha: e.target.value || null }))} />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-white/50 text-xs uppercase tracking-wider block">Fecha <span className="normal-case text-white/20">(opcional)</span></label>
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, fecha: todayISO() }))}
+                  className="text-xs text-accent hover:underline inline-flex items-center gap-1"
+                >
+                  <CalendarDays size={12} /> Hoy
+                </button>
+              </div>
+              <input type="date" className="input w-full" value={form.fecha ?? ""} onChange={(e) => setForm((p) => ({ ...p, fecha: e.target.value || null }))} />
             </div>
 
-            {/* Activo */}
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setForm(p => ({ ...p, activo: !p.activo }))}
+                onClick={() => setForm((p) => ({ ...p, activo: !p.activo }))}
                 className={`relative w-10 h-5 rounded-full transition-colors ${form.activo ? "bg-accent" : "bg-white/10"}`}
               >
                 <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${form.activo ? "left-5" : "left-0.5"}`} />
@@ -223,7 +262,7 @@ export default function AdminAnuncios() {
 
             <div className="flex gap-3 justify-end pt-2">
               <button onClick={() => setModal(false)} className="btn-secondary py-2 px-4 text-sm">Cancelar</button>
-              <button onClick={save} disabled={saving || !form.titulo} className="btn-primary flex items-center gap-1.5 py-2 px-4 text-sm disabled:opacity-50">
+              <button onClick={save} disabled={saving || !form.titulo.trim()} className="btn-primary flex items-center gap-1.5 py-2 px-4 text-sm disabled:opacity-50">
                 <Check size={14} /> {saving ? "Guardando..." : "Guardar"}
               </button>
             </div>
@@ -233,4 +272,3 @@ export default function AdminAnuncios() {
     </div>
   );
 }
-

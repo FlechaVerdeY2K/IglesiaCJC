@@ -10,6 +10,7 @@ const routes = [
   "/devocionales",
   "/live",
   "/equipos",
+  "/ministerios",
   "/oraciones",
   "/recursos",
   "/biblia",

@@ -2,6 +2,7 @@
 import { getUser } from "@/lib/auth";
 import { getLiveStatus } from "@/lib/live-status";
 import { yesterdayCR } from "@/lib/date";
+import { unstable_cache } from "next/cache";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -29,17 +30,16 @@ function computeCurrentChapter(
   const libroData = LIBROS.find(l => l.id === libro);
   if (!libroData) return capitulo;
 
-  // Costa Rica is UTC-6 (no DST). Midnight CR = 06:00 UTC.
-  // We represent each "CR day" as its midnight in CR time (= 06:00 UTC that day).
-  const nowCR = new Date(Date.now() - 6 * 60 * 60 * 1000);
-  const todayMs = Date.UTC(nowCR.getUTCFullYear(), nowCR.getUTCMonth(), nowCR.getUTCDate()) + 6 * 60 * 60 * 1000;
+  // Costa Rica is UTC-6 (no DST). Monday 12:00 PM CR = 18:00 UTC.
+  // Auto-advance uses weekly jumps from that reference timestamp.
 
   const [y, m, d] = fechaInicio.split("-").map(Number);
-  const startMs = Date.UTC(y, m - 1, d) + 6 * 60 * 60 * 1000;
+  const startMs = Date.UTC(y, m - 1, d, 18, 0, 0);
+  const nowMs = Date.now();
 
-  if (todayMs < startMs) return capitulo;
+  if (nowMs < startMs) return capitulo;
 
-  const weeksPassed = Math.floor((todayMs - startMs) / (7 * 24 * 60 * 60 * 1000));
+  const weeksPassed = Math.floor((nowMs - startMs) / (7 * 24 * 60 * 60 * 1000));
   const effective = capitulo + weeksPassed;
   return ((effective - 1) % libroData.caps) + 1;
 }
@@ -65,23 +65,24 @@ async function getHomeData(isLoggedIn: boolean) {
   };
 }
 
-async function getBibleVerse(libro: string, capitulo: number, versiculo: number): Promise<string> {
-  try {
-    const { LIBROS } = await import("@/lib/bible-books");
-    const libroData = LIBROS.find(l => l.id === libro);
-    if (!libroData) return "";
-    const res = await fetch(
-      `https://bolls.life/get-text/RV1960/${libroData.num}/${capitulo}/`,
-      { next: { revalidate: 3600 } }
-    );
-    if (!res.ok) return "";
-    const data = await res.json();
-    const verse = data.find((v: { verse: number; text: string }) => v.verse === versiculo);
-    return verse ? verse.text.replace(/<[^>]*>/g, "").trim() : "";
-  } catch {
-    return "";
-  }
-}
+const getBibleVerse = unstable_cache(
+  async (libro: string, capitulo: number, versiculo: number): Promise<string> => {
+    try {
+      const { LIBROS } = await import("@/lib/bible-books");
+      const libroData = LIBROS.find(l => l.id === libro);
+      if (!libroData) return "";
+      const res = await fetch(`https://bolls.life/get-text/RV1960/${libroData.num}/${capitulo}/`);
+      if (!res.ok) return "";
+      const data = await res.json();
+      const verse = data.find((v: { verse: number; text: string }) => v.verse === versiculo);
+      return verse ? verse.text.replace(/<[^>]*>/g, "").trim() : "";
+    } catch {
+      return "";
+    }
+  },
+  ["bible-verse"],
+  { revalidate: 3600 }
+);
 
 export default async function HomePage() {
   const user = await getUser();
@@ -149,7 +150,7 @@ export default async function HomePage() {
       {/* ── HERO ── */}
       <section className="relative h-[400px] w-full overflow-hidden">
         {heroImage ? (
-          <Image src={heroImage} alt="Hero" className="absolute inset-0 w-full h-full object-cover" fill sizes="100vw" />
+          <Image src={heroImage} alt="Hero" className="absolute inset-0 w-full h-full object-cover" fill sizes="100vw" priority />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-[#0D1628] via-[#1A0A0D] to-[#080E1E]" />
         )}
@@ -227,10 +228,9 @@ export default async function HomePage() {
 
       {/* ── CARDS DE SERVICIOS ── */}
       <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-8 pb-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+        <div className="grid grid-cols-1 gap-4 max-w-xl mx-auto">
           {[
             { n: "01", dia: "Domingo", hora: "10:00 AM", tipo: "Servicio General" },
-            { n: "02", dia: "Viernes", hora: "Variable", tipo: "Grupo de Jóvenes" },
           ].map((s) => (
             <div key={s.dia} className="relative overflow-hidden rounded-2xl border border-white/5 p-6 group hover:border-accent/25 transition-all duration-300" style={{ background: "linear-gradient(135deg, #0F1C30 0%, #080E1E 100%)" }}>
               {/* número */}
@@ -373,7 +373,7 @@ export default async function HomePage() {
                   {a.imagen_url
                     ? <Image src={a.imagen_url} alt={a.titulo} className="w-full h-40 object-cover" width={800} height={160} />
                     : <div className="w-full h-40 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0D1628, #1A0A0D)" }}>
-                        <Image src="/logo-cjc.png" alt="CJC" className="h-16 object-contain opacity-60" width={64} height={64} />
+                        <Image src="/logo-cjc.png" alt="CJC" className="h-16 w-auto object-contain opacity-60" width={64} height={64} />
                       </div>
                   }
                   <div className="p-5">

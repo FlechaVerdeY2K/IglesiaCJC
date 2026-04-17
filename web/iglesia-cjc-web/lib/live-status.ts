@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { unstable_cache } from "next/cache";
 
 const API_KEY = process.env.YOUTUBE_API_KEY;
 const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;
@@ -14,7 +15,7 @@ async function getLatestVideoIdFromRSS(channelId: string): Promise<string | null
   try {
     const res = await fetch(
       `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
-      { next: { revalidate: 120 } }
+      { cache: "no-store" }
     );
     if (!res.ok) return null;
     const xml = await res.text();
@@ -32,7 +33,7 @@ async function checkIfVideoIsLive(
   try {
     const res = await fetch(
       `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${videoId}&key=${apiKey}`,
-      { next: { revalidate: 120 } }
+      { cache: "no-store" }
     );
     if (!res.ok) return { isLive: false, title: null, thumbnail: null };
     const data = await res.json();
@@ -54,7 +55,6 @@ async function autoArchiveIfEnded(
   videoId: string | null,
   title: string | null
 ) {
-  // Obtener estado previo guardado
   const { data: cfg } = await supabase
     .from("config_live")
     .select("auto_video_id, auto_titulo")
@@ -62,7 +62,6 @@ async function autoArchiveIfEnded(
     .single();
 
   if (isLive && videoId) {
-    // Si hay un live activo y cambió el video, actualizar
     if (cfg?.auto_video_id !== videoId) {
       await supabase
         .from("config_live")
@@ -70,9 +69,7 @@ async function autoArchiveIfEnded(
         .eq("id", 1);
     }
   } else {
-    // No hay live — si había uno guardado, archivarlo
     if (cfg?.auto_video_id) {
-      // Verificar que no esté ya archivado
       const { data: existing } = await supabase
         .from("lives")
         .select("id")
@@ -87,7 +84,6 @@ async function autoArchiveIfEnded(
         });
       }
 
-      // Limpiar estado
       await supabase
         .from("config_live")
         .update({ auto_video_id: null, auto_titulo: null })
@@ -96,23 +92,32 @@ async function autoArchiveIfEnded(
   }
 }
 
-export async function getLiveStatus(): Promise<LiveStatus> {
-  if (!API_KEY || !CHANNEL_ID) {
-    return { isLive: false, videoId: null, title: null, thumbnail: null };
-  }
-  try {
+const fetchLiveStatusCached = unstable_cache(
+  async (): Promise<LiveStatus & { _raw: { videoId: string | null; title: string | null; isLive: boolean } }> => {
+    if (!API_KEY || !CHANNEL_ID) {
+      return { isLive: false, videoId: null, title: null, thumbnail: null, _raw: { videoId: null, title: null, isLive: false } };
+    }
     const videoId = await getLatestVideoIdFromRSS(CHANNEL_ID);
     if (!videoId) {
-      await autoArchiveIfEnded(false, null, null);
-      return { isLive: false, videoId: null, title: null, thumbnail: null };
+      return { isLive: false, videoId: null, title: null, thumbnail: null, _raw: { videoId: null, title: null, isLive: false } };
     }
-
     const { isLive, title, thumbnail } = await checkIfVideoIsLive(videoId, API_KEY);
-    await autoArchiveIfEnded(isLive, isLive ? videoId : null, isLive ? title : null);
+    return {
+      isLive,
+      videoId: isLive ? videoId : null,
+      title: isLive ? title : null,
+      thumbnail: isLive ? thumbnail : null,
+      _raw: { videoId, title, isLive },
+    };
+  },
+  ["live-status"],
+  { revalidate: 120 }
+);
 
-    if (!isLive) return { isLive: false, videoId: null, title: null, thumbnail: null };
-    return { isLive: true, videoId, title, thumbnail };
-  } catch {
-    return { isLive: false, videoId: null, title: null, thumbnail: null };
-  }
+export async function getLiveStatus(): Promise<LiveStatus> {
+  const result = await fetchLiveStatusCached();
+  // Auto-archive runs after cache is built — fire-and-forget, doesn't block render
+  void autoArchiveIfEnded(result._raw.isLive, result._raw.videoId, result._raw.title);
+  const { _raw: _, ...status } = result;
+  return status;
 }

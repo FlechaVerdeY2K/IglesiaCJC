@@ -6,15 +6,14 @@ import Image from "next/image";
 
 import { Plus, Pencil, Trash2, X, Check, Upload, MapPin, Tag } from "lucide-react";
 import { todayCR } from "@/lib/date";
+import { broadcastNotification } from "@/lib/notifications";
 import dynamic from "next/dynamic";
+import { CLOUDINARY_PRESET, cloudinaryUploadUrl } from "@/lib/cloudinary";
 
 const MapPicker = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
-
 const FALLBACK_LAT = 9.95239;
 const FALLBACK_LNG = -84.05036;
-const CLOUDINARY_CLOUD = "djfnlzs0g";
-const CLOUDINARY_PRESET = "cjc_uploads";
 
 function extractCoordsFromWaze(wazeUrl: string | null): { lat: number; lng: number; lugar: string } | null {
   if (!wazeUrl) return null;
@@ -125,7 +124,7 @@ export default function AdminEventos() {
     fd.append("file", file);
     fd.append("upload_preset", CLOUDINARY_PRESET);
     fd.append("folder", "eventos");
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+    const res = await fetch(cloudinaryUploadUrl(), {
       method: "POST", body: fd,
     });
     const data = await res.json();
@@ -152,6 +151,7 @@ export default function AdminEventos() {
       await supabase.from("eventos").update(payload).eq("id", editing);
     } else {
       await supabase.from("eventos").insert(payload);
+      void broadcastNotification("evento_nuevo", `Nuevo evento: ${form.titulo}`, form.descripcion || null, { fecha: form.fecha });
     }
     setSaving(false); setModal(false); load();
   };

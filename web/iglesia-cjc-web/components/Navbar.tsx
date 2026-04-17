@@ -3,11 +3,12 @@ import { getBrowserClient } from "@/lib/supabase-browser";
 const supabase = getBrowserClient();
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import type { User } from "@supabase/supabase-js";
 import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { recordBrowserAccess } from "@/lib/access-log";
 
 
 // Links públicos (sin login)
@@ -25,6 +26,7 @@ const MEMBER_LINKS = [
   { href: "/devocionales", label: "Devocional" },
   { href: "/galeria", label: "Galería" },
   { href: "/equipos", label: "GPS" },
+  { href: "/ministerios", label: "Ministerios" },
   { href: "/oraciones", label: "Oraciones" },
   { href: "/recursos", label: "Recursos" },
 ];
@@ -38,14 +40,40 @@ export default function Navbar() {
   const [memberOpen, setMemberOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const pathname = usePathname();
+  const prevPathnameRef = useRef(pathname);
+  const hasMountedPathRef = useRef(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startClosingMenu = () => {
+    setClosing(true);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setOpen(false);
+      setClosing(false);
+      closeTimerRef.current = null;
+    }, 400);
+  };
 
   const toggleMenu = () => {
-    if (open) {
-      setClosing(true);
-      setTimeout(() => { setOpen(false); setClosing(false); }, 400);
+    if (open || closing) {
+      startClosingMenu();
     } else {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+      setClosing(false);
       setOpen(true);
     }
+  };
+
+  const fetchUnread = async (userId: string) => {
+    const { count } = await supabase
+      .from("notificaciones")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("leida", false);
+    setUnread(count ?? 0);
   };
 
   const fetchAvatar = async (userId: string, fallback: string | null) => {
@@ -55,46 +83,61 @@ export default function Navbar() {
       ? data.roles
       : (data?.rol ? [data.rol] : ["miembro"]);
     setRoles(r);
-    const { count } = await supabase
-      .from("notificaciones")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("leida", false);
-    setUnread(count ?? 0);
+    await fetchUnread(userId);
   };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
       setUser(data.user);
-      if (data.user) fetchAvatar(data.user.id, data.user.user_metadata?.avatar_url ?? null);
+      if (data.user) {
+        fetchAvatar(data.user.id, data.user.user_metadata?.avatar_url ?? null);
+        recordBrowserAccess(data.user.id, "navbar");
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_: string, session: { user: User } | null) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchAvatar(session.user.id, session.user.user_metadata?.avatar_url ?? null);
+      if (session?.user) {
+        fetchAvatar(session.user.id, session.user.user_metadata?.avatar_url ?? null);
+        recordBrowserAccess(session.user.id, "navbar");
+      }
       else { setAvatarUrl(null); setRoles([]); }
     });
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!open) return;
-    let closeTimer: ReturnType<typeof setTimeout> | null = null;
-    const timer = setTimeout(() => {
-      setClosing(true);
-      closeTimer = setTimeout(() => {
-        setOpen(false);
-        setClosing(false);
-      }, 400);
-    }, 0);
+    if (!user?.id) return;
+    fetchUnread(user.id);
+  }, [pathname, user?.id]);
+
+  useEffect(() => {
     return () => {
-      clearTimeout(timer);
-      if (closeTimer) clearTimeout(closeTimer);
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
     };
-  }, [pathname, open]);
+  }, []);
+
+  useEffect(() => {
+    if (!hasMountedPathRef.current) {
+      hasMountedPathRef.current = true;
+      prevPathnameRef.current = pathname;
+      return;
+    }
+    if (prevPathnameRef.current === pathname) return;
+    prevPathnameRef.current = pathname;
+    if (!open && !closing) return;
+    startClosingMenu();
+  }, [pathname]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "global" });
     setUser(null);
+    setAvatarUrl(null);
+    setRoles([]);
+    setUnread(0);
+    window.location.replace("/login?logout=1");
   };
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/lider") || pathname.startsWith("/cocina")) return null;
@@ -121,7 +164,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden lg:flex items-center gap-1 flex-1">
+          <div className="hidden min-[1250px]:flex items-center gap-1 flex-1">
             {PUBLIC_LINKS.map((l) => (
               <Link
                 key={l.href}
@@ -162,7 +205,7 @@ export default function Navbar() {
           </div>
 
           {/* Auth desktop */}
-          <div className="hidden lg:flex items-center gap-3 shrink-0 ml-auto">
+          <div className="hidden min-[1250px]:flex items-center gap-3 shrink-0 ml-auto">
             {user ? (
               <>
                 <div className="flex items-center gap-1.5">
@@ -224,7 +267,7 @@ export default function Navbar() {
           </div>
 
           {/* Mobile hamburger */}
-          <button className="lg:hidden ml-auto text-white p-1 relative w-7 h-7" onClick={toggleMenu}>
+          <button className="min-[1250px]:hidden ml-auto text-white p-1 relative w-7 h-7" onClick={toggleMenu}>
             <span className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${open ? "opacity-0 rotate-90 scale-50" : "opacity-100 rotate-0 scale-100"}`}>
               <Menu size={24} />
             </span>
@@ -238,7 +281,7 @@ export default function Navbar() {
       {/* Mobile menu */}
       {(open || closing) && (
         <div
-          className="lg:hidden border-t border-white/5 px-5 py-5 flex flex-col max-h-[80vh] overflow-y-auto"
+          className="min-[1250px]:hidden absolute top-full left-0 right-0 border-t border-white/5 px-5 py-5 flex flex-col max-h-[80vh] overflow-y-auto shadow-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{
             background: "linear-gradient(180deg, #0D1628 0%, #080E1E 100%)",
             animation: closing ? "menu-slide-up 0.4s ease forwards" : "menu-slide-down 0.4s ease forwards",

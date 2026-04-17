@@ -2,6 +2,8 @@ import { supabase, type Devocional } from "@/lib/supabase";
 import { BookOpen } from "lucide-react";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Devocionales",
   description: "Devocionales de Iglesia CJC para tu crecimiento espiritual diario.",

@@ -4,9 +4,7 @@ const supabase = getBrowserClient();
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Plus, Trash2, Loader, ImageIcon, ToggleLeft, ToggleRight } from "lucide-react";
-
-const CLOUDINARY_CLOUD  = "djfnlzs0g";
-const CLOUDINARY_PRESET = "cjc_uploads";
+import { CLOUDINARY_PRESET, cloudinaryUploadUrl } from "@/lib/cloudinary";
 
 type Banner = { id: string; url: string; label: string; activo: boolean; orden: number };
 
@@ -36,7 +34,7 @@ export default function AdminBanners() {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("upload_preset", CLOUDINARY_PRESET);
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: "POST", body: fd });
+    const res = await fetch(cloudinaryUploadUrl(), { method: "POST", body: fd });
     const data = await res.json();
     return data.secure_url ?? null;
   };

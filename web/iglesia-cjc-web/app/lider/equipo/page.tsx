@@ -22,8 +22,9 @@ export default function LiderEquipoPage() {
 
   const load = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    const user = session.user;
 
     // Find the equipo where this user is the leader
     const { data: eq } = await supabase

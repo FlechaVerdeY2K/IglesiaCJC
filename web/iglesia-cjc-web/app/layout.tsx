@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticlesBackground from "@/components/ParticlesBackground";
 import NavigationLoader from "@/components/NavigationLoader";
 import MainWrapper from "@/components/MainWrapper";
+import ParticlesLoader from "@/components/ParticlesLoader";
 import { SITE_URL } from "@/lib/site-url";
 
 const navLinks = [
@@ -120,7 +120,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(navJsonLd) }}
         />
         <NavigationLoader />
-        <ParticlesBackground />
+        <ParticlesLoader />
         <Navbar />
         <MainWrapper>{children}</MainWrapper>
         <Footer />

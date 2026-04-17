@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 import { Radio, ToggleLeft, ToggleRight, Archive, Trash2, Plus, Check, X } from "lucide-react";
+import { broadcastNotification } from "@/lib/notifications";
 
 
 type ConfigLive = { activo: boolean; video_id: string | null; titulo: string | null; descripcion: string | null; manual_override: boolean };
@@ -50,6 +51,7 @@ export default function AdminLive() {
     if (!videoId) return;
     setArchiving(true);
     await supabase.from("lives").insert({ video_id: videoId, titulo: title, fecha: new Date().toISOString() });
+    void broadcastNotification("live_inicio", "¡Estamos en vivo!", title || null, { video_id: videoId });
     setArchiving(false);
     load();
   };

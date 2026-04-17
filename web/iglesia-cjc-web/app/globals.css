@@ -44,11 +44,11 @@ body {
 @keyframes menu-slide-up {
   from {
     opacity: 1;
-    transform: scaleY(1);
+    transform: translateY(0);
   }
   to {
     opacity: 0;
-    transform: scaleY(0.95);
+    transform: translateY(-12px);
   }
 }
 

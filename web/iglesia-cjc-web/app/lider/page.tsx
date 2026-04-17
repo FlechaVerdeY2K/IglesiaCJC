@@ -16,8 +16,9 @@ export default function LiderDashboard() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const user = session.user;
       const { data: u } = await supabase.from("usuarios").select("nombre").eq("id", user.id).single();
       setNombre(u?.nombre ?? user.user_metadata?.full_name ?? "");
 

@@ -4,6 +4,7 @@ const supabase = getBrowserClient();
 import { useEffect, useState } from "react";
 
 import { Check, ExternalLink, BookOpen, Loader, RefreshCw } from "lucide-react";
+import { broadcastNotification } from "@/lib/notifications";
 import { LIBROS, getLibro } from "@/lib/bible-books";
 
 function getTodayCR(): string {
@@ -82,6 +83,7 @@ export default function AdminBiblia() {
       auto_avance: autoAvance,
       fecha_inicio: autoAvance ? fechaInicio : null,
     });
+    void broadcastNotification("biblia_avance", titulo || "Versículo actualizado", `${libro} ${capitulo}:${versiculo}`, { libro, capitulo, versiculo });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -93,7 +95,7 @@ export default function AdminBiblia() {
     <div className="max-w-2xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-white">Lectura del Domingo</h1>
+          <h1 className="text-2xl font-black text-white">Lectura de la Semana</h1>
           <p className="text-white/40 text-sm mt-1">Selecciona el versículo de la semana que aparece en el inicio</p>
         </div>
         <a href={`/biblia?libro=${libro}&capitulo=${capitulo}&versiculo=${versiculo}`} target="_blank"
@@ -218,7 +220,7 @@ export default function AdminBiblia() {
           </div>
         </div>
 
-        {/* Auto-avance dominical */}
+        {/* Auto-avance semanal */}
         <div className="space-y-3 rounded-xl border border-white/8 p-4" style={{ background: "#080E1E" }}>
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setAutoAvance(v => !v)}
@@ -227,9 +229,9 @@ export default function AdminBiblia() {
             </button>
             <div>
               <span className="text-white/80 text-sm font-semibold flex items-center gap-1.5">
-                <RefreshCw size={13} className="text-accent" /> Auto-avance cada domingo
+                <RefreshCw size={13} className="text-accent" /> Auto-avance cada lunes (12:00 PM)
               </span>
-              <p className="text-white/30 text-xs">El capítulo sube solo cada 7 días</p>
+              <p className="text-white/30 text-xs">El capítulo sube solo cada lunes a las 12:00 PM (hora CR)</p>
             </div>
           </div>
 
@@ -237,15 +239,15 @@ export default function AdminBiblia() {
             <div className="space-y-3 pt-1">
               <div>
                 <label className="text-white/40 text-xs uppercase tracking-wider mb-1 block">
-                  Domingo de referencia <span className="normal-case text-white/25">(el cap. {capitulo} se lee este día)</span>
+                  Lunes de referencia <span className="normal-case text-white/25">(el cap. {capitulo} se usa desde este día a las 12:00 PM)</span>
                 </label>
                 <input type="date" className="input" value={fechaInicio}
                   onChange={e => setFechaInicio(e.target.value)} />
               </div>
 
-              {/* Preview próximos domingos */}
+              {/* Preview próximos lunes */}
               <div>
-                <p className="text-white/30 text-xs uppercase tracking-wider mb-2">Próximos 4 domingos</p>
+                <p className="text-white/30 text-xs uppercase tracking-wider mb-2">Próximos 4 lunes</p>
                 <div className="grid grid-cols-2 gap-2">
                   {[0, 1, 2, 3].map(w => {
                     const cap = computeChapterPreview(libro, capitulo, fechaInicio, w);
@@ -278,9 +280,9 @@ export default function AdminBiblia() {
         </div>
 
         <button onClick={save} disabled={saving}
-          className="btn-primary w-full flex items-center justify-center gap-2 py-3">
+          className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-sm">
           <Check size={15} />
-          {saving ? "Guardando..." : saved ? "¡Guardado!" : "Guardar lectura del Domingo"}
+          {saving ? "Guardando..." : saved ? "¡Guardado!" : "Guardar lectura de la Semana"}
         </button>
       </div>
     </div>
