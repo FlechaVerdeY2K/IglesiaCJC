@@ -6,6 +6,7 @@ import Image from "next/image";
 
 import { Plus, Pencil, Trash2, X, Check, Upload, CalendarDays } from "lucide-react";
 import { CLOUDINARY_PRESET, cloudinaryUploadUrl } from "@/lib/cloudinary";
+import { broadcastNotification } from "@/lib/notifications";
 
 type Anuncio = {
   id: string;
@@ -35,6 +36,7 @@ export default function AdminAnuncios() {
   const [form, setForm] = useState<Omit<Anuncio, "id">>(EMPTY);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -87,7 +89,8 @@ export default function AdminAnuncios() {
   };
 
   const save = async () => {
-    if (!form.titulo.trim()) return;
+    if (!form.titulo.trim() || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
 
     const payload = {
@@ -98,9 +101,14 @@ export default function AdminAnuncios() {
       activo: form.activo,
     };
 
-    if (editing) await supabase.from("anuncios").update(payload).eq("id", editing);
-    else await supabase.from("anuncios").insert(payload);
+    if (editing) {
+      await supabase.from("anuncios").update(payload).eq("id", editing);
+    } else {
+      const { data: ins } = await supabase.from("anuncios").insert(payload).select("id").single();
+      void broadcastNotification("anuncio_nuevo", `📢 ${payload.titulo}`, payload.descripcion || null, { anuncio_id: ins?.id });
+    }
 
+    savingRef.current = false;
     setSaving(false);
     setModal(false);
     void load();
@@ -108,7 +116,10 @@ export default function AdminAnuncios() {
 
   const remove = async (id: string) => {
     if (!confirm("¿Eliminar anuncio?")) return;
-    await supabase.from("anuncios").delete().eq("id", id);
+    await Promise.all([
+      supabase.from("anuncios").delete().eq("id", id),
+      supabase.from("notificaciones").delete().eq("tipo", "anuncio_nuevo").contains("meta", { anuncio_id: id }),
+    ]);
     void load();
   };
 

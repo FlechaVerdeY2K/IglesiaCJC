@@ -21,7 +21,7 @@ export default function OracionesPage() {
   const [praying, setPraying] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    void (async () => { const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         const uid = session.user.id;
         setUserId(uid);
@@ -41,7 +41,7 @@ export default function OracionesPage() {
             setPrayed(new Set((rows ?? []).map((r) => r.oracion_id)));
           });
       }
-    });
+    })();
 
     supabase
       .from("oraciones")

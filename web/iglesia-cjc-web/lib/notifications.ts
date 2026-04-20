@@ -11,7 +11,8 @@ export type NotifTipo =
   | "devocional_nuevo"
   | "recurso_nuevo"
   | "live_inicio"
-  | "biblia_avance";
+  | "biblia_avance"
+  | "anuncio_nuevo";
 
 export async function sendNotification(
   userId: string,
@@ -33,8 +34,21 @@ export async function broadcastNotification(
   userIds?: string[]
 ) {
   const supabase = getBrowserClient();
-  let ids = userIds;
-  if (!ids) {
+
+  // DB-level dedup: skip if same tipo+titulo was broadcast in last 20 seconds
+  const cutoff = new Date(Date.now() - 20_000).toISOString();
+  const { count } = await supabase
+    .from("notificaciones")
+    .select("id", { count: "exact", head: true })
+    .eq("tipo", tipo)
+    .eq("titulo", titulo)
+    .gte("created_at", cutoff);
+  if ((count ?? 0) > 0) return;
+
+  let ids: string[];
+  if (userIds) {
+    ids = userIds;
+  } else {
     const { data, error } = await supabase.from("usuarios").select("id");
     if (error) { console.error("[broadcastNotification] fetch users:", error.message); return; }
     ids = (data ?? []).map((u: { id: string }) => u.id);

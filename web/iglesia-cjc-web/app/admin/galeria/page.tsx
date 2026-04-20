@@ -35,7 +35,7 @@ export default function AdminGaleria() {
       .order("fecha", { ascending: true });
 
     const fotos = (fotosData ?? []) as GaleriaItem[];
-    const result: AlbumWithCount[] = albumsData.map(a => ({
+    const result: AlbumWithCount[] = (albumsData as GaleriaAlbum[]).map(a => ({
       ...a,
       fotos: fotos.filter(f => f.album_id === a.id),
     }));

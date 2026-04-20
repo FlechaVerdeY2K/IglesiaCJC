@@ -36,7 +36,7 @@ export default function OfrendaCards({ ofrenda }: { ofrenda: ConfigOfrenda }) {
             <p className="text-accent text-[10px] font-black tracking-[3px] uppercase">SINPE Móvil</p>
           </div>
           <div className="flex items-center gap-1">
-            <p className="text-white font-black text-3xl tracking-tight">{ofrenda.sinpe_numero}</p>
+            <p className="text-white font-mono font-bold text-xl tracking-wider">{ofrenda.sinpe_numero}</p>
             <CopyButton value={ofrenda.sinpe_numero} />
           </div>
           {ofrenda.sinpe_nombre && <p className="text-white/40 text-sm mt-1">{ofrenda.sinpe_nombre}</p>}

@@ -56,6 +56,7 @@ export default function AdminEventos() {
   const [form, setForm] = useState<Omit<Evento, "id">>(EMPTY);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [uploading, setUploading] = useState(false);
   const [tipos, setTipos] = useState<TipoEvento[]>([]);
   const [nuevoTipo, setNuevoTipo] = useState("");
@@ -133,7 +134,8 @@ export default function AdminEventos() {
   };
 
   const save = async () => {
-    if (!form.titulo || !form.fecha) return;
+    if (!form.titulo || !form.fecha || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     const payload = {
       titulo: form.titulo,
@@ -150,15 +152,19 @@ export default function AdminEventos() {
     if (editing) {
       await supabase.from("eventos").update(payload).eq("id", editing);
     } else {
-      await supabase.from("eventos").insert(payload);
-      void broadcastNotification("evento_nuevo", `Nuevo evento: ${form.titulo}`, form.descripcion || null, { fecha: form.fecha });
+      const { data: ins } = await supabase.from("eventos").insert(payload).select("id").single();
+      void broadcastNotification("evento_nuevo", `Nuevo evento: ${form.titulo}`, form.descripcion || null, { evento_id: ins?.id, fecha: form.fecha });
     }
+    savingRef.current = false;
     setSaving(false); setModal(false); load();
   };
 
   const remove = async (ev: Evento) => {
     if (!confirm("¿Eliminar este evento?")) return;
-    await supabase.from("eventos").delete().eq("id", ev.id);
+    await Promise.all([
+      supabase.from("eventos").delete().eq("id", ev.id),
+      supabase.from("notificaciones").delete().eq("tipo", "evento_nuevo").contains("meta", { evento_id: ev.id }),
+    ]);
     load();
   };
 

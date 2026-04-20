@@ -158,14 +158,14 @@ export default async function ContactoPage() {
                 <span className="w-1 h-3 rounded-full bg-accent inline-block" />
                 Cómo llegar
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {maps.map((m) => (
                   <a
                     key={m.href}
                     href={m.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex flex-col items-center gap-3 p-5 rounded-2xl border transition-all duration-200 hover:scale-[1.03] text-center"
+                    className="group flex flex-col items-center gap-2.5 p-4 rounded-2xl border transition-all duration-200 hover:scale-[1.03] text-center"
                     style={{ background: m.bg, borderColor: m.border }}
                   >
                     <div>{m.icon}</div>

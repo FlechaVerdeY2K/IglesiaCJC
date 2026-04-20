@@ -111,6 +111,13 @@ export default function Navbar() {
   }, [pathname, user?.id]);
 
   useEffect(() => {
+    if (!user?.id) return;
+    const onFocus = () => fetchUnread(user!.id);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [user?.id]);
+
+  useEffect(() => {
     return () => {
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
@@ -274,6 +281,11 @@ export default function Navbar() {
             <span className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${open ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-50"}`}>
               <X size={24} />
             </span>
+            {unread > 0 && !open && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-accent text-white text-[9px] font-black flex items-center justify-center px-0.5 leading-none pointer-events-none">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
           </button>
         </div>
       </div>

@@ -11,22 +11,19 @@ import { usePathname } from "next/navigation";
 const NAV_PUBLIC = [
   { href: "/sermones", label: "Prédicas" },
   { href: "/eventos", label: "Eventos" },
-];
-
-const NAV_MEMBER = [
-  { href: "/devocionales", label: "Devocionales" },
-  { href: "/galeria", label: "Galería" },
   { href: "/pastores", label: "Pastores" },
-];
-
-const COMMUNITY_PUBLIC = [
+  { href: "/biblia", label: "Biblia" },
   { href: "/live", label: "En Vivo" },
   { href: "/contacto", label: "Contacto" },
 ];
 
 const COMMUNITY_MEMBER = [
-  { href: "/equipos", label: "GPS – Grupos" },
+  { href: "/devocionales", label: "Devocional" },
+  { href: "/galeria", label: "Galería" },
+  { href: "/equipos", label: "GPS" },
+  { href: "/ministerios", label: "Ministerios" },
   { href: "/oraciones", label: "Oraciones" },
+  { href: "/recursos", label: "Recursos" },
 ];
 
 export default function Footer() {
@@ -49,10 +46,10 @@ export default function Footer() {
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-125 h-32 rounded-full blur-[80px] pointer-events-none" style={{ background: "rgba(191,30,46,0.07)" }} />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-10">
 
           {/* Brand */}
-          <div className="md:col-span-2">
+          <div className="col-span-2">
             <div className="flex items-center gap-3 mb-4">
               <Image src="/logo-cjc.png" alt="Logo CJC" width={36} height={36} className="object-contain" />
               <div className="flex items-center gap-2">
@@ -75,7 +72,7 @@ export default function Footer() {
               <h4 className="text-white/60 text-[10px] font-bold tracking-[3px] uppercase">Navegación</h4>
             </div>
             <div className="flex flex-col gap-2.5">
-              {[...NAV_PUBLIC, ...(loggedIn ? NAV_MEMBER : [])].map((l) => (
+              {NAV_PUBLIC.map((l) => (
                 <Link key={l.href} href={l.href} className="text-white/40 hover:text-white text-sm transition-colors">
                   {l.label}
                 </Link>
@@ -84,19 +81,21 @@ export default function Footer() {
           </div>
 
           {/* Comunidad */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-3 rounded-full bg-accent" />
-              <h4 className="text-white/60 text-[10px] font-bold tracking-[3px] uppercase">Comunidad</h4>
+          {loggedIn && (
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-3 rounded-full bg-accent" />
+                <h4 className="text-white/60 text-[10px] font-bold tracking-[3px] uppercase">Comunidad</h4>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                {COMMUNITY_MEMBER.map((l) => (
+                  <Link key={l.href} href={l.href} className="text-white/40 hover:text-white text-sm transition-colors">
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-col gap-2.5">
-              {[...COMMUNITY_PUBLIC, ...(loggedIn ? COMMUNITY_MEMBER : [])].map((l) => (
-                <Link key={l.href} href={l.href} className="text-white/40 hover:text-white text-sm transition-colors">
-                  {l.label}
-                </Link>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Bottom bar */}

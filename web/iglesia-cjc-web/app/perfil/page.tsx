@@ -7,7 +7,7 @@ import Link from "next/link";
 
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
-import { LogOut, User as UserIcon, Camera, Shield, Users, BookOpen, Heart, CalendarDays, Palette, X, Bell, Radio, BookMarked, FileText, Mic2, BookOpenCheck, UserCheck, UserX, UserPlus, UserMinus } from "lucide-react";
+import { LogOut, User as UserIcon, Camera, Shield, Users, BookOpen, Heart, CalendarDays, Palette, X, Bell, Radio, BookMarked, FileText, Mic2, BookOpenCheck, UserCheck, UserX, UserPlus, UserMinus, Newspaper } from "lucide-react";
 import LoadingScreen from "@/components/LoadingScreen";
 import { getLibro, LIBROS } from "@/lib/bible-books";
 import type { Oracion } from "@/lib/supabase";
@@ -99,6 +99,8 @@ export default function PerfilPage() {
   const [orPage, setOrPage]         = useState(1);
   const [notifs, setNotifs]         = useState<Notificacion[]>([]);
   const [unread, setUnread]         = useState(0);
+  const [notifPage, setNotifPage] = useState(1);
+  const NOTIF_PER_PAGE = 5;
 
   useEffect(() => {
     supabase
@@ -110,7 +112,7 @@ export default function PerfilPage() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    void (async () => { const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { router.push("/login"); return; }
       const data = { user: session.user as User };
       setUser(data.user);
@@ -228,11 +230,11 @@ export default function PerfilPage() {
         .select("*")
         .eq("user_id", data.user.id)
         .order("created_at", { ascending: false })
-        .limit(30);
+        .limit(50);
       const notifList = (notifData ?? []) as Notificacion[];
       setNotifs(notifList);
       setUnread(notifList.filter(n => !n.leida).length);
-    });
+    })();
   }, [router]);
 
   const selectCover = (id: string) => {
@@ -342,6 +344,12 @@ export default function PerfilPage() {
     setUnread(0);
   };
 
+  useEffect(() => {
+    if (activeTab === "notificaciones" && user && unread > 0) {
+      void markAllRead();
+    }
+  }, [activeTab, user]);
+
   if (loading) return <LoadingScreen />;
 
   const rolInfo   = ROL_LABEL[rol] ?? ROL_LABEL.miembro;
@@ -380,14 +388,14 @@ export default function PerfilPage() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12 space-y-4">
+    <div className="max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto px-6 py-12 space-y-4">
 
       {/* ── HEADER ── */}
       {/* Outer card: NO overflow-hidden → picker puede salir sin clipping */}
       <div className="relative rounded-2xl border border-white/5" style={{ background: "#080E1E" }}>
 
         {/* Cover — tiene su propio overflow-hidden para efectos internos */}
-        <div className="h-32 rounded-t-2xl overflow-hidden relative" style={{ background: cover.bg }}>
+        <div className="h-32 sm:h-36 md:h-44 lg:h-52 rounded-t-2xl overflow-hidden relative" style={{ background: cover.bg }}>
           {/* Imagen de fondo si está seleccionada */}
           {coverImg && (
             <Image
@@ -557,17 +565,17 @@ export default function PerfilPage() {
 
       {/* ── TABS ── */}
       <div className="overflow-x-auto">
-        <div className="flex gap-2 p-1 rounded-xl border border-white/10 w-max min-w-full" style={{ background: "#080E1E" }}>
+        <div className="flex gap-1 p-1 rounded-xl border border-white/10 w-full" style={{ background: "#080E1E" }}>
         {([
           { id: "cuenta", label: "Cuenta" },
           { id: "oraciones", label: "Oraciones" },
           { id: "resumen", label: "Resumen" },
-          { id: "notificaciones", label: "Notificaciones" },
+          { id: "notificaciones", label: "Notif." },
         ] as const).map(tab => (
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); if (tab.id === "notificaciones") markAllRead(); }}
-            className={`relative px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`relative flex-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               activeTab === tab.id ? "bg-accent text-white" : "text-white/45 hover:text-white"
             }`}>
             {tab.label}
@@ -740,7 +748,7 @@ export default function PerfilPage() {
             <p className="text-white/35 text-sm">Sin notificaciones aún.</p>
           ) : (
             <div className="space-y-2">
-              {notifs.map(n => {
+              {notifs.slice((notifPage - 1) * NOTIF_PER_PAGE, notifPage * NOTIF_PER_PAGE).map(n => {
                 const Icon =
                   n.tipo === "oracion_orada"       ? Heart :
                   n.tipo === "evento_nuevo"        ? CalendarDays :
@@ -752,7 +760,8 @@ export default function PerfilPage() {
                   n.tipo === "ministerio_agregado" ? UserPlus :
                   n.tipo === "ministerio_removido" ? UserMinus :
                   n.tipo === "rol_asignado"        ? UserCheck :
-                  n.tipo === "rol_removido"        ? UserX : Bell;
+                  n.tipo === "rol_removido"        ? UserX :
+                  n.tipo === "anuncio_nuevo"       ? Newspaper : Bell;
                 const iconColor =
                   n.tipo === "oracion_orada"       ? "#BF1E2E" :
                   n.tipo === "evento_nuevo"        ? "#3b82f6" :
@@ -764,13 +773,24 @@ export default function PerfilPage() {
                   n.tipo === "ministerio_agregado" ? "#10b981" :
                   n.tipo === "ministerio_removido" ? "#ef4444" :
                   n.tipo === "rol_asignado"        ? "#f59e0b" :
-                  n.tipo === "rol_removido"        ? "#6b7280" : "#6b7280";
-                return (
-                  <div key={n.id}
-                    className={`flex items-start gap-3 rounded-xl p-3 border transition-all ${
-                      n.leida ? "border-white/5 opacity-60" : "border-white/10"
-                    }`}
-                    style={{ background: n.leida ? "transparent" : "#0D1628" }}>
+                  n.tipo === "rol_removido"        ? "#6b7280" :
+                  n.tipo === "anuncio_nuevo"       ? "#f43f5e" : "#6b7280";
+                const href =
+                  n.tipo === "evento_nuevo"        ? "/eventos" :
+                  n.tipo === "predica_nueva"       ? "/sermones" :
+                  n.tipo === "devocional_nuevo"    ? "/devocionales" :
+                  n.tipo === "recurso_nuevo"       ? "/recursos" :
+                  n.tipo === "live_inicio"         ? "/live" :
+                  n.tipo === "anuncio_nuevo"       ? "/" :
+                  n.tipo === "oracion_orada"       ? "/oraciones" :
+                  n.tipo === "biblia_avance"       ? "/biblia" :
+                  n.tipo === "ministerio_agregado" ? "/equipos" :
+                  n.tipo === "ministerio_removido" ? "/equipos" :
+                  n.tipo === "rol_asignado"        ? "/perfil" :
+                  n.tipo === "rol_removido"        ? "/perfil" : null;
+
+                const inner = (
+                  <>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
                       style={{ backgroundColor: `${iconColor}15` }}>
                       <Icon size={13} style={{ color: iconColor }} />
@@ -783,9 +803,39 @@ export default function PerfilPage() {
                       </p>
                     </div>
                     {!n.leida && <div className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 mt-1.5" />}
-                  </div>
+                  </>
+                );
+
+                const cls = `flex items-start gap-3 rounded-xl p-3 border transition-all ${n.leida ? "border-white/5 opacity-60" : "border-white/10"} ${href ? "hover:border-accent/30 cursor-pointer" : ""}`;
+                const style = { background: n.leida ? "transparent" : "#0D1628" };
+
+                return href ? (
+                  <Link key={n.id} href={href} className={cls} style={style}>{inner}</Link>
+                ) : (
+                  <div key={n.id} className={cls} style={style}>{inner}</div>
                 );
               })}
+              {notifs.length > NOTIF_PER_PAGE && (
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    onClick={() => setNotifPage(p => Math.max(1, p - 1))}
+                    disabled={notifPage === 1}
+                    className="text-xs text-white/40 hover:text-white disabled:opacity-20 px-2 py-1 rounded-lg hover:bg-white/5 transition-all"
+                  >
+                    ← Anterior
+                  </button>
+                  <span className="text-white/25 text-[10px]">
+                    {notifPage} / {Math.ceil(notifs.length / NOTIF_PER_PAGE)}
+                  </span>
+                  <button
+                    onClick={() => setNotifPage(p => Math.min(Math.ceil(notifs.length / NOTIF_PER_PAGE), p + 1))}
+                    disabled={notifPage >= Math.ceil(notifs.length / NOTIF_PER_PAGE)}
+                    className="text-xs text-white/40 hover:text-white disabled:opacity-20 px-2 py-1 rounded-lg hover:bg-white/5 transition-all"
+                  >
+                    Siguiente →
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
