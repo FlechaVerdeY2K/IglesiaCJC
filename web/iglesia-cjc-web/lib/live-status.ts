@@ -11,50 +11,63 @@ export type LiveStatus = {
   thumbnail: string | null;
 };
 
-async function getLatestVideoIdFromRSS(channelId: string): Promise<string | null> {
+type LiveHit = { videoId: string; title: string | null; thumbnail: string | null } | null;
+
+async function searchLiveOnChannel(channelId: string, apiKey: string): Promise<LiveHit> {
   try {
     const res = await fetch(
-      `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&maxResults=1&key=${apiKey}`,
       { cache: "no-store" }
     );
-    if (!res.ok) return null;
-    const xml = await res.text();
-    const match = xml.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
-    return match?.[1] ?? null;
-  } catch {
+    if (!res.ok) {
+      console.error("[live-status] search.list http fail:", res.status, await res.text().catch(() => ""));
+      return null;
+    }
+    const data = await res.json();
+    if (data.error) {
+      console.error("[live-status] search.list api error:", data.error.code, data.error.message);
+      return null;
+    }
+    const item = data.items?.[0];
+    if (!item?.id?.videoId) return null;
+    return {
+      videoId: item.id.videoId,
+      title: item.snippet?.title ?? null,
+      thumbnail: item.snippet?.thumbnails?.high?.url ?? null,
+    };
+  } catch (e) {
+    console.error("[live-status] search.list exception:", e);
     return null;
   }
 }
 
-async function checkIfVideoIsLive(
-  videoId: string,
-  apiKey: string
-): Promise<{ isLive: boolean; title: string | null; thumbnail: string | null }> {
+async function verifyStillLive(videoId: string, apiKey: string): Promise<LiveHit> {
   try {
     const res = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${videoId}&key=${apiKey}`,
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${apiKey}`,
       { cache: "no-store" }
     );
-    if (!res.ok) return { isLive: false, title: null, thumbnail: null };
+    if (!res.ok) return null;
     const data = await res.json();
-    if (data.error) return { isLive: false, title: null, thumbnail: null };
+    if (data.error) {
+      console.error("[live-status] videos.list verify error:", data.error.message);
+      return null;
+    }
     const item = data.items?.[0];
-    if (!item) return { isLive: false, title: null, thumbnail: null };
+    if (!item) return null;
+    if (item.snippet?.liveBroadcastContent !== "live") return null;
     return {
-      isLive: item.snippet?.liveBroadcastContent === "live",
+      videoId,
       title: item.snippet?.title ?? null,
       thumbnail: item.snippet?.thumbnails?.high?.url ?? null,
     };
-  } catch {
-    return { isLive: false, title: null, thumbnail: null };
+  } catch (e) {
+    console.error("[live-status] videos.list verify exception:", e);
+    return null;
   }
 }
 
-async function autoArchiveIfEnded(
-  isLive: boolean,
-  videoId: string | null,
-  title: string | null
-) {
+async function autoArchiveIfEnded(isLive: boolean, videoId: string | null, title: string | null) {
   const { data: cfg } = await supabase
     .from("config_live")
     .select("auto_video_id, auto_titulo")
@@ -95,28 +108,34 @@ async function autoArchiveIfEnded(
 const fetchLiveStatusCached = unstable_cache(
   async (): Promise<LiveStatus & { _raw: { videoId: string | null; title: string | null; isLive: boolean } }> => {
     if (!API_KEY || !CHANNEL_ID) {
+      console.error("[live-status] missing env vars", { hasKey: !!API_KEY, hasChannel: !!CHANNEL_ID });
       return { isLive: false, videoId: null, title: null, thumbnail: null, _raw: { videoId: null, title: null, isLive: false } };
     }
-    const videoId = await getLatestVideoIdFromRSS(CHANNEL_ID);
-    if (!videoId) {
+
+    const hit = await searchLiveOnChannel(CHANNEL_ID, API_KEY);
+    if (!hit) {
       return { isLive: false, videoId: null, title: null, thumbnail: null, _raw: { videoId: null, title: null, isLive: false } };
     }
-    const { isLive, title, thumbnail } = await checkIfVideoIsLive(videoId, API_KEY);
+
+    const verified = await verifyStillLive(hit.videoId, API_KEY);
+    if (!verified) {
+      return { isLive: false, videoId: null, title: null, thumbnail: null, _raw: { videoId: hit.videoId, title: hit.title, isLive: false } };
+    }
+
     return {
-      isLive,
-      videoId: isLive ? videoId : null,
-      title: isLive ? title : null,
-      thumbnail: isLive ? thumbnail : null,
-      _raw: { videoId, title, isLive },
+      isLive: true,
+      videoId: verified.videoId,
+      title: verified.title,
+      thumbnail: verified.thumbnail,
+      _raw: { videoId: verified.videoId, title: verified.title, isLive: true },
     };
   },
   ["live-status"],
-  { revalidate: 120 }
+  { revalidate: 180 }
 );
 
 export async function getLiveStatus(): Promise<LiveStatus> {
   const result = await fetchLiveStatusCached();
-  // Auto-archive runs after cache is built — fire-and-forget, doesn't block render
   void autoArchiveIfEnded(result._raw.isLive, result._raw.videoId, result._raw.title);
   const { _raw: _, ...status } = result;
   return status;
