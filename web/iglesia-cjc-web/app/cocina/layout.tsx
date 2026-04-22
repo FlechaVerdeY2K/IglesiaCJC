@@ -94,13 +94,29 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col lg:ml-64">
+      <div className="flex-1 flex flex-col lg:ml-64 overflow-x-hidden">
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border sticky top-0 z-30"
           style={{ background: "#08111f" }}>
           <button onClick={() => setSidebarOpen(true)} className="text-white p-1">
             <Menu size={20} />
           </button>
-          <span className="text-sm font-bold text-white">Panel Cocina</span>
+          <Image src="/logo-cjc.png" alt="Logo" width={24} height={24} className="object-contain" />
+          <div className="leading-tight">
+            <p className="text-[8px] font-bold tracking-[3px] uppercase text-white/30">Panel</p>
+            <p className="text-xs font-black tracking-widest uppercase text-white">Cocina</p>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-widest uppercase ml-1"
+            style={{ background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)" }}>
+            <ChefHat size={9} /> Cocina
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <Link href="/" className="text-white/50 hover:text-white p-1" aria-label="Ver sitio">
+              <ExternalLink size={16} />
+            </Link>
+            <button onClick={handleSignOut} className="text-white/50 hover:text-white p-1" aria-label="Cerrar sesión">
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
         <main className="flex-1 p-6 lg:p-8">{children}</main>
       </div>

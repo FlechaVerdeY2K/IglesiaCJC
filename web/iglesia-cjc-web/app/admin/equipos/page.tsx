@@ -675,10 +675,13 @@ export default function AdminEquipos() {
           {scopedSolicitudes.length === 0 && <p className="text-white/30 text-sm text-center py-12">No hay solicitudes</p>}
 
           {scopedSolicitudes.map((s) => (
-            <button
+            <div
               key={`${s.source}-${s.id}`}
+              role="button"
+              tabIndex={0}
               onClick={() => setSelectedSolicitud(s)}
-              className="w-full flex items-center gap-4 p-4 rounded-2xl border border-border hover:border-accent/40 transition-all text-left"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedSolicitud(s); } }}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl border border-border hover:border-accent/40 transition-all text-left cursor-pointer"
               style={{ background: "#0D1628" }}
             >
               {s.usuario?.foto_url ? (
@@ -717,7 +720,7 @@ export default function AdminEquipos() {
                   </button>
                 </div>
               )}
-            </button>
+            </div>
           ))}
         </div>
       ) : tab === "aperturas" ? (

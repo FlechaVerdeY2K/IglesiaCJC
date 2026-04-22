@@ -151,21 +151,34 @@ export default function PerfilPage() {
         }
       }
 
-      const { data: ministerioRegs } = await supabase
+      const { data: solRegs } = await supabase
         .from("equipo_solicitudes")
         .select("equipo_id, equipo_nombre")
         .eq("usuario_id", data.user.id)
         .eq("estado", "aprobado");
 
-      const ministeriosBase = (ministerioRegs ?? []) as MinisterioRegistro[];
-      const ids = Array.from(new Set(ministeriosBase.map((m) => m.equipo_id).filter(Boolean))) as string[];
-      if (ids.length > 0) {
-        const { data: equiposData } = await supabase.from("equipos").select("id, nombre, icon_name").in("id", ids);
-        const list = ((equiposData ?? []) as Array<{ id: string; nombre: string | null; icon_name?: string | null }>)
-          .map((e) => ({ id: e.id, nombre: String(e.nombre ?? ""), icon_name: e.icon_name ?? null }));
-        setMinisterios(list);
+      const solBase = (solRegs ?? []) as MinisterioRegistro[];
+      const solIds = Array.from(new Set(solBase.map((m) => m.equipo_id).filter(Boolean))) as string[];
+      let gpsFromSolicitud: { nombre: string } | null = null;
+      if (solIds.length > 0) {
+        const { data: equiposData } = await supabase
+          .from("equipos")
+          .select("id, nombre, icon_name, tipo")
+          .in("id", solIds);
+        const rows = (equiposData ?? []) as Array<{ id: string; nombre: string | null; icon_name: string | null; tipo: string | null }>;
+        const ministeriosList = rows
+          .filter((r) => r.tipo === "ministerio")
+          .map((r) => ({ id: r.id, nombre: String(r.nombre ?? ""), icon_name: r.icon_name ?? null }));
+        setMinisterios(ministeriosList);
+        const gpsRow = rows.find((r) => r.tipo === "gps");
+        if (gpsRow) gpsFromSolicitud = { nombre: String(gpsRow.nombre ?? "") };
       } else {
         setMinisterios([]);
+      }
+
+      if (gpsFromSolicitud) {
+        gpsNombre = gpsFromSolicitud.nombre;
+        gpsEstado = "aprobada";
       }
 
       const { data: ownOraciones, error: ownOrError } = await supabase

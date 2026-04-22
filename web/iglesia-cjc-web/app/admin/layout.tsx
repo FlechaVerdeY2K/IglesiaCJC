@@ -186,7 +186,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent animate-pulse" />
             )}
           </button>
-          <span className="text-sm font-bold text-white">Admin</span>
+          <Image src="/logo-cjc.png" alt="Logo" width={24} height={24} className="object-contain" />
+          <div className="leading-tight">
+            <p className="text-[8px] font-bold tracking-[3px] uppercase text-white/30">Panel</p>
+            <p className="text-xs font-black tracking-widest uppercase text-white">Admin</p>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-widest uppercase ml-1"
+            style={{ background: "rgba(191,30,46,0.15)", color: "#BF1E2E", border: "1px solid rgba(191,30,46,0.3)" }}>
+            <ShieldAlert size={9} /> Admin
+          </span>
           <div className="ml-auto flex items-center gap-2">
             {liveActive && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-green-500/15 text-green-400 border border-green-500/30">
@@ -200,6 +208,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {totalPending}
               </span>
             )}
+            <Link href="/" className="text-white/50 hover:text-white p-1" aria-label="Ver sitio">
+              <ExternalLink size={16} />
+            </Link>
+            <button onClick={handleSignOut} className="text-white/50 hover:text-white p-1" aria-label="Cerrar sesión">
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
 

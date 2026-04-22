@@ -35,6 +35,7 @@ export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [leadsAny, setLeadsAny] = useState(false);
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [memberOpen, setMemberOpen] = useState(false);
@@ -77,12 +78,24 @@ export default function Navbar() {
   };
 
   const fetchAvatar = async (userId: string, fallback: string | null) => {
-    const { data } = await supabase.from("usuarios").select("foto_url, rol").eq("id", userId).single();
+    const { data } = await supabase.from("usuarios").select("foto_url, rol, roles").eq("id", userId).single();
     setAvatarUrl(data?.foto_url ?? fallback ?? null);
     const r: string[] = Array.isArray(data?.roles) && data.roles.length > 0
       ? data.roles
       : (data?.rol ? [data.rol] : ["miembro"]);
     setRoles(r);
+
+    const needsLiderCheck = r.includes("lider") && !r.includes("admin");
+    if (needsLiderCheck) {
+      const [liderIdRes, lideresRes] = await Promise.all([
+        supabase.from("equipos").select("id").eq("lider_id", userId).limit(1),
+        supabase.from("equipos").select("id").contains("lideres", [{ id: userId }]).limit(1),
+      ]);
+      setLeadsAny((liderIdRes.data?.length ?? 0) > 0 || (lideresRes.data?.length ?? 0) > 0);
+    } else {
+      setLeadsAny(r.includes("admin"));
+    }
+
     await fetchUnread(userId);
   };
 
@@ -100,7 +113,7 @@ export default function Navbar() {
         fetchAvatar(session.user.id, session.user.user_metadata?.avatar_url ?? null);
         recordBrowserAccess(session.user.id, "navbar");
       }
-      else { setAvatarUrl(null); setRoles([]); }
+      else { setAvatarUrl(null); setRoles([]); setLeadsAny(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -143,6 +156,7 @@ export default function Navbar() {
     setUser(null);
     setAvatarUrl(null);
     setRoles([]);
+    setLeadsAny(false);
     setUnread(0);
     window.location.replace("/login?logout=1");
   };
@@ -223,7 +237,7 @@ export default function Navbar() {
                       Admin
                     </Link>
                   )}
-                  {roles.includes("lider") && (
+                  {roles.includes("lider") && leadsAny && (
                     <Link href="/lider"
                       className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all hover:opacity-80"
                       style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.25)" }}>
@@ -330,23 +344,23 @@ export default function Navbar() {
                 </Link>
               ))}
               <div className="mt-5 pt-4 border-t border-white/5">
-                <div className="flex flex-col gap-1.5 mb-1">
+                <div className="flex flex-wrap gap-2 mb-3">
                   {roles.includes("admin") && (
-                    <Link href="/admin" className="flex items-center justify-center py-2 rounded-lg text-xs font-bold uppercase tracking-wider"
+                    <Link href="/admin" className="inline-flex items-center px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider"
                       style={{ background: "rgba(191,30,46,0.12)", color: "#BF1E2E", border: "1px solid rgba(191,30,46,0.25)" }}>
-                      Panel Admin
+                      Admin
                     </Link>
                   )}
-                  {roles.includes("lider") && (
-                    <Link href="/lider" className="flex items-center justify-center py-2 rounded-lg text-xs font-bold uppercase tracking-wider"
+                  {roles.includes("lider") && leadsAny && (
+                    <Link href="/lider" className="inline-flex items-center px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider"
                       style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.25)" }}>
-                      Panel Líder
+                      Líder
                     </Link>
                   )}
                   {roles.includes("cocina") && (
-                    <Link href="/cocina" className="flex items-center justify-center py-2 rounded-lg text-xs font-bold uppercase tracking-wider"
+                    <Link href="/cocina" className="inline-flex items-center px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider"
                       style={{ background: "rgba(251,146,60,0.12)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.25)" }}>
-                      Panel Cocina
+                      Cocina
                     </Link>
                   )}
                 </div>

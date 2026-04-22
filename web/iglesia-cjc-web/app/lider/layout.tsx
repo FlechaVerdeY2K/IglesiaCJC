@@ -7,7 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  LayoutDashboard, UsersRound, HandHeart,
+  LayoutDashboard, UsersRound,
   CalendarDays, FileText, LogOut, Menu, X,
   ExternalLink, ShieldCheck,
 } from "lucide-react";
@@ -16,7 +16,6 @@ import {
 const NAV = [
   { href: "/lider",          label: "Inicio",     icon: LayoutDashboard },
   { href: "/lider/equipo",   label: "Mi Equipo",  icon: UsersRound },
-  { href: "/lider/oraciones",label: "Oraciones",  icon: HandHeart },
   { href: "/lider/eventos",  label: "Eventos",    icon: CalendarDays },
   { href: "/lider/recursos", label: "Recursos",   icon: FileText },
 ];
@@ -32,8 +31,21 @@ export default function LiderLayout({ children }: { children: React.ReactNode })
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { router.replace("/login"); return; }
-      const { data } = await supabase.from("usuarios").select("nombre").eq("id", session.user.id).single();
-      setNombre(data?.nombre ?? session.user.user_metadata?.full_name ?? "Líder");
+      const userId = session.user.id;
+
+      const [profileRes, liderIdRes, lideresRes] = await Promise.all([
+        supabase.from("usuarios").select("nombre, roles").eq("id", userId).single(),
+        supabase.from("equipos").select("id").eq("lider_id", userId).limit(1),
+        supabase.from("equipos").select("id").contains("lideres", [{ id: userId }]).limit(1),
+      ]);
+
+      const roles = (profileRes.data?.roles as string[] | null) ?? [];
+      const isAdmin = roles.includes("admin");
+      const leadsAny = (liderIdRes.data?.length ?? 0) > 0 || (lideresRes.data?.length ?? 0) > 0;
+
+      if (!isAdmin && !leadsAny) { router.replace("/perfil"); return; }
+
+      setNombre(profileRes.data?.nombre ?? session.user.user_metadata?.full_name ?? "Líder");
     })();
   }, [router]);
 
@@ -98,13 +110,29 @@ export default function LiderLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col lg:ml-64">
+      <div className="flex-1 flex flex-col lg:ml-64 overflow-x-hidden">
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border sticky top-0 z-30"
           style={{ background: "#08111f" }}>
           <button onClick={() => setSidebarOpen(true)} className="text-white p-1">
             <Menu size={20} />
           </button>
-          <span className="text-sm font-bold text-white">Panel Líder</span>
+          <Image src="/logo-cjc.png" alt="Logo" width={24} height={24} className="object-contain" />
+          <div className="leading-tight">
+            <p className="text-[8px] font-bold tracking-[3px] uppercase text-white/30">Panel</p>
+            <p className="text-xs font-black tracking-widest uppercase text-white">Líder</p>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-widest uppercase ml-1"
+            style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)" }}>
+            <ShieldCheck size={9} /> Líder
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <Link href="/" className="text-white/50 hover:text-white p-1" aria-label="Ver sitio">
+              <ExternalLink size={16} />
+            </Link>
+            <button onClick={handleSignOut} className="text-white/50 hover:text-white p-1" aria-label="Cerrar sesión">
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
         <main className="flex-1 p-6 lg:p-8">{children}</main>
       </div>

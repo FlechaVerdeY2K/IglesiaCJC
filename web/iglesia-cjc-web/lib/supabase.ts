@@ -44,6 +44,7 @@ export interface Evento {
   lng: number | null;
   activo: boolean;
   tipo: string | null;
+  equipo_id: string | null;
 }
 
 export interface Devocional {
@@ -106,6 +107,8 @@ export interface Recurso {
   url: string;
   tipo: string;
   fecha: string;
+  audiencia?: string | null;
+  equipo_id?: string | null;
 }
 
 export interface ConfigLive {

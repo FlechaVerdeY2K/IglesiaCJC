@@ -22,14 +22,29 @@ export default function LiderDashboard() {
       const { data: u } = await supabase.from("usuarios").select("nombre").eq("id", user.id).single();
       setNombre(u?.nombre ?? user.user_metadata?.full_name ?? "");
 
-      const [equipoRes, oracionesRes, eventosRes] = await Promise.all([
-        supabase.from("usuarios").select("id", { count: "exact", head: true }).eq("rol", "miembro"),
+      const [liderIdRes, lideresRes, oracionesRes, eventosRes] = await Promise.all([
+        supabase.from("equipos").select("id").eq("lider_id", user.id),
+        supabase.from("equipos").select("id").contains("lideres", [{ id: user.id }]),
         supabase.from("oraciones").select("id, titulo, created_at").order("created_at", { ascending: false }).limit(5),
         supabase.from("eventos").select("id, titulo, fecha, hora").eq("activo", true).gte("fecha", todayCR()).order("fecha", { ascending: true }).limit(4),
       ]);
 
+      const equipoIds = Array.from(new Set([
+        ...((liderIdRes.data ?? []) as Array<{ id: string }>).map((r) => r.id),
+        ...((lideresRes.data ?? []) as Array<{ id: string }>).map((r) => r.id),
+      ]));
+
+      let memberCount = 0;
+      if (equipoIds.length > 0) {
+        const { count } = await supabase.from("equipo_solicitudes")
+          .select("id", { count: "exact", head: true })
+          .in("equipo_id", equipoIds)
+          .eq("estado", "aprobado");
+        memberCount = count ?? 0;
+      }
+
       setStats({
-        equipo: equipoRes.count ?? 0,
+        equipo: memberCount,
         oraciones: (oracionesRes.data ?? []).length,
         eventos: (eventosRes.data ?? []).length,
       });
@@ -54,7 +69,7 @@ export default function LiderDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: "Miembros", value: stats.equipo, icon: Users, href: "/lider/equipo", color: "rgba(59,130,246,0.15)", border: "rgba(59,130,246,0.3)", text: "#60a5fa" },
-          { label: "Oraciones", value: stats.oraciones, icon: HandHeart, href: "/lider/oraciones", color: "rgba(191,30,46,0.12)", border: "rgba(191,30,46,0.3)", text: "#BF1E2E" },
+          { label: "Oraciones", value: stats.oraciones, icon: HandHeart, href: "/oraciones", color: "rgba(191,30,46,0.12)", border: "rgba(191,30,46,0.3)", text: "#BF1E2E" },
           { label: "Eventos próximos", value: stats.eventos, icon: CalendarDays, href: "/lider/eventos", color: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", text: "#34d399" },
         ].map(s => (
           <Link key={s.label} href={s.href}
@@ -80,7 +95,7 @@ export default function LiderDashboard() {
             <h2 className="font-bold text-white flex items-center gap-2">
               <HandHeart size={16} className="text-accent" /> Oraciones recientes
             </h2>
-            <Link href="/lider/oraciones" className="text-xs text-white/30 hover:text-white transition-colors">Ver todas →</Link>
+            <Link href="/oraciones" className="text-xs text-white/30 hover:text-white transition-colors">Ver todas →</Link>
           </div>
           <div className="space-y-2">
             {oraciones.length === 0 && <p className="text-white/25 text-sm py-4 text-center">Sin solicitudes</p>}

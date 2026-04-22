@@ -21,6 +21,7 @@ type Recurso = {
   tipo: string;
   fecha?: string;
   audiencia?: string | null;
+  equipo_id?: string | null;
 };
 
 const iconoTipo = { pdf: FileText, audio: Headphones, video: Video, foto: ImageIcon, link: Link2 } as const;
@@ -48,24 +49,34 @@ export default async function RecursosPage() {
 
   let roles: string[] = [];
   let hasAnyEquipo = false;
+  const userEquipoIds = new Set<string>();
 
   if (userId) {
-    const [profileRes, modernRes, legacyRes] = await Promise.all([
+    const [profileRes, aprobadosRes, liderIdRes, lideresRes] = await Promise.all([
       supabase.from("usuarios").select("rol, roles").eq("id", userId).maybeSingle(),
-      supabase.from("equipo_solicitudes").select("id").eq("usuario_id", userId).eq("estado", "aprobado").limit(1),
-      supabase.from("gps_registros").select("id").eq("usuario_id", userId).eq("estado", "aprobada").limit(1),
+      supabase.from("equipo_solicitudes").select("equipo_id").eq("usuario_id", userId).eq("estado", "aprobado"),
+      supabase.from("equipos").select("id").eq("lider_id", userId),
+      supabase.from("equipos").select("id").contains("lideres", [{ id: userId }]),
     ]);
 
     roles = normalizeRoles(profileRes.data ?? null);
-    hasAnyEquipo = (modernRes.data?.length ?? 0) > 0 || (legacyRes.data?.length ?? 0) > 0;
+    for (const r of ((aprobadosRes.data ?? []) as Array<{ equipo_id: string | null }>)) {
+      if (r.equipo_id) userEquipoIds.add(r.equipo_id);
+    }
+    for (const r of ((liderIdRes.data ?? []) as Array<{ id: string }>)) userEquipoIds.add(r.id);
+    for (const r of ((lideresRes.data ?? []) as Array<{ id: string }>)) userEquipoIds.add(r.id);
+    hasAnyEquipo = userEquipoIds.size > 0;
   }
+
+  const isAdmin = roles.includes("admin");
 
   const { data } = await supabase.from("recursos").select("*").order("fecha", { ascending: false });
   const recursos = ((data ?? []) as Recurso[]).filter((r) => {
+    if (r.equipo_id) return userEquipoIds.has(r.equipo_id);
     const audiencia = (r.audiencia ?? "general").toLowerCase();
     if (audiencia === "general") return true;
-    if (audiencia === "equipos") return hasAnyEquipo;
-    if (audiencia === "lideres") return roles.includes("lider") || roles.includes("admin");
+    if (audiencia === "equipo" || audiencia === "equipos") return hasAnyEquipo;
+    if (audiencia === "lideres") return roles.includes("lider") || isAdmin;
     return true;
   });
 
