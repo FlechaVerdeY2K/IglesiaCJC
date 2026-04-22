@@ -19,6 +19,7 @@ export default function OracionesPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [prayed, setPrayed] = useState<Set<string>>(new Set());
   const [praying, setPraying] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ nombre?: string; peticion?: string }>({});
 
   useEffect(() => {
     void (async () => { const { data: { session } } = await supabase.auth.getSession();
@@ -56,9 +57,19 @@ export default function OracionesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const nextErrors: { nombre?: string; peticion?: string } = {};
+    const nombreActual = usarMiNombre && miNombre ? miNombre : nombre;
+    if (!anonima && !nombreActual.trim()) nextErrors.nombre = "Escribí tu nombre o marca la opción anónima.";
+    if (!peticion.trim()) nextErrors.peticion = "Contanos brevemente tu petición.";
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
+      return;
+    }
+    setErrors({});
     setEnviando(true);
 
-    const nombreFinal = anonima ? "Anónimo" : (usarMiNombre && miNombre ? miNombre : nombre);
+    const nombreFinal = anonima ? "Anónimo" : nombreActual;
 
     const { error } = await supabase.from("oraciones").insert({
       nombre: nombreFinal,
@@ -120,23 +131,23 @@ export default function OracionesPage() {
                 )}
 
                 <input
-                  className="input"
+                  className={`input ${errors.nombre ? "border-red-500/60" : ""}`}
                   placeholder="Tu nombre"
                   value={usarMiNombre && miNombre ? miNombre : nombre}
-                  onChange={(e) => setNombre(e.target.value)}
+                  onChange={(e) => { setNombre(e.target.value); if (errors.nombre) setErrors((p) => ({ ...p, nombre: undefined })); }}
                   disabled={usarMiNombre && !!miNombre}
-                  required={!anonima}
                 />
+                {errors.nombre && <p className="text-red-400 text-xs">{errors.nombre}</p>}
               </>
             )}
 
             <textarea
-              className="input min-h-[120px] resize-none"
+              className={`input min-h-[120px] resize-none ${errors.peticion ? "border-red-500/60" : ""}`}
               placeholder="¿Por qué quieres que oremos?"
               value={peticion}
-              onChange={(e) => setPeticion(e.target.value)}
-              required
+              onChange={(e) => { setPeticion(e.target.value); if (errors.peticion) setErrors((p) => ({ ...p, peticion: undefined })); }}
             />
+            {errors.peticion && <p className="text-red-400 text-xs">{errors.peticion}</p>}
 
             <label className="flex items-center gap-3 text-muted text-sm cursor-pointer">
               <input

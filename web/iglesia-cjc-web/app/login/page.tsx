@@ -21,6 +21,10 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      setError("Completá correo y contraseña para ingresar.");
+      return;
+    }
     setLoading(true); setError("");
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
@@ -69,22 +73,20 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-border" />
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4" noValidate>
             <input
               type="email"
-              className="input"
+              className={`input ${error && !email.trim() ? "border-red-500/60" : ""}`}
               placeholder="Email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
             />
             <input
               type="password"
-              className="input"
+              className={`input ${error && !password.trim() ? "border-red-500/60" : ""}`}
               placeholder="Contraseña"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
             />
             {error && <p className="text-accent text-sm">{error}</p>}
             <button type="submit" disabled={loading} className="btn-primary w-full">

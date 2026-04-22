@@ -12,7 +12,8 @@ export type NotifTipo =
   | "recurso_nuevo"
   | "live_inicio"
   | "biblia_avance"
-  | "anuncio_nuevo";
+  | "anuncio_nuevo"
+  | "apertura_gps";
 
 export async function sendNotification(
   userId: string,

@@ -12,6 +12,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 import { getLibro, LIBROS } from "@/lib/bible-books";
 import type { Oracion } from "@/lib/supabase";
 import { CLOUDINARY_PRESET, cloudinaryUploadUrl } from "@/lib/cloudinary";
+import PhoneInput from "@/components/PhoneInput";
 
 function computeCurrentChapter(
   libro: string, capitulo: number, autoAvance: boolean, fechaInicio: string | null,
@@ -694,13 +695,7 @@ export default function PerfilPage() {
           </div>
           <div>
             <label className="text-white/40 text-xs block mb-1.5">Número (opcional)</label>
-            <input
-              className="input"
-              value={telefono}
-              onChange={e => setTelefono(e.target.value)}
-              placeholder="+506 8888-8888"
-              type="tel"
-            />
+            <PhoneInput value={telefono} onChange={setTelefono} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-xl border border-white/5 p-3" style={{ background: "#080E1E" }}>
@@ -761,7 +756,8 @@ export default function PerfilPage() {
                   n.tipo === "ministerio_removido" ? UserMinus :
                   n.tipo === "rol_asignado"        ? UserCheck :
                   n.tipo === "rol_removido"        ? UserX :
-                  n.tipo === "anuncio_nuevo"       ? Newspaper : Bell;
+                  n.tipo === "anuncio_nuevo"       ? Newspaper :
+                  n.tipo === "apertura_gps"        ? UserPlus : Bell;
                 const iconColor =
                   n.tipo === "oracion_orada"       ? "#BF1E2E" :
                   n.tipo === "evento_nuevo"        ? "#3b82f6" :
@@ -774,7 +770,8 @@ export default function PerfilPage() {
                   n.tipo === "ministerio_removido" ? "#ef4444" :
                   n.tipo === "rol_asignado"        ? "#f59e0b" :
                   n.tipo === "rol_removido"        ? "#6b7280" :
-                  n.tipo === "anuncio_nuevo"       ? "#f43f5e" : "#6b7280";
+                  n.tipo === "anuncio_nuevo"       ? "#f43f5e" :
+                  n.tipo === "apertura_gps"        ? "#3b82f6" : "#6b7280";
                 const href =
                   n.tipo === "evento_nuevo"        ? "/eventos" :
                   n.tipo === "predica_nueva"       ? "/sermones" :
@@ -784,10 +781,11 @@ export default function PerfilPage() {
                   n.tipo === "anuncio_nuevo"       ? "/" :
                   n.tipo === "oracion_orada"       ? "/oraciones" :
                   n.tipo === "biblia_avance"       ? "/biblia" :
-                  n.tipo === "ministerio_agregado" ? "/equipos" :
-                  n.tipo === "ministerio_removido" ? "/equipos" :
+                  n.tipo === "ministerio_agregado" ? "/ministerios" :
+                  n.tipo === "ministerio_removido" ? "/ministerios" :
                   n.tipo === "rol_asignado"        ? "/perfil" :
-                  n.tipo === "rol_removido"        ? "/perfil" : null;
+                  n.tipo === "rol_removido"        ? "/perfil" :
+                  n.tipo === "apertura_gps"        ? "/equipos/registrar" : null;
 
                 const inner = (
                   <>
